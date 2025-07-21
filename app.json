@@ -1,0 +1,57 @@
+{
+  "expo": {
+    "name": "Adola",
+    "slug": "adola-gaming",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "adola",
+    "userInterfaceStyle": "dark",
+    "platforms": ["ios", "android", "web"],
+    "description": "Complete mobile gaming platform with 19 casino games, secure payments, and referral system",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#121212"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.adola.game",
+      "buildNumber": "1"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#121212"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.adola.game",
+      "versionCode": 1
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "name": "Adola Gaming Platform",
+      "shortName": "Adola",
+      "lang": "en",
+      "scope": "/",
+      "themeColor": "#121212",
+      "backgroundColor": "#121212",
+      "display": "standalone",
+      "orientation": "portrait",
+      "dir": "ltr",
+      "preferRelatedApplications": false,
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "f498b192-8b15-4a5a-aae8-6665bb6e1b4b"
+      }
+    }
+  }
+}
