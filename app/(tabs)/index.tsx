@@ -5,7 +5,8 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert
+  Alert,
+  Platform
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,6 +29,15 @@ export default function HomeScreen() {
   // No need for manual balance refresh - WalletContext handles real-time updates
 
   const handleSignOut = () => {
+    console.log('🔄 handleSignOut called');
+
+    // For web, skip the alert and logout directly for testing
+    if (Platform.OS === 'web') {
+      console.log('🌐 Web logout - bypassing alert');
+      performLogout();
+      return;
+    }
+
     Alert.alert(
       'Sign Out',
       'Are you sure you want to sign out?',
@@ -39,17 +49,27 @@ export default function HomeScreen() {
         {
           text: 'Sign Out',
           style: 'destructive',
-          onPress: async () => {
-            try {
-              await logout();
-              router.replace('/auth/login');
-            } catch (error) {
-              Alert.alert('Error', 'Failed to sign out. Please try again.');
-            }
-          },
+          onPress: performLogout,
         },
       ]
     );
+  };
+
+  const performLogout = async () => {
+    try {
+      console.log('🔄 Starting logout process...');
+      await logout();
+      console.log('✅ Logout completed, redirecting...');
+      router.replace('/auth/login');
+    } catch (error) {
+      console.error('❌ Logout error:', error);
+      if (Platform.OS === 'web') {
+        // On web, show a simple alert
+        window.alert('Failed to sign out. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to sign out. Please try again.');
+      }
+    }
   };
 
   // Use web-specific layout if on web platform

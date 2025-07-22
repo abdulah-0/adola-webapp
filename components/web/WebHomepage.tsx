@@ -26,6 +26,31 @@ export default function WebHomepage({ onSignOut }: WebHomepageProps) {
   const { balance } = useWallet();
   const router = useRouter();
 
+  const handleSignOutClick = () => {
+    console.log('🔄 WebHomepage logout button clicked');
+    console.log('📋 onSignOut function:', typeof onSignOut);
+    if (onSignOut) {
+      onSignOut();
+    } else {
+      console.error('❌ onSignOut function not provided');
+    }
+  };
+
+  // Direct logout test function
+  const testDirectLogout = async () => {
+    console.log('🧪 Testing direct web logout...');
+    try {
+      const { webLogout } = await import('../../utils/webLogout');
+      await webLogout();
+    } catch (error) {
+      console.error('❌ Direct logout failed:', error);
+      // Fallback: force redirect
+      if (typeof window !== 'undefined') {
+        window.location.href = '/auth/login';
+      }
+    }
+  };
+
   const featuredGames = [
     { name: 'Aviator', icon: '✈️', players: '1.2k', color: Colors.primary.neonCyan, route: '/game/aviator' },
     { name: 'Crash', icon: '🚀', players: '2.7k', color: Colors.primary.hotPink, route: '/game/crash' },
@@ -68,8 +93,15 @@ export default function WebHomepage({ onSignOut }: WebHomepageProps) {
               {(user?.email?.charAt(0) || 'P').toUpperCase()}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.signOutButton} onPress={onSignOut}>
+          <TouchableOpacity style={styles.signOutButton} onPress={handleSignOutClick}>
             <Ionicons name="log-out-outline" size={20} color={Colors.primary.text} />
+          </TouchableOpacity>
+          {/* Debug button - remove after testing */}
+          <TouchableOpacity
+            style={[styles.signOutButton, { backgroundColor: '#ff4444', marginLeft: 8 }]}
+            onPress={testDirectLogout}
+          >
+            <Text style={{ color: 'white', fontSize: 12 }}>TEST</Text>
           </TouchableOpacity>
         </View>
       </View>
