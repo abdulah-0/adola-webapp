@@ -35,36 +35,29 @@ export default function WithdrawalModal({ visible, onClose, onWithdraw, balance 
   };
 
   const handleWithdraw = () => {
-    console.log('🔄 WithdrawalModal: handleWithdraw called');
     const withdrawAmount = parseFloat(amount);
-    console.log('💰 Parsed amount:', withdrawAmount);
 
     if (!withdrawAmount || withdrawAmount <= 0) {
-      console.log('❌ Invalid amount');
       Alert.alert('Error', 'Please enter a valid amount');
       return;
     }
 
     if (withdrawAmount < 500) {
-      console.log('❌ Amount below minimum');
       Alert.alert('Error', 'Minimum withdrawal amount is PKR 500');
       return;
     }
 
     if (withdrawAmount > 50000) {
-      console.log('❌ Amount above maximum');
       Alert.alert('Error', 'Maximum withdrawal amount is PKR 50,000');
       return;
     }
 
     if (withdrawAmount > balance) {
-      console.log('❌ Insufficient balance');
       Alert.alert('Error', 'Insufficient balance');
       return;
     }
 
     if (!accountTitle.trim() || !accountNumber.trim() || !iban.trim() || !bank.trim()) {
-      console.log('❌ Missing bank details');
       Alert.alert('Error', 'Please fill in all bank details');
       return;
     }
@@ -76,10 +69,6 @@ export default function WithdrawalModal({ visible, onClose, onWithdraw, balance 
       bank: bank.trim(),
     };
 
-    console.log('🏦 Bank details:', bankDetails);
-
-    console.log('🔄 Showing confirmation dialog');
-
     // For web, use window.confirm instead of Alert.alert
     if (typeof window !== 'undefined') {
       const confirmed = window.confirm(
@@ -87,12 +76,9 @@ export default function WithdrawalModal({ visible, onClose, onWithdraw, balance 
       );
 
       if (confirmed) {
-        console.log('✅ User confirmed withdrawal (web)');
         onWithdraw(withdrawAmount, bankDetails, notes);
         resetForm();
         onClose();
-      } else {
-        console.log('❌ User cancelled withdrawal (web)');
       }
     } else {
       // Mobile Alert.alert
@@ -104,7 +90,6 @@ export default function WithdrawalModal({ visible, onClose, onWithdraw, balance 
           {
             text: 'Confirm',
             onPress: () => {
-              console.log('✅ User confirmed withdrawal (mobile)');
               onWithdraw(withdrawAmount, bankDetails, notes);
               resetForm();
               onClose();

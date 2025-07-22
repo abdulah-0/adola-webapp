@@ -8,22 +8,7 @@ import DepositModal from '../../components/wallet/DepositModal';
 import WithdrawalModal from '../../components/wallet/WithdrawalModal';
 import TransactionHistory from '../../components/wallet/TransactionHistory';
 
-// Add global error handler for web
-if (Platform.OS === 'web' && typeof window !== 'undefined') {
-  window.addEventListener('error', (event) => {
-    console.error('🚨 Global JavaScript Error:', event.error);
-    console.error('🚨 Error message:', event.message);
-    console.error('🚨 Error filename:', event.filename);
-    console.error('🚨 Error line:', event.lineno);
-  });
-
-  window.addEventListener('unhandledrejection', (event) => {
-    console.error('🚨 Unhandled Promise Rejection:', event.reason);
-  });
-}
-
 export default function WalletScreen() {
-  console.log('🔄 WalletScreen rendered');
   const { user } = useApp();
   const {
     balance,
@@ -79,19 +64,9 @@ export default function WalletScreen() {
   };
 
   const handleWithdraw = async (amount: number, bankDetails: any, notes?: string) => {
-    console.log('🎯 handleWithdraw called in wallet.tsx');
-    console.log('📋 Parameters received:', { amount, bankDetails, notes });
-
     try {
-      console.log('🔄 Starting withdrawal request...');
-      console.log('💰 Amount:', amount);
-      console.log('🏦 Bank details:', bankDetails);
-      console.log('📝 Notes:', notes);
-      console.log('💳 Current balance:', balance);
-
       // Check if user has sufficient balance
       if (!balance || balance < amount) {
-        console.error('❌ Insufficient balance check failed');
         if (typeof window !== 'undefined') {
           window.alert('Error: Insufficient balance for withdrawal');
         } else {
@@ -100,20 +75,14 @@ export default function WalletScreen() {
         return;
       }
 
-      console.log('✅ Balance check passed, calling createWithdrawalRequest...');
-
       const transactionId = await createWithdrawalRequest(amount, {
         bank_details: bankDetails,
         notes: notes || ''
       });
 
-      console.log('📋 Transaction ID received:', transactionId);
-
       if (transactionId) {
         const deductionAmount = Math.round(amount * 0.01 * 100) / 100;
         const finalAmount = amount - deductionAmount;
-
-        console.log('✅ Withdrawal successful, showing success message');
 
         if (typeof window !== 'undefined') {
           window.alert(
@@ -128,9 +97,7 @@ export default function WalletScreen() {
         }
 
         setShowWithdrawalModal(false);
-        console.log('✅ Withdrawal request completed successfully');
       } else {
-        console.error('❌ No transaction ID returned');
         if (typeof window !== 'undefined') {
           window.alert('Error: Failed to submit withdrawal request. Please try again.');
         } else {
@@ -138,9 +105,6 @@ export default function WalletScreen() {
         }
       }
     } catch (error) {
-      console.error('❌ Error in handleWithdraw:', error);
-      console.error('❌ Error details:', error.message, error.stack);
-
       if (typeof window !== 'undefined') {
         window.alert(`Error: Failed to submit withdrawal request: ${error.message || 'Unknown error'}`);
       } else {
@@ -169,14 +133,8 @@ export default function WalletScreen() {
           balance={balance}
           pendingDeposits={pendingDeposits}
           pendingWithdrawals={pendingWithdrawals}
-          onDeposit={() => {
-            console.log('🔄 Opening deposit modal');
-            setShowDepositModal(true);
-          }}
-          onWithdraw={() => {
-            console.log('🔄 Opening withdrawal modal');
-            setShowWithdrawalModal(true);
-          }}
+          onDeposit={() => setShowDepositModal(true)}
+          onWithdraw={() => setShowWithdrawalModal(true)}
         />
 
         <TransactionHistory transactions={transactions} />
@@ -190,10 +148,7 @@ export default function WalletScreen() {
 
       <WithdrawalModal
         visible={showWithdrawalModal}
-        onClose={() => {
-          console.log('🔄 Closing withdrawal modal');
-          setShowWithdrawalModal(false);
-        }}
+        onClose={() => setShowWithdrawalModal(false)}
         onWithdraw={handleWithdraw}
         balance={balance || 0}
       />

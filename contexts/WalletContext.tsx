@@ -252,21 +252,11 @@ export function WalletProvider({ children }: WalletProviderProps) {
   };
 
   const createWithdrawalRequest = async (amount: number, metadata: any = {}): Promise<string | null> => {
-    console.log('🎯 WalletContext: createWithdrawalRequest called');
-    console.log('👤 User object:', user);
-    console.log('🆔 User ID:', user?.id);
-
     if (!user?.id) {
-      console.error('❌ No user ID available for withdrawal request');
-      console.error('❌ User object is:', user);
       return null;
     }
 
     try {
-      console.log(`🔄 WalletContext: Creating withdrawal request for user ${user.id}`);
-      console.log(`💰 Amount: PKR ${amount}`);
-      console.log(`📋 Metadata:`, metadata);
-
       const transactionId = await NewWalletService.createWithdrawalRequest(
         user.id,
         amount,
@@ -274,26 +264,13 @@ export function WalletProvider({ children }: WalletProviderProps) {
         `Withdrawal request for PKR ${amount.toLocaleString()}`
       );
 
-      console.log(`📋 WalletContext: Received transaction ID: ${transactionId}`);
-
       if (transactionId) {
-        console.log(`✅ Withdrawal request created: ${transactionId}`);
-        console.log(`💰 PKR ${amount} immediately deducted from balance`);
-        // Refresh both balance and transactions to show the immediate deduction
-        console.log('🔄 Starting balance refresh...');
         await refreshBalance();
-        console.log('🔄 Starting transactions refresh...');
         await refreshTransactions();
-        console.log(`🔄 Balance and transactions refreshed`);
-      } else {
-        console.error('❌ No transaction ID returned from NewWalletService');
       }
 
       return transactionId;
     } catch (error) {
-      console.error('❌ Error in WalletContext createWithdrawalRequest:', error);
-      console.error('❌ Error message:', error.message);
-      console.error('❌ Error stack:', error.stack);
       return null;
     }
   };
@@ -303,13 +280,11 @@ export function WalletProvider({ children }: WalletProviderProps) {
       const success = await NewWalletService.approveWithdrawalRequest(withdrawalId, adminId);
 
       if (success) {
-        console.log(`✅ Withdrawal request ${withdrawalId} approved`);
         await refreshTransactions();
       }
 
       return success;
     } catch (error) {
-      console.error('❌ Error approving withdrawal request:', error);
       return false;
     }
   };
@@ -319,15 +294,12 @@ export function WalletProvider({ children }: WalletProviderProps) {
       const success = await NewWalletService.rejectWithdrawalRequest(withdrawalId, adminId, reason);
 
       if (success) {
-        console.log(`✅ Withdrawal request ${withdrawalId} rejected and money returned`);
-        // Refresh both balance and transactions to show the refund
         await refreshBalance();
         await refreshTransactions();
       }
 
       return success;
     } catch (error) {
-      console.error('❌ Error rejecting withdrawal request:', error);
       return false;
     }
   };

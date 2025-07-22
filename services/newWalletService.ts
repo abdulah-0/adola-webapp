@@ -527,17 +527,12 @@ export class NewWalletService {
     description?: string
   ): Promise<string | null> {
     try {
-      console.log(`🔄 Creating withdrawal request for user ${userId}, amount: PKR ${amount}`);
-      console.log('📋 Metadata:', metadata);
-
       // Validate withdrawal amount limits
       if (amount < 500) {
-        console.error('❌ Minimum withdrawal amount is PKR 500');
         return null;
       }
 
       if (amount > 50000) {
-        console.error('❌ Maximum withdrawal amount is PKR 50,000');
         return null;
       }
 
@@ -546,7 +541,6 @@ export class NewWalletService {
 
       // If no balance record exists, create one with 0 balance
       if (!currentBalance) {
-        console.log('⚠️ No wallet record found, creating one...');
         const { error: createError } = await supabase
           .from('wallets')
           .insert({
@@ -559,7 +553,6 @@ export class NewWalletService {
           });
 
         if (createError) {
-          console.error('❌ Error creating wallet record:', createError);
           return null;
         }
 
@@ -567,11 +560,9 @@ export class NewWalletService {
       }
 
       const balanceAmount = currentBalance?.balance || 0;
-      console.log(`💰 Current balance: PKR ${balanceAmount}`);
 
       // Check if user has sufficient balance
       if (balanceAmount < amount) {
-        console.error(`❌ Insufficient balance for withdrawal: ${balanceAmount} < ${amount}`);
         return null;
       }
 
@@ -595,13 +586,8 @@ export class NewWalletService {
         });
 
       if (balanceUpdateError) {
-        console.error('❌ Error updating user balance:', balanceUpdateError);
-        console.error('❌ Balance update error details:', balanceUpdateError.message);
-        console.error('❌ Balance update error code:', balanceUpdateError.code);
         return null;
       }
-
-      console.log(`💰 Balance immediately deducted: PKR ${amount} (New balance: PKR ${newBalance})`);
 
       // Create withdrawal request
       const { data: withdrawalData, error: withdrawalError } = await supabase
@@ -617,7 +603,6 @@ export class NewWalletService {
         .select();
 
       if (withdrawalError) {
-        console.error('❌ Error creating withdrawal request:', withdrawalError);
         // Rollback balance update
         await supabase
           .from('wallets')
@@ -655,7 +640,6 @@ export class NewWalletService {
         .select();
 
       if (txError) {
-        console.error('❌ Error creating transaction record:', txError);
         // Rollback: restore balance and clean up withdrawal request
         await supabase
           .from('wallets')
@@ -667,18 +651,10 @@ export class NewWalletService {
             onConflict: 'user_id'
           });
         await supabase.from('withdrawal_requests').delete().eq('id', withdrawalRecord.id);
-        console.log('🔄 Rollback completed - balance restored');
         return null;
       }
-
-      console.log('✅ Withdrawal request created successfully:', withdrawalRecord.id);
-      console.log(`💰 Amount PKR ${amount} immediately deducted from user balance`);
-      console.log(`🎯 Returning transaction ID: ${withdrawalRecord.id}`);
       return withdrawalRecord.id;
     } catch (error) {
-      console.error('❌ Error creating withdrawal request:', error);
-      console.error('❌ Error details:', error.message);
-      console.error('❌ Error stack:', error.stack);
       return null;
     }
   }
@@ -700,12 +676,10 @@ export class NewWalletService {
         .single();
 
       if (fetchError || !withdrawal) {
-        console.error('❌ Withdrawal request not found or already processed');
         return false;
       }
 
       // Update withdrawal request status (only use columns that exist)
-      console.log(`🔄 Updating withdrawal request ${withdrawalId} to approved status`);
       const { error: updateError } = await supabase
         .from('withdrawal_requests')
         .update({
@@ -713,10 +687,7 @@ export class NewWalletService {
         })
         .eq('id', withdrawalId);
 
-      console.log('🔍 Approval update result:', { updateError });
-
       if (updateError) {
-        console.error('❌ Error updating withdrawal request:', updateError);
         return false;
       }
 
@@ -730,15 +701,8 @@ export class NewWalletService {
         .eq('reference_id', withdrawalId)
         .eq('type', 'withdraw');
 
-      if (txUpdateError) {
-        console.error('❌ Error updating transaction status:', txUpdateError);
-      }
-
-      console.log(`✅ Withdrawal request ${withdrawalId} approved by admin ${adminId}`);
-      console.log(`💰 User will receive PKR ${withdrawal.final_amount} (after 1% deduction)`);
       return true;
     } catch (error) {
-      console.error('❌ Error approving withdrawal request:', error);
       return false;
     }
   }
@@ -761,7 +725,6 @@ export class NewWalletService {
         .single();
 
       if (fetchError || !withdrawal) {
-        console.error('❌ Withdrawal request not found or already processed');
         return false;
       }
 
@@ -784,12 +747,10 @@ export class NewWalletService {
         });
 
       if (balanceUpdateError) {
-        console.error('❌ Error returning money to user balance:', balanceUpdateError);
         return false;
       }
 
       // Update withdrawal request status (only use columns that exist)
-      console.log(`🔄 Updating withdrawal request ${withdrawalId} to rejected status`);
       const { error: updateError } = await supabase
         .from('withdrawal_requests')
         .update({
@@ -797,10 +758,7 @@ export class NewWalletService {
         })
         .eq('id', withdrawalId);
 
-      console.log('🔍 Update result:', { updateError });
-
       if (updateError) {
-        console.error('❌ Error updating withdrawal request:', updateError);
         return false;
       }
 
@@ -814,9 +772,7 @@ export class NewWalletService {
         .eq('reference_id', withdrawalId)
         .eq('type', 'withdraw');
 
-      if (txUpdateError) {
-        console.error('❌ Error updating transaction status:', txUpdateError);
-      }
+
 
       // Create a new transaction record for the refund (using 'deposit' type for money returned)
       const { error: refundTxError } = await supabase
@@ -836,15 +792,8 @@ export class NewWalletService {
           }
         });
 
-      if (refundTxError) {
-        console.error('❌ Error creating refund transaction:', refundTxError);
-      }
-
-      console.log(`✅ Withdrawal request ${withdrawalId} rejected by admin ${adminId}`);
-      console.log(`💰 PKR ${withdrawal.amount} returned to user balance (New balance: PKR ${newBalance})`);
       return true;
     } catch (error) {
-      console.error('❌ Error rejecting withdrawal request:', error);
       return false;
     }
   }
