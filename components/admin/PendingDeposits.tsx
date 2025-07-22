@@ -62,24 +62,35 @@ export default function PendingDeposits() {
   const confirmAction = async () => {
     if (!selectedDeposit) return;
 
+    console.log(`🔄 Frontend: Starting ${actionType} action for deposit:`, selectedDeposit.id);
+    console.log(`🔄 Frontend: Admin ID:`, user?.id);
+    console.log(`🔄 Frontend: Notes:`, notes);
+
     try {
       let result;
       if (actionType === 'approve') {
+        console.log(`🔄 Frontend: Calling NewAdminService.approveDeposit...`);
+        console.log(`🔄 Frontend: NewAdminService available:`, !!NewAdminService);
+        console.log(`🔄 Frontend: approveDeposit function available:`, !!NewAdminService.approveDeposit);
+
         result = await NewAdminService.approveDeposit(
           selectedDeposit.id,
           user?.id || '00000000-0000-0000-0000-000000000001', // Use actual admin ID
           notes
         );
+        console.log(`✅ Frontend: Approval result:`, result);
       } else {
         if (!notes.trim()) {
           Alert.alert('Error', 'Please provide a reason for rejection');
           return;
         }
+        console.log(`🔄 Frontend: Calling NewAdminService.rejectDeposit...`);
         result = await NewAdminService.rejectDeposit(
           selectedDeposit.id,
           user?.id || '00000000-0000-0000-0000-000000000001',
           notes
         );
+        console.log(`✅ Frontend: Rejection result:`, result);
       }
 
       if (result.success) {
@@ -106,7 +117,8 @@ export default function PendingDeposits() {
         Alert.alert('Error', result.error || 'Failed to process request');
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to process request');
+      console.error('❌ Frontend: Error in confirmAction:', error);
+      Alert.alert('Error', `Failed to process request: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setShowActionModal(false);
       setSelectedDeposit(null);
