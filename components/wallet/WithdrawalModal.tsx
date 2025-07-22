@@ -19,6 +19,8 @@ interface WithdrawalModalProps {
 }
 
 export default function WithdrawalModal({ visible, onClose, onWithdraw, balance }: WithdrawalModalProps) {
+  console.log('🔄 WithdrawalModal rendered with props:', { visible, balance });
+
   const [amount, setAmount] = useState('');
   const [accountTitle, setAccountTitle] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
@@ -244,12 +246,16 @@ export default function WithdrawalModal({ visible, onClose, onWithdraw, balance 
             <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[
               styles.withdrawButton,
               (!amount || !accountTitle || !accountNumber || !iban || !bank || withdrawAmount > balance) && styles.disabledButton
             ]}
-            onPress={handleWithdraw}
+            onPress={() => {
+              console.log('🔴 BUTTON CLICKED - Basic test');
+              alert('Button clicked!'); // Simple test
+              handleWithdraw();
+            }}
             disabled={!amount || !accountTitle || !accountNumber || !iban || !bank || withdrawAmount > balance}
           >
             <Text style={styles.withdrawText}>Submit Withdrawal</Text>

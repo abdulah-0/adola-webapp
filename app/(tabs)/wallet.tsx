@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useApp } from '../../contexts/AppContext';
 import { useWallet } from '../../contexts/WalletContext';
@@ -8,7 +8,22 @@ import DepositModal from '../../components/wallet/DepositModal';
 import WithdrawalModal from '../../components/wallet/WithdrawalModal';
 import TransactionHistory from '../../components/wallet/TransactionHistory';
 
+// Add global error handler for web
+if (Platform.OS === 'web' && typeof window !== 'undefined') {
+  window.addEventListener('error', (event) => {
+    console.error('🚨 Global JavaScript Error:', event.error);
+    console.error('🚨 Error message:', event.message);
+    console.error('🚨 Error filename:', event.filename);
+    console.error('🚨 Error line:', event.lineno);
+  });
+
+  window.addEventListener('unhandledrejection', (event) => {
+    console.error('🚨 Unhandled Promise Rejection:', event.reason);
+  });
+}
+
 export default function WalletScreen() {
+  console.log('🔄 WalletScreen rendered');
   const { user } = useApp();
   const {
     balance,
@@ -124,8 +139,14 @@ export default function WalletScreen() {
           balance={balance}
           pendingDeposits={pendingDeposits}
           pendingWithdrawals={pendingWithdrawals}
-          onDeposit={() => setShowDepositModal(true)}
-          onWithdraw={() => setShowWithdrawalModal(true)}
+          onDeposit={() => {
+            console.log('🔄 Opening deposit modal');
+            setShowDepositModal(true);
+          }}
+          onWithdraw={() => {
+            console.log('🔄 Opening withdrawal modal');
+            setShowWithdrawalModal(true);
+          }}
         />
 
         <TransactionHistory transactions={transactions} />
@@ -139,9 +160,12 @@ export default function WalletScreen() {
 
       <WithdrawalModal
         visible={showWithdrawalModal}
-        onClose={() => setShowWithdrawalModal(false)}
+        onClose={() => {
+          console.log('🔄 Closing withdrawal modal');
+          setShowWithdrawalModal(false);
+        }}
         onWithdraw={handleWithdraw}
-        balance={balance}
+        balance={balance || 0}
       />
     </View>
   );
