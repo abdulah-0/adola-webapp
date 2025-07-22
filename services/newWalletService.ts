@@ -724,7 +724,7 @@ export class NewWalletService {
       const { error: txUpdateError } = await supabase
         .from('wallet_transactions')
         .update({
-          status: 'completed',
+          status: 'approved',
           description: `Withdrawal approved - PKR ${withdrawal.amount} (Admin: ${adminId})`
         })
         .eq('reference_id', withdrawalId)
@@ -808,7 +808,7 @@ export class NewWalletService {
       const { error: txUpdateError } = await supabase
         .from('wallet_transactions')
         .update({
-          status: 'cancelled',
+          status: 'rejected',
           description: `Withdrawal rejected - PKR ${withdrawal.amount} returned (Admin: ${adminId})`
         })
         .eq('reference_id', withdrawalId)
@@ -818,13 +818,13 @@ export class NewWalletService {
         console.error('❌ Error updating transaction status:', txUpdateError);
       }
 
-      // Create a new transaction record for the refund
+      // Create a new transaction record for the refund (using 'deposit' type for money returned)
       const { error: refundTxError } = await supabase
         .from('wallet_transactions')
         .insert({
           user_id: withdrawal.user_id,
-          type: 'refund',
-          status: 'completed',
+          type: 'deposit',
+          status: 'approved',
           amount: withdrawal.amount, // Positive amount (money returned)
           balance_before: balanceAmount,
           balance_after: newBalance,
