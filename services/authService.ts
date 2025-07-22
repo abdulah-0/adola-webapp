@@ -163,7 +163,7 @@ class AuthService {
       }
 
       // Use Supabase signUp function from requirements document
-      const supabaseResult = await signUpUser(data.email, data.password, data.username);
+      const supabaseResult = await signUpUser(data.email, data.password, data.username, data.referralCode);
 
       if (!supabaseResult.success || !supabaseResult.user) {
         return {

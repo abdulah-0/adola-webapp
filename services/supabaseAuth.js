@@ -36,41 +36,32 @@ export const signUpUser = async (email, password, username, referralCode = null)
       throw new Error('User creation failed');
     }
 
-    // Step 2: Create user profile in users table
-    const userData = {
-      id: authData.user.id,
-      email: email,
-      username: username,
-      display_name: username,
-      wallet_balance: 50, // New user bonus as per requirements
-      joined_date: new Date().toISOString(),
-      is_online: true,
-      email_verified: authData.user.email_confirmed_at ? true : false,
-      level: 1,
-      xp: 0,
-      games_played: 0,
-      total_wins: 0,
-      total_losses: 0,
-      status: 'online',
-      is_admin: false,
-      is_super_admin: false,
-      last_login_date: new Date().toISOString(),
-      registration_bonus: true,
-    };
+    // Step 2: User profile and wallet will be created automatically by database trigger
+    // The trigger 'auto_create_user_and_wallet' will handle:
+    // - Creating user profile in users table
+    // - Creating wallet with welcome bonus
+    // - Processing referral code if provided
+    // - Giving referral bonus to referrer
 
-    const { error: insertError } = await supabase
+    // Wait a moment for the trigger to complete
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Fetch the created user data from the database
+    const { data: userData, error: fetchError } = await supabase
       .from('users')
-      .insert([userData]);
+      .select('*')
+      .eq('auth_user_id', authData.user.id)
+      .single();
 
-    if (insertError) {
-      console.warn('⚠️ User profile creation failed:', insertError.message);
-      // Continue anyway as auth user was created
+    if (fetchError || !userData) {
+      console.error('❌ Failed to fetch user data after registration:', fetchError);
+      throw new Error('User profile creation failed');
     }
 
     console.log('✅ User registered successfully:', email);
     return {
       success: true,
-      user: { ...userData, id: authData.user.id },
+      user: userData,
       message: 'Registration successful! Please check your email for verification.'
     };
 
