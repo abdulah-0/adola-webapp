@@ -53,11 +53,13 @@ export class NewAdminService {
 
       // Get current wallet balance
       console.log(`🔄 Looking up wallet for user: ${deposit.user_id}`);
-      const { data: wallet, error: walletError } = await supabase
+      const { data: walletData, error: walletError } = await supabase
         .from('wallets')
         .select('*')
         .eq('user_id', deposit.user_id)
         .maybeSingle();
+
+      let wallet = walletData;
 
       if (walletError) {
         console.error('❌ Error fetching wallet:', walletError);
