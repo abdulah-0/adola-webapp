@@ -69,10 +69,31 @@ export class NewAdminService {
 
       if (!wallet) {
         console.error('❌ No wallet found for user:', deposit.user_id);
-        return {
-          success: false,
-          error: 'User wallet not found'
-        };
+        console.log('🔧 Creating missing wallet for user...');
+
+        // Create wallet for user if it doesn't exist
+        const { data: newWallet, error: createWalletError } = await supabase
+          .from('wallets')
+          .insert({
+            user_id: deposit.user_id,
+            balance: 0,
+            total_deposited: 0,
+            referral_earnings: 0,
+            created_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (createWalletError) {
+          console.error('❌ Failed to create wallet:', createWalletError);
+          return {
+            success: false,
+            error: `Failed to create user wallet: ${createWalletError.message}`
+          };
+        }
+
+        console.log('✅ Created new wallet for user');
+        wallet = newWallet;
       }
 
       console.log(`✅ Found wallet with balance: PKR ${wallet.balance}`);
