@@ -38,6 +38,8 @@
       "backgroundColor": "#121212",
       "display": "standalone",
       "orientation": "portrait",
+      "bundler": "metro",
+      "template": "./web/index.html",
       "dir": "ltr",
       "preferRelatedApplications": false,
       "bundler": "metro"
