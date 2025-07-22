@@ -704,15 +704,16 @@ export class NewWalletService {
         return false;
       }
 
-      // Update withdrawal request status
+      // Update withdrawal request status (only use columns that exist)
+      console.log(`🔄 Updating withdrawal request ${withdrawalId} to approved status`);
       const { error: updateError } = await supabase
         .from('withdrawal_requests')
         .update({
-          status: 'approved',
-          processed_by: adminId,
-          processed_at: new Date().toISOString()
+          status: 'approved'
         })
         .eq('id', withdrawalId);
+
+      console.log('🔍 Approval update result:', { updateError });
 
       if (updateError) {
         console.error('❌ Error updating withdrawal request:', updateError);
@@ -787,16 +788,16 @@ export class NewWalletService {
         return false;
       }
 
-      // Update withdrawal request status
+      // Update withdrawal request status (only use columns that exist)
+      console.log(`🔄 Updating withdrawal request ${withdrawalId} to rejected status`);
       const { error: updateError } = await supabase
         .from('withdrawal_requests')
         .update({
-          status: 'rejected',
-          processed_by: adminId,
-          processed_at: new Date().toISOString(),
-          rejection_reason: reason || 'Rejected by admin'
+          status: 'rejected'
         })
         .eq('id', withdrawalId);
+
+      console.log('🔍 Update result:', { updateError });
 
       if (updateError) {
         console.error('❌ Error updating withdrawal request:', updateError);
