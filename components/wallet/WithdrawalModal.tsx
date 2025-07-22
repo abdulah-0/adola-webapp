@@ -78,22 +78,41 @@ export default function WithdrawalModal({ visible, onClose, onWithdraw, balance 
 
     console.log('🏦 Bank details:', bankDetails);
 
-    Alert.alert(
-      'Confirm Withdrawal',
-      `Amount: PKR ${withdrawAmount}\nDeduction (1%): PKR ${calculateDeduction(withdrawAmount)}\nYou will receive: PKR ${calculateFinalAmount(withdrawAmount)}\n\nProceed with withdrawal?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Confirm',
-          onPress: () => {
-            console.log('✅ User confirmed withdrawal');
-            onWithdraw(withdrawAmount, bankDetails, notes);
-            resetForm();
-            onClose();
+    console.log('🔄 Showing confirmation dialog');
+
+    // For web, use window.confirm instead of Alert.alert
+    if (typeof window !== 'undefined') {
+      const confirmed = window.confirm(
+        `Confirm Withdrawal\n\nAmount: PKR ${withdrawAmount}\nDeduction (1%): PKR ${calculateDeduction(withdrawAmount)}\nYou will receive: PKR ${calculateFinalAmount(withdrawAmount)}\n\nProceed with withdrawal?`
+      );
+
+      if (confirmed) {
+        console.log('✅ User confirmed withdrawal (web)');
+        onWithdraw(withdrawAmount, bankDetails, notes);
+        resetForm();
+        onClose();
+      } else {
+        console.log('❌ User cancelled withdrawal (web)');
+      }
+    } else {
+      // Mobile Alert.alert
+      Alert.alert(
+        'Confirm Withdrawal',
+        `Amount: PKR ${withdrawAmount}\nDeduction (1%): PKR ${calculateDeduction(withdrawAmount)}\nYou will receive: PKR ${calculateFinalAmount(withdrawAmount)}\n\nProceed with withdrawal?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Confirm',
+            onPress: () => {
+              console.log('✅ User confirmed withdrawal (mobile)');
+              onWithdraw(withdrawAmount, bankDetails, notes);
+              resetForm();
+              onClose();
+            }
           }
-        }
-      ]
-    );
+        ]
+      );
+    }
   };
 
   const resetForm = () => {

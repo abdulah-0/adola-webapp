@@ -79,43 +79,73 @@ export default function WalletScreen() {
   };
 
   const handleWithdraw = async (amount: number, bankDetails: any, notes?: string) => {
+    console.log('🎯 handleWithdraw called in wallet.tsx');
+    console.log('📋 Parameters received:', { amount, bankDetails, notes });
+
     try {
       console.log('🔄 Starting withdrawal request...');
       console.log('💰 Amount:', amount);
       console.log('🏦 Bank details:', bankDetails);
       console.log('📝 Notes:', notes);
+      console.log('💳 Current balance:', balance);
 
       // Check if user has sufficient balance
       if (!balance || balance < amount) {
-        Alert.alert('Error', 'Insufficient balance for withdrawal');
+        console.error('❌ Insufficient balance check failed');
+        if (typeof window !== 'undefined') {
+          window.alert('Error: Insufficient balance for withdrawal');
+        } else {
+          Alert.alert('Error', 'Insufficient balance for withdrawal');
+        }
         return;
       }
+
+      console.log('✅ Balance check passed, calling createWithdrawalRequest...');
 
       const transactionId = await createWithdrawalRequest(amount, {
         bank_details: bankDetails,
         notes: notes || ''
       });
 
-      console.log('📋 Transaction ID:', transactionId);
+      console.log('📋 Transaction ID received:', transactionId);
 
       if (transactionId) {
         const deductionAmount = Math.round(amount * 0.01 * 100) / 100;
         const finalAmount = amount - deductionAmount;
 
-        Alert.alert(
-          'Withdrawal Request Submitted',
-          `Your withdrawal request for PKR ${amount.toLocaleString()} has been submitted successfully!\n\nAmount deducted from balance: PKR ${amount.toLocaleString()}\nAfter 1% deduction, you will receive: PKR ${finalAmount.toLocaleString()}\n\nProcessing will be completed within 24 hours.`,
-          [{ text: 'OK' }]
-        );
+        console.log('✅ Withdrawal successful, showing success message');
+
+        if (typeof window !== 'undefined') {
+          window.alert(
+            `Withdrawal Request Submitted!\n\nYour withdrawal request for PKR ${amount.toLocaleString()} has been submitted successfully!\n\nAmount deducted from balance: PKR ${amount.toLocaleString()}\nAfter 1% deduction, you will receive: PKR ${finalAmount.toLocaleString()}\n\nProcessing will be completed within 24 hours.`
+          );
+        } else {
+          Alert.alert(
+            'Withdrawal Request Submitted',
+            `Your withdrawal request for PKR ${amount.toLocaleString()} has been submitted successfully!\n\nAmount deducted from balance: PKR ${amount.toLocaleString()}\nAfter 1% deduction, you will receive: PKR ${finalAmount.toLocaleString()}\n\nProcessing will be completed within 24 hours.`,
+            [{ text: 'OK' }]
+          );
+        }
+
         setShowWithdrawalModal(false);
         console.log('✅ Withdrawal request completed successfully');
       } else {
         console.error('❌ No transaction ID returned');
-        Alert.alert('Error', 'Failed to submit withdrawal request. Please try again.');
+        if (typeof window !== 'undefined') {
+          window.alert('Error: Failed to submit withdrawal request. Please try again.');
+        } else {
+          Alert.alert('Error', 'Failed to submit withdrawal request. Please try again.');
+        }
       }
     } catch (error) {
       console.error('❌ Error in handleWithdraw:', error);
-      Alert.alert('Error', `Failed to submit withdrawal request: ${error.message || 'Unknown error'}`);
+      console.error('❌ Error details:', error.message, error.stack);
+
+      if (typeof window !== 'undefined') {
+        window.alert(`Error: Failed to submit withdrawal request: ${error.message || 'Unknown error'}`);
+      } else {
+        Alert.alert('Error', `Failed to submit withdrawal request: ${error.message || 'Unknown error'}`);
+      }
     }
   };
 

@@ -252,8 +252,13 @@ export function WalletProvider({ children }: WalletProviderProps) {
   };
 
   const createWithdrawalRequest = async (amount: number, metadata: any = {}): Promise<string | null> => {
+    console.log('🎯 WalletContext: createWithdrawalRequest called');
+    console.log('👤 User object:', user);
+    console.log('🆔 User ID:', user?.id);
+
     if (!user?.id) {
       console.error('❌ No user ID available for withdrawal request');
+      console.error('❌ User object is:', user);
       return null;
     }
 
@@ -275,7 +280,9 @@ export function WalletProvider({ children }: WalletProviderProps) {
         console.log(`✅ Withdrawal request created: ${transactionId}`);
         console.log(`💰 PKR ${amount} immediately deducted from balance`);
         // Refresh both balance and transactions to show the immediate deduction
+        console.log('🔄 Starting balance refresh...');
         await refreshBalance();
+        console.log('🔄 Starting transactions refresh...');
         await refreshTransactions();
         console.log(`🔄 Balance and transactions refreshed`);
       } else {
@@ -286,6 +293,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
     } catch (error) {
       console.error('❌ Error in WalletContext createWithdrawalRequest:', error);
       console.error('❌ Error message:', error.message);
+      console.error('❌ Error stack:', error.stack);
       return null;
     }
   };
