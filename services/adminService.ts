@@ -338,6 +338,62 @@ export class AdminService {
         }
       }
 
+      // Check if this user was referred by someone and give referrer 5% bonus
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('referred_by_user_id, username')
+        .eq('auth_user_id', transaction.user_id)
+        .maybeSingle();
+
+      if (!userError && userData && userData.referred_by_user_id) {
+        const referrerBonus = Math.floor(depositAmount * 0.05);
+
+        if (referrerBonus > 0) {
+          console.log(`💰 Processing referral bonus: PKR ${referrerBonus} for referrer of ${userData.username}`);
+
+          // Get referrer's current balance
+          const { data: referrerUser, error: referrerUserError } = await supabase
+            .from('users')
+            .select('wallet_balance')
+            .eq('auth_user_id', userData.referred_by_user_id)
+            .maybeSingle();
+
+          if (!referrerUserError && referrerUser) {
+            const referrerNewBalance = Number(referrerUser.wallet_balance) + referrerBonus;
+
+            // Update referrer's wallet balance
+            const { error: referrerUpdateError } = await supabase
+              .from('users')
+              .update({ wallet_balance: referrerNewBalance })
+              .eq('auth_user_id', userData.referred_by_user_id);
+
+            if (!referrerUpdateError) {
+              // Create referral bonus transaction for referrer
+              const { error: referralTxError } = await supabase
+                .from('wallet_transactions')
+                .insert({
+                  user_id: userData.referred_by_user_id,
+                  type: 'referral_deposit_bonus',
+                  status: 'approved',
+                  amount: referrerBonus,
+                  description: `5% Referral Bonus - PKR ${referrerBonus} (from ${userData.username}'s PKR ${depositAmount} deposit)`,
+                  approved_at: new Date().toISOString(),
+                });
+
+              if (!referralTxError) {
+                console.log(`✅ 5% referral bonus given: PKR ${referrerBonus} to referrer of ${userData.username}`);
+              } else {
+                console.error('❌ Error creating referral bonus transaction:', referralTxError);
+              }
+            } else {
+              console.error('❌ Error updating referrer balance:', referrerUpdateError);
+            }
+          } else {
+            console.error('❌ Error fetching referrer user:', referrerUserError);
+          }
+        }
+      }
+
       // Log admin action
       this.logAdminAction(adminId, 'approve_deposit', 'deposit', depositId, {
         amount: depositAmount,

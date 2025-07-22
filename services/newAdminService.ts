@@ -135,6 +135,77 @@ export class NewAdminService {
         }
       }
 
+      // Check if this user was referred by someone and give referrer 5% bonus
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('referred_by_user_id, username')
+        .eq('auth_user_id', deposit.user_id)
+        .maybeSingle();
+
+      if (!userError && userData && userData.referred_by_user_id) {
+        const referrerBonus = Math.floor(depositAmount * 0.05);
+
+        if (referrerBonus > 0) {
+          console.log(`💰 Processing referral bonus: PKR ${referrerBonus} for referrer of ${userData.username}`);
+
+          // Get referrer's current wallet balance
+          const { data: referrerWallet, error: referrerWalletError } = await supabase
+            .from('wallets')
+            .select('balance, referral_earnings')
+            .eq('user_id', userData.referred_by_user_id)
+            .maybeSingle();
+
+          if (!referrerWalletError && referrerWallet) {
+            const referrerBalanceBefore = parseFloat((referrerWallet.balance || 0).toString());
+            const referrerBalanceAfter = referrerBalanceBefore + referrerBonus;
+            const currentReferralEarnings = parseFloat((referrerWallet.referral_earnings || 0).toString());
+
+            // Update referrer's wallet balance and referral earnings
+            const { error: referrerUpdateError } = await supabase
+              .from('wallets')
+              .update({
+                balance: referrerBalanceAfter,
+                referral_earnings: currentReferralEarnings + referrerBonus
+              })
+              .eq('user_id', userData.referred_by_user_id);
+
+            if (!referrerUpdateError) {
+              // Create referral bonus transaction for referrer
+              const { error: referralTxError } = await supabase
+                .from('wallet_transactions')
+                .insert({
+                  user_id: userData.referred_by_user_id,
+                  type: 'referral_deposit_bonus',
+                  status: 'approved',
+                  amount: referrerBonus,
+                  balance_before: referrerBalanceBefore,
+                  balance_after: referrerBalanceAfter,
+                  description: `5% Referral Bonus - PKR ${referrerBonus} (from ${userData.username}'s PKR ${depositAmount} deposit)`,
+                  metadata: {
+                    referred_user_id: deposit.user_id,
+                    referred_username: userData.username,
+                    original_deposit_id: depositId,
+                    original_deposit_amount: depositAmount,
+                    bonus_percentage: 5
+                  },
+                  approved_by: adminId,
+                  approved_at: new Date().toISOString()
+                });
+
+              if (!referralTxError) {
+                console.log(`✅ 5% referral bonus given: PKR ${referrerBonus} to referrer of ${userData.username}`);
+              } else {
+                console.error('❌ Error creating referral bonus transaction:', referralTxError);
+              }
+            } else {
+              console.error('❌ Error updating referrer wallet:', referrerUpdateError);
+            }
+          } else {
+            console.error('❌ Error fetching referrer wallet:', referrerWalletError);
+          }
+        }
+      }
+
       console.log(`✅ Deposit approved successfully: ${depositId} - PKR ${depositAmount} + PKR ${bonusAmount} bonus = PKR ${totalAmount} total`);
 
       return {
