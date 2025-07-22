@@ -527,24 +527,28 @@ export class NewWalletService {
     description?: string
   ): Promise<string | null> {
     try {
+      console.log(`🔄 Creating withdrawal request for user ${userId}, amount: PKR ${amount}`);
+      console.log('📋 Metadata:', metadata);
+
       // Validate withdrawal amount limits
       if (amount < 500) {
-        console.error('❌ Minimum withdrawal amount is Rs 500');
+        console.error('❌ Minimum withdrawal amount is PKR 500');
         return null;
       }
 
       if (amount > 50000) {
-        console.error('❌ Maximum withdrawal amount is Rs 50,000');
+        console.error('❌ Maximum withdrawal amount is PKR 50,000');
         return null;
       }
 
       // Get current balance
       const currentBalance = await this.getBalance(userId);
       const balanceAmount = currentBalance?.balance || 0;
+      console.log(`💰 Current balance: PKR ${balanceAmount}`);
 
       // Check if user has sufficient balance
       if (balanceAmount < amount) {
-        console.error('❌ Insufficient balance for withdrawal');
+        console.error(`❌ Insufficient balance for withdrawal: ${balanceAmount} < ${amount}`);
         return null;
       }
 
@@ -637,9 +641,12 @@ export class NewWalletService {
 
       console.log('✅ Withdrawal request created successfully:', withdrawalRecord.id);
       console.log(`💰 Amount PKR ${amount} immediately deducted from user balance`);
+      console.log(`🎯 Returning transaction ID: ${withdrawalRecord.id}`);
       return withdrawalRecord.id;
     } catch (error) {
       console.error('❌ Error creating withdrawal request:', error);
+      console.error('❌ Error details:', error.message);
+      console.error('❌ Error stack:', error.stack);
       return null;
     }
   }

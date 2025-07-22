@@ -8,7 +8,7 @@ import { Transaction } from '../types/walletTypes';
 import { useApp } from './AppContext';
 
 interface WalletContextType {
-  balance: number;
+  balance: number | null;
   isLoading: boolean;
   transactions: Transaction[];
   refreshBalance: () => Promise<void>;
@@ -252,9 +252,16 @@ export function WalletProvider({ children }: WalletProviderProps) {
   };
 
   const createWithdrawalRequest = async (amount: number, metadata: any = {}): Promise<string | null> => {
-    if (!user?.id) return null;
+    if (!user?.id) {
+      console.error('❌ No user ID available for withdrawal request');
+      return null;
+    }
 
     try {
+      console.log(`🔄 WalletContext: Creating withdrawal request for user ${user.id}`);
+      console.log(`💰 Amount: PKR ${amount}`);
+      console.log(`📋 Metadata:`, metadata);
+
       const transactionId = await NewWalletService.createWithdrawalRequest(
         user.id,
         amount,
@@ -262,17 +269,23 @@ export function WalletProvider({ children }: WalletProviderProps) {
         `Withdrawal request for PKR ${amount.toLocaleString()}`
       );
 
+      console.log(`📋 WalletContext: Received transaction ID: ${transactionId}`);
+
       if (transactionId) {
         console.log(`✅ Withdrawal request created: ${transactionId}`);
         console.log(`💰 PKR ${amount} immediately deducted from balance`);
         // Refresh both balance and transactions to show the immediate deduction
         await refreshBalance();
         await refreshTransactions();
+        console.log(`🔄 Balance and transactions refreshed`);
+      } else {
+        console.error('❌ No transaction ID returned from NewWalletService');
       }
 
       return transactionId;
     } catch (error) {
-      console.error('❌ Error creating withdrawal request:', error);
+      console.error('❌ Error in WalletContext createWithdrawalRequest:', error);
+      console.error('❌ Error message:', error.message);
       return null;
     }
   };

@@ -65,28 +65,42 @@ export default function WalletScreen() {
 
   const handleWithdraw = async (amount: number, bankDetails: any, notes?: string) => {
     try {
-      const transactionId = await createWithdrawalRequest(
-        amount,
-        {
-          method: 'bank_transfer',
-          bank_details: bankDetails,
-          notes: notes
-        },
-        `Withdrawal request for Rs ${amount.toLocaleString()}`
-      );
+      console.log('🔄 Starting withdrawal request...');
+      console.log('💰 Amount:', amount);
+      console.log('🏦 Bank details:', bankDetails);
+      console.log('📝 Notes:', notes);
+
+      // Check if user has sufficient balance
+      if (!balance || balance < amount) {
+        Alert.alert('Error', 'Insufficient balance for withdrawal');
+        return;
+      }
+
+      const transactionId = await createWithdrawalRequest(amount, {
+        bank_details: bankDetails,
+        notes: notes || ''
+      });
+
+      console.log('📋 Transaction ID:', transactionId);
 
       if (transactionId) {
+        const deductionAmount = Math.round(amount * 0.01 * 100) / 100;
+        const finalAmount = amount - deductionAmount;
+
         Alert.alert(
           'Withdrawal Request Submitted',
-          `Your withdrawal request for Rs ${amount.toLocaleString()} has been submitted. After 1% deduction, you will receive Rs ${(amount * 0.99).toLocaleString()}. Processing will be completed within 24 hours.`,
+          `Your withdrawal request for PKR ${amount.toLocaleString()} has been submitted successfully!\n\nAmount deducted from balance: PKR ${amount.toLocaleString()}\nAfter 1% deduction, you will receive: PKR ${finalAmount.toLocaleString()}\n\nProcessing will be completed within 24 hours.`,
           [{ text: 'OK' }]
         );
         setShowWithdrawalModal(false);
+        console.log('✅ Withdrawal request completed successfully');
       } else {
-        Alert.alert('Error', 'Failed to submit withdrawal request');
+        console.error('❌ No transaction ID returned');
+        Alert.alert('Error', 'Failed to submit withdrawal request. Please try again.');
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to submit withdrawal request');
+      console.error('❌ Error in handleWithdraw:', error);
+      Alert.alert('Error', `Failed to submit withdrawal request: ${error.message || 'Unknown error'}`);
     }
   };
 
