@@ -17,6 +17,15 @@ export class NewAdminService {
     try {
       console.log(`🔄 Starting deposit approval process for ID: ${depositId}, Admin: ${adminId}`);
 
+      // Validate inputs
+      if (!depositId || !adminId) {
+        console.error('❌ Missing required parameters:', { depositId, adminId });
+        return {
+          success: false,
+          error: 'Missing deposit ID or admin ID'
+        };
+      }
+
       // Get deposit request
       const { data: deposit, error: depositError } = await supabase
         .from('deposit_requests')
@@ -43,18 +52,30 @@ export class NewAdminService {
       console.log(`✅ Found pending deposit: PKR ${deposit.amount} for user ${deposit.user_id}`);
 
       // Get current wallet balance
+      console.log(`🔄 Looking up wallet for user: ${deposit.user_id}`);
       const { data: wallet, error: walletError } = await supabase
         .from('wallets')
         .select('*')
         .eq('user_id', deposit.user_id)
         .maybeSingle();
 
-      if (walletError || !wallet) {
+      if (walletError) {
+        console.error('❌ Error fetching wallet:', walletError);
+        return {
+          success: false,
+          error: `Wallet lookup failed: ${walletError.message}`
+        };
+      }
+
+      if (!wallet) {
+        console.error('❌ No wallet found for user:', deposit.user_id);
         return {
           success: false,
           error: 'User wallet not found'
         };
       }
+
+      console.log(`✅ Found wallet with balance: PKR ${wallet.balance}`);
 
       const balanceBefore = parseFloat((wallet.balance || 0).toString());
       const depositAmount = parseFloat((deposit.amount || 0).toString());
