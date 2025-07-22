@@ -546,18 +546,20 @@ export class NewWalletService {
 
       // If no balance record exists, create one with 0 balance
       if (!currentBalance) {
-        console.log('⚠️ No balance record found, creating one...');
+        console.log('⚠️ No wallet record found, creating one...');
         const { error: createError } = await supabase
-          .from('user_balances')
+          .from('wallets')
           .insert({
             user_id: userId,
             balance: 0,
+            total_deposited: 0,
+            total_withdrawn: 0,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           });
 
         if (createError) {
-          console.error('❌ Error creating balance record:', createError);
+          console.error('❌ Error creating wallet record:', createError);
           return null;
         }
 
@@ -582,10 +584,11 @@ export class NewWalletService {
 
       // Update user's balance immediately (with upsert to handle missing records)
       const { error: balanceUpdateError } = await supabase
-        .from('user_balances')
+        .from('wallets')
         .upsert({
           user_id: userId,
           balance: newBalance,
+          total_withdrawn: (currentBalance.total_withdrawn || 0) + amount,
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'user_id'
@@ -617,7 +620,7 @@ export class NewWalletService {
         console.error('❌ Error creating withdrawal request:', withdrawalError);
         // Rollback balance update
         await supabase
-          .from('user_balances')
+          .from('wallets')
           .upsert({
             user_id: userId,
             balance: balanceAmount,
@@ -655,7 +658,7 @@ export class NewWalletService {
         console.error('❌ Error creating transaction record:', txError);
         // Rollback: restore balance and clean up withdrawal request
         await supabase
-          .from('user_balances')
+          .from('wallets')
           .upsert({
             user_id: userId,
             balance: balanceAmount,
@@ -770,7 +773,7 @@ export class NewWalletService {
 
       // Update user's balance (return the money) using upsert
       const { error: balanceUpdateError } = await supabase
-        .from('user_balances')
+        .from('wallets')
         .upsert({
           user_id: withdrawal.user_id,
           balance: newBalance,
