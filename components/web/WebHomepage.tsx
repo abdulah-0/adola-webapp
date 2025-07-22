@@ -36,20 +36,7 @@ export default function WebHomepage({ onSignOut }: WebHomepageProps) {
     }
   };
 
-  // Direct logout test function
-  const testDirectLogout = async () => {
-    console.log('🧪 Testing direct web logout...');
-    try {
-      const { webLogout } = await import('../../utils/webLogout');
-      await webLogout();
-    } catch (error) {
-      console.error('❌ Direct logout failed:', error);
-      // Fallback: force redirect
-      if (typeof window !== 'undefined') {
-        window.location.href = '/auth/login';
-      }
-    }
-  };
+
 
   const featuredGames = [
     { name: 'Aviator', icon: '✈️', players: '1.2k', color: Colors.primary.neonCyan, route: '/game/aviator' },
@@ -95,13 +82,6 @@ export default function WebHomepage({ onSignOut }: WebHomepageProps) {
           </TouchableOpacity>
           <TouchableOpacity style={styles.signOutButton} onPress={handleSignOutClick}>
             <Ionicons name="log-out-outline" size={20} color={Colors.primary.text} />
-          </TouchableOpacity>
-          {/* Debug button - remove after testing */}
-          <TouchableOpacity
-            style={[styles.signOutButton, { backgroundColor: '#ff4444', marginLeft: 8 }]}
-            onPress={testDirectLogout}
-          >
-            <Text style={{ color: 'white', fontSize: 12 }}>TEST</Text>
           </TouchableOpacity>
         </View>
       </View>
