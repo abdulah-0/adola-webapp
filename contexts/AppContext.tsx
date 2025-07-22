@@ -51,11 +51,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
+      console.log('🔄 Starting logout process...');
       await AuthService.logout();
       setUser(null);
       setIsAuthenticated(false);
+      console.log('✅ Logout completed successfully');
     } catch (error) {
-      console.error('Error logging out:', error);
+      console.error('❌ Error logging out:', error);
+      // Even if logout fails, clear the local state
+      setUser(null);
+      setIsAuthenticated(false);
+      throw error; // Re-throw to let the UI handle the error
     }
   };
 

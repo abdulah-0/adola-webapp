@@ -270,7 +270,17 @@ class AuthService {
       await signOutUser();
 
       // Clear stored session data (Requirements Document Section 10: Security)
-      await AsyncStorage.multiRemove(['user', 'authToken']);
+      try {
+        await AsyncStorage.multiRemove(['user', 'authToken']);
+      } catch (storageError) {
+        // On web, AsyncStorage might not work, so clear localStorage instead
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('user');
+          localStorage.removeItem('authToken');
+          console.log('✅ Cleared web localStorage');
+        }
+        console.log('⚠️ AsyncStorage not available, using web storage');
+      }
 
       this.currentUser = null;
       this.authToken = null;
@@ -278,6 +288,7 @@ class AuthService {
       console.log('✅ User logged out successfully');
     } catch (error) {
       console.error('❌ Logout error:', error);
+      throw error; // Re-throw to let the UI handle the error
     }
   }
 
