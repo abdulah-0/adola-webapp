@@ -16,6 +16,8 @@ interface WalletContextType {
   canPlaceBet: (amount: number) => boolean;
   createDepositRequest: (amount: number, metadata?: any) => Promise<string | null>;
   createWithdrawalRequest: (amount: number, metadata?: any) => Promise<string | null>;
+  approveWithdrawalRequest: (withdrawalId: string, adminId: string) => Promise<boolean>;
+  rejectWithdrawalRequest: (withdrawalId: string, adminId: string, reason?: string) => Promise<boolean>;
   placeBet: (amount: number, gameId: string, description?: string) => Promise<boolean>;
   addWinnings: (amount: number, gameId: string, description?: string) => Promise<boolean>;
   applyGameResult: (amount: number, isWin: boolean, gameId: string, description?: string) => Promise<boolean>;
@@ -257,11 +259,14 @@ export function WalletProvider({ children }: WalletProviderProps) {
         user.id,
         amount,
         metadata,
-        `Withdrawal request for Rs ${amount.toLocaleString()}`
+        `Withdrawal request for PKR ${amount.toLocaleString()}`
       );
 
       if (transactionId) {
         console.log(`✅ Withdrawal request created: ${transactionId}`);
+        console.log(`💰 PKR ${amount} immediately deducted from balance`);
+        // Refresh both balance and transactions to show the immediate deduction
+        await refreshBalance();
         await refreshTransactions();
       }
 
@@ -269,6 +274,40 @@ export function WalletProvider({ children }: WalletProviderProps) {
     } catch (error) {
       console.error('❌ Error creating withdrawal request:', error);
       return null;
+    }
+  };
+
+  const approveWithdrawalRequest = async (withdrawalId: string, adminId: string): Promise<boolean> => {
+    try {
+      const success = await NewWalletService.approveWithdrawalRequest(withdrawalId, adminId);
+
+      if (success) {
+        console.log(`✅ Withdrawal request ${withdrawalId} approved`);
+        await refreshTransactions();
+      }
+
+      return success;
+    } catch (error) {
+      console.error('❌ Error approving withdrawal request:', error);
+      return false;
+    }
+  };
+
+  const rejectWithdrawalRequest = async (withdrawalId: string, adminId: string, reason?: string): Promise<boolean> => {
+    try {
+      const success = await NewWalletService.rejectWithdrawalRequest(withdrawalId, adminId, reason);
+
+      if (success) {
+        console.log(`✅ Withdrawal request ${withdrawalId} rejected and money returned`);
+        // Refresh both balance and transactions to show the refund
+        await refreshBalance();
+        await refreshTransactions();
+      }
+
+      return success;
+    } catch (error) {
+      console.error('❌ Error rejecting withdrawal request:', error);
+      return false;
     }
   };
 
@@ -405,6 +444,8 @@ export function WalletProvider({ children }: WalletProviderProps) {
     canPlaceBet,
     createDepositRequest,
     createWithdrawalRequest,
+    approveWithdrawalRequest,
+    rejectWithdrawalRequest,
     placeBet,
     addWinnings,
     applyGameResult

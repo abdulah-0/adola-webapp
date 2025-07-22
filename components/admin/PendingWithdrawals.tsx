@@ -14,9 +14,11 @@ import * as Clipboard from 'expo-clipboard';
 import { NewAdminService } from '../../services/newAdminService';
 import { PendingWithdrawalRequest } from '../../types/adminTypes';
 import { useApp } from '../../contexts/AppContext';
+import { useWallet } from '../../contexts/WalletContext';
 
 export default function PendingWithdrawals() {
   const { user } = useApp();
+  const { approveWithdrawalRequest, rejectWithdrawalRequest } = useWallet();
   const [withdrawals, setWithdrawals] = useState<PendingWithdrawalRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedWithdrawal, setSelectedWithdrawal] = useState<PendingWithdrawalRequest | null>(null);
@@ -68,46 +70,48 @@ export default function PendingWithdrawals() {
     if (!selectedWithdrawal) return;
 
     try {
-      let result;
+      let success = false;
+      const adminId = user?.id || '00000000-0000-0000-0000-000000000001';
+
       if (actionType === 'approve') {
-        result = await NewAdminService.approveWithdrawal(
-          selectedWithdrawal.id,
-          user?.id || '00000000-0000-0000-0000-000000000001',
-          notes
-        );
+        console.log(`🔄 Admin approving withdrawal: ${selectedWithdrawal.id}`);
+        success = await approveWithdrawalRequest(selectedWithdrawal.id, adminId);
+
+        if (success) {
+          console.log(`✅ Withdrawal approved: ${selectedWithdrawal.id}`);
+          Alert.alert(
+            'Success',
+            `Withdrawal approved successfully!\n\nAmount: PKR ${selectedWithdrawal.amount.toLocaleString()}\nUser will receive: PKR ${selectedWithdrawal.finalAmount.toLocaleString()} (after 1% deduction)`,
+            [{ text: 'OK' }]
+          );
+        }
       } else {
         if (!notes.trim()) {
           Alert.alert('Error', 'Please provide a reason for rejection');
           return;
         }
-        result = await NewAdminService.rejectWithdrawal(
-          selectedWithdrawal.id,
-          user?.id || '00000000-0000-0000-0000-000000000001',
-          notes
-        );
+
+        console.log(`🔄 Admin rejecting withdrawal: ${selectedWithdrawal.id}`);
+        success = await rejectWithdrawalRequest(selectedWithdrawal.id, adminId, notes);
+
+        if (success) {
+          console.log(`✅ Withdrawal rejected and money returned: ${selectedWithdrawal.id}`);
+          Alert.alert(
+            'Success',
+            `Withdrawal rejected successfully!\n\nAmount PKR ${selectedWithdrawal.amount.toLocaleString()} has been returned to user's wallet.\n\nReason: ${notes}`,
+            [{ text: 'OK' }]
+          );
+        }
       }
 
-      if (result.success) {
-        // Log balance update for tracking
-        if (actionType === 'approve' && result.userId && result.amount) {
-          console.log(`💰 Admin approved withdrawal: User ${result.userId} balance decreased by PKR ${result.amount}`);
-        }
-
-        Alert.alert(
-          'Success',
-          `Withdrawal ${actionType === 'approve' ? 'approved' : 'rejected'} successfully${
-            actionType === 'approve' && result.amount
-              ? `\n\nUser balance updated: -PKR ${result.amount.toLocaleString()}`
-              : ''
-          }`,
-          [{ text: 'OK' }]
-        );
+      if (success) {
         await loadPendingWithdrawals();
       } else {
-        Alert.alert('Error', result.error || 'Failed to process request');
+        Alert.alert('Error', 'Failed to process request. Please try again.');
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to process request');
+      console.error('❌ Error processing withdrawal:', error);
+      Alert.alert('Error', 'Failed to process request. Please try again.');
     } finally {
       setShowActionModal(false);
       setSelectedWithdrawal(null);

@@ -552,6 +552,25 @@ export class NewWalletService {
       const deductionAmount = Math.round(amount * 0.01 * 100) / 100;
       const finalAmount = amount - deductionAmount;
 
+      // IMMEDIATELY deduct the withdrawal amount from user's balance
+      const newBalance = balanceAmount - amount;
+
+      // Update user's balance immediately
+      const { error: balanceUpdateError } = await supabase
+        .from('user_balances')
+        .update({
+          balance: newBalance,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', userId);
+
+      if (balanceUpdateError) {
+        console.error('❌ Error updating user balance:', balanceUpdateError);
+        return null;
+      }
+
+      console.log(`💰 Balance immediately deducted: PKR ${amount} (New balance: PKR ${newBalance})`);
+
       // Create withdrawal request
       const { data: withdrawalData, error: withdrawalError } = await supabase
         .from('withdrawal_requests')
@@ -567,26 +586,35 @@ export class NewWalletService {
 
       if (withdrawalError) {
         console.error('❌ Error creating withdrawal request:', withdrawalError);
+        // Rollback balance update
+        await supabase
+          .from('user_balances')
+          .update({
+            balance: balanceAmount,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', userId);
         return null;
       }
 
       const withdrawalRecord = withdrawalData?.[0] || withdrawalData;
 
-      // Create wallet transaction record
+      // Create wallet transaction record (showing the deduction)
       const { data: txData, error: txError } = await supabase
         .from('wallet_transactions')
         .insert({
           user_id: userId,
           type: 'withdraw',
           status: 'pending',
-          amount: amount,
+          amount: -amount, // Negative amount to show deduction
           balance_before: balanceAmount,
-          balance_after: balanceAmount, // Balance doesn't change until approved
-          description: description || `Withdrawal request - PKR ${amount}`,
+          balance_after: newBalance, // Updated balance after deduction
+          description: description || `Withdrawal request - PKR ${amount} (Pending approval)`,
           metadata: {
             ...metadata,
             deduction_amount: deductionAmount,
-            final_amount: finalAmount
+            final_amount: finalAmount,
+            immediately_deducted: true
           },
           reference_id: withdrawalRecord.id
         })
@@ -594,16 +622,188 @@ export class NewWalletService {
 
       if (txError) {
         console.error('❌ Error creating transaction record:', txError);
-        // Try to clean up the withdrawal request
+        // Rollback: restore balance and clean up withdrawal request
+        await supabase
+          .from('user_balances')
+          .update({
+            balance: balanceAmount,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', userId);
         await supabase.from('withdrawal_requests').delete().eq('id', withdrawalRecord.id);
+        console.log('🔄 Rollback completed - balance restored');
         return null;
       }
 
       console.log('✅ Withdrawal request created successfully:', withdrawalRecord.id);
+      console.log(`💰 Amount PKR ${amount} immediately deducted from user balance`);
       return withdrawalRecord.id;
     } catch (error) {
       console.error('❌ Error creating withdrawal request:', error);
       return null;
+    }
+  }
+
+  /**
+   * Admin approves withdrawal request
+   */
+  static async approveWithdrawalRequest(
+    withdrawalId: string,
+    adminId: string
+  ): Promise<boolean> {
+    try {
+      // Get withdrawal request details
+      const { data: withdrawal, error: fetchError } = await supabase
+        .from('withdrawal_requests')
+        .select('*')
+        .eq('id', withdrawalId)
+        .eq('status', 'pending')
+        .single();
+
+      if (fetchError || !withdrawal) {
+        console.error('❌ Withdrawal request not found or already processed');
+        return false;
+      }
+
+      // Update withdrawal request status
+      const { error: updateError } = await supabase
+        .from('withdrawal_requests')
+        .update({
+          status: 'approved',
+          processed_by: adminId,
+          processed_at: new Date().toISOString()
+        })
+        .eq('id', withdrawalId);
+
+      if (updateError) {
+        console.error('❌ Error updating withdrawal request:', updateError);
+        return false;
+      }
+
+      // Update the corresponding transaction status
+      const { error: txUpdateError } = await supabase
+        .from('wallet_transactions')
+        .update({
+          status: 'completed',
+          description: `Withdrawal approved - PKR ${withdrawal.amount} (Admin: ${adminId})`
+        })
+        .eq('reference_id', withdrawalId)
+        .eq('type', 'withdraw');
+
+      if (txUpdateError) {
+        console.error('❌ Error updating transaction status:', txUpdateError);
+      }
+
+      console.log(`✅ Withdrawal request ${withdrawalId} approved by admin ${adminId}`);
+      console.log(`💰 User will receive PKR ${withdrawal.final_amount} (after 1% deduction)`);
+      return true;
+    } catch (error) {
+      console.error('❌ Error approving withdrawal request:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Admin rejects withdrawal request and returns money to user
+   */
+  static async rejectWithdrawalRequest(
+    withdrawalId: string,
+    adminId: string,
+    reason?: string
+  ): Promise<boolean> {
+    try {
+      // Get withdrawal request details
+      const { data: withdrawal, error: fetchError } = await supabase
+        .from('withdrawal_requests')
+        .select('*')
+        .eq('id', withdrawalId)
+        .eq('status', 'pending')
+        .single();
+
+      if (fetchError || !withdrawal) {
+        console.error('❌ Withdrawal request not found or already processed');
+        return false;
+      }
+
+      // Get current user balance
+      const currentBalance = await this.getBalance(withdrawal.user_id);
+      const balanceAmount = currentBalance?.balance || 0;
+
+      // Return the withdrawal amount to user's balance
+      const newBalance = balanceAmount + withdrawal.amount;
+
+      // Update user's balance (return the money)
+      const { error: balanceUpdateError } = await supabase
+        .from('user_balances')
+        .update({
+          balance: newBalance,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', withdrawal.user_id);
+
+      if (balanceUpdateError) {
+        console.error('❌ Error returning money to user balance:', balanceUpdateError);
+        return false;
+      }
+
+      // Update withdrawal request status
+      const { error: updateError } = await supabase
+        .from('withdrawal_requests')
+        .update({
+          status: 'rejected',
+          processed_by: adminId,
+          processed_at: new Date().toISOString(),
+          rejection_reason: reason || 'Rejected by admin'
+        })
+        .eq('id', withdrawalId);
+
+      if (updateError) {
+        console.error('❌ Error updating withdrawal request:', updateError);
+        return false;
+      }
+
+      // Update the original transaction status
+      const { error: txUpdateError } = await supabase
+        .from('wallet_transactions')
+        .update({
+          status: 'cancelled',
+          description: `Withdrawal rejected - PKR ${withdrawal.amount} returned (Admin: ${adminId})`
+        })
+        .eq('reference_id', withdrawalId)
+        .eq('type', 'withdraw');
+
+      if (txUpdateError) {
+        console.error('❌ Error updating transaction status:', txUpdateError);
+      }
+
+      // Create a new transaction record for the refund
+      const { error: refundTxError } = await supabase
+        .from('wallet_transactions')
+        .insert({
+          user_id: withdrawal.user_id,
+          type: 'refund',
+          status: 'completed',
+          amount: withdrawal.amount, // Positive amount (money returned)
+          balance_before: balanceAmount,
+          balance_after: newBalance,
+          description: `Withdrawal refund - PKR ${withdrawal.amount} (Rejection: ${reason || 'Admin decision'})`,
+          metadata: {
+            original_withdrawal_id: withdrawalId,
+            rejection_reason: reason,
+            processed_by: adminId
+          }
+        });
+
+      if (refundTxError) {
+        console.error('❌ Error creating refund transaction:', refundTxError);
+      }
+
+      console.log(`✅ Withdrawal request ${withdrawalId} rejected by admin ${adminId}`);
+      console.log(`💰 PKR ${withdrawal.amount} returned to user balance (New balance: PKR ${newBalance})`);
+      return true;
+    } catch (error) {
+      console.error('❌ Error rejecting withdrawal request:', error);
+      return false;
     }
   }
 
