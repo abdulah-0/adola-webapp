@@ -541,8 +541,29 @@ export class NewWalletService {
         return null;
       }
 
-      // Get current balance
-      const currentBalance = await this.getBalance(userId);
+      // Get current balance and ensure user has a balance record
+      let currentBalance = await this.getBalance(userId);
+
+      // If no balance record exists, create one with 0 balance
+      if (!currentBalance) {
+        console.log('⚠️ No balance record found, creating one...');
+        const { error: createError } = await supabase
+          .from('user_balances')
+          .insert({
+            user_id: userId,
+            balance: 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+        if (createError) {
+          console.error('❌ Error creating balance record:', createError);
+          return null;
+        }
+
+        currentBalance = { balance: 0 };
+      }
+
       const balanceAmount = currentBalance?.balance || 0;
       console.log(`💰 Current balance: PKR ${balanceAmount}`);
 
@@ -559,17 +580,21 @@ export class NewWalletService {
       // IMMEDIATELY deduct the withdrawal amount from user's balance
       const newBalance = balanceAmount - amount;
 
-      // Update user's balance immediately
+      // Update user's balance immediately (with upsert to handle missing records)
       const { error: balanceUpdateError } = await supabase
         .from('user_balances')
-        .update({
+        .upsert({
+          user_id: userId,
           balance: newBalance,
           updated_at: new Date().toISOString()
-        })
-        .eq('user_id', userId);
+        }, {
+          onConflict: 'user_id'
+        });
 
       if (balanceUpdateError) {
         console.error('❌ Error updating user balance:', balanceUpdateError);
+        console.error('❌ Balance update error details:', balanceUpdateError.message);
+        console.error('❌ Balance update error code:', balanceUpdateError.code);
         return null;
       }
 
@@ -593,11 +618,13 @@ export class NewWalletService {
         // Rollback balance update
         await supabase
           .from('user_balances')
-          .update({
+          .upsert({
+            user_id: userId,
             balance: balanceAmount,
             updated_at: new Date().toISOString()
-          })
-          .eq('user_id', userId);
+          }, {
+            onConflict: 'user_id'
+          });
         return null;
       }
 
@@ -629,11 +656,13 @@ export class NewWalletService {
         // Rollback: restore balance and clean up withdrawal request
         await supabase
           .from('user_balances')
-          .update({
+          .upsert({
+            user_id: userId,
             balance: balanceAmount,
             updated_at: new Date().toISOString()
-          })
-          .eq('user_id', userId);
+          }, {
+            onConflict: 'user_id'
+          });
         await supabase.from('withdrawal_requests').delete().eq('id', withdrawalRecord.id);
         console.log('🔄 Rollback completed - balance restored');
         return null;
@@ -739,14 +768,16 @@ export class NewWalletService {
       // Return the withdrawal amount to user's balance
       const newBalance = balanceAmount + withdrawal.amount;
 
-      // Update user's balance (return the money)
+      // Update user's balance (return the money) using upsert
       const { error: balanceUpdateError } = await supabase
         .from('user_balances')
-        .update({
+        .upsert({
+          user_id: withdrawal.user_id,
           balance: newBalance,
           updated_at: new Date().toISOString()
-        })
-        .eq('user_id', withdrawal.user_id);
+        }, {
+          onConflict: 'user_id'
+        });
 
       if (balanceUpdateError) {
         console.error('❌ Error returning money to user balance:', balanceUpdateError);
