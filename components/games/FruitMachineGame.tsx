@@ -8,11 +8,13 @@ import {
   Alert,
   Animated,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import { useApp } from '../../contexts/AppContext';
 import { useWallet } from '../../contexts/WalletContext';
 import BettingPanel from '../BettingPanel';
+import WebFruitMachineGame from './web/WebFruitMachineGame';
 
 const { width } = Dimensions.get('window');
 const SLOT_WIDTH = Math.min(width - 40, 350);
@@ -21,6 +23,11 @@ const SYMBOLS = ['🍒', '🍋', '🍊', '🍇', '🍉', '🍓', '🥝', '🍍']
 const REELS = 3;
 
 export default function FruitMachineGame() {
+  // Use web-specific layout if on web platform
+  if (Platform.OS === 'web') {
+    return <WebFruitMachineGame />;
+  }
+
   const { user } = useApp();
   const { balance, canPlaceBet, placeBet, addWinnings, refreshBalance } = useWallet();
   const [isSpinning, setIsSpinning] = useState(false);
