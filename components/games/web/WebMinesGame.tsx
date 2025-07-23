@@ -167,57 +167,38 @@ export default function WebMinesGame() {
   };
 
   const cashOut = async () => {
-    if (!gameActive || revealedSafeCells === 0) return;
+    console.log(`🔘 Cash out button clicked!`);
+    console.log(`🔍 Game state - gameActive: ${gameActive}, revealedSafeCells: ${revealedSafeCells}`);
+    console.log(`🔍 Current multiplier: ${currentMultiplier}, Bet amount: ${betAmount}`);
+
+    if (!gameActive || revealedSafeCells === 0) {
+      console.log(`❌ Cash out blocked - invalid game state`);
+      return;
+    }
 
     try {
       console.log(`💰 Cashing out with ${currentMultiplier.toFixed(2)}x multiplier`);
 
-      // Calculate final payout with advanced logic
-      const { finalPayout } = await gameLogicService.calculateAdvancedPayout({
-        baseAmount: betAmount,
-        multiplier: currentMultiplier,
-        gameType: 'mines',
-        userId: user?.id || '',
-        gameSpecificData: {
-          mineCount,
-          revealedSafeCells,
-          totalCells: GRID_SIZE * GRID_SIZE
-        }
-      });
+      // Calculate final payout (simple calculation)
+      const finalPayout = Math.floor(betAmount * currentMultiplier);
 
-      console.log(`💰 Advanced payout calculation: PKR ${finalPayout} (base: ${Math.floor(betAmount * currentMultiplier)})`);
+      console.log(`💰 Final payout calculated: PKR ${finalPayout} (bet: ${betAmount} x multiplier: ${currentMultiplier})`);
 
-      // Log the game result for analytics
-      await gameLogicService.logGameResult(user.id, 'mines', {
-        won: true,
-        multiplier: currentMultiplier,
-        winAmount: finalPayout,
-        betAmount,
-        newBalance: (balance || 0) + finalPayout - betAmount,
-        adjustedProbability: gameWinProbability,
-        houseEdge: gameLogicService.getGameConfig('mines').houseEdge,
-        engagementBonus
-      }, {
-        mineCount,
-        revealedSafeCells,
-        totalCells: GRID_SIZE * GRID_SIZE,
-        cashOutMultiplier: currentMultiplier
-      });
+      // Force balance refresh to ensure UI updates
+      setTimeout(() => refreshBalance(), 500);
 
       // Add winnings to balance
       const success = await addWinnings(
         finalPayout,
         'mines',
-        `Mines game win - ${currentMultiplier.toFixed(2)}x multiplier`
+        `Mines game cash out - ${currentMultiplier.toFixed(2)}x multiplier`
       );
 
       console.log('💰 addWinnings result:', success);
 
       if (success) {
-        let message = `You won PKR ${finalPayout.toLocaleString()} with ${currentMultiplier.toFixed(2)}x multiplier!`;
-        if (engagementBonus) {
-          message += `\n\n🎯 ${engagementBonus}`;
-        }
+        const message = `You won PKR ${finalPayout.toLocaleString()} with ${currentMultiplier.toFixed(2)}x multiplier!`;
+
         Alert.alert(
           'Cashed Out!',
           message,
@@ -227,7 +208,8 @@ export default function WebMinesGame() {
           }}]
         );
       } else {
-        Alert.alert('Error', 'Failed to process game result', [{ text: 'OK', onPress: () => {
+        console.log('❌ Failed to add winnings');
+        Alert.alert('Error', 'Failed to add winnings. Please contact support.', [{ text: 'OK', onPress: () => {
           console.log('🔄 Error alert OK pressed, calling resetGame...');
           resetGame();
         }}]);
