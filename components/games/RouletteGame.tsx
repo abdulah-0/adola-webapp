@@ -158,8 +158,8 @@ export default function RouletteGame() {
   };
 
   const determineFinalResult = (naturalResult: number | string, wouldNaturallyWin: boolean, currentBets: Bet[]): number | string => {
-    // 20% win rate logic with respect for natural wins
-    const shouldForceWin = Math.random() < 0.2;
+    // 8% win rate logic with respect for natural wins - REDUCED FOR HIGHER HOUSE WINS
+    const shouldForceWin = Math.random() < 0.08;
 
     console.log(`🎯 Natural result: ${naturalResult}, Would naturally win: ${wouldNaturallyWin}, Should force win: ${shouldForceWin}`);
 

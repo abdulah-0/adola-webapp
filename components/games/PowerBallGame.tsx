@@ -174,8 +174,8 @@ export default function PowerBallGame() {
 
     // Simulate drawing delay
     setTimeout(async () => {
-      // Determine if player should win (20% win rate)
-      const shouldPlayerWin = Math.random() < 0.2;
+      // Determine if player should win (8% win rate - REDUCED FOR HIGHER HOUSE WINS)
+      const shouldPlayerWin = Math.random() < 0.08;
 
       // Generate winning numbers and power ball based on win rate requirement
       const { winningNumbers, winningPowerBall } = generateStrategicNumbers(selectedNumbers, selectedPowerBall, shouldPlayerWin);

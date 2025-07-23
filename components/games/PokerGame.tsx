@@ -193,8 +193,8 @@ export default function PokerGame() {
     const playerResult = getHandRank(finalPlayerHand);
     const dealerResult = getHandRank(dealerHand);
 
-    // Determine if player should win (20% win rate)
-    const shouldPlayerWin = Math.random() < 0.2;
+    // Determine if player should win (10% win rate - REDUCED FOR HIGHER HOUSE WINS)
+    const shouldPlayerWin = Math.random() < 0.1;
 
     let winAmount = 0;
     let isWin = false;

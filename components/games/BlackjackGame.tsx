@@ -162,8 +162,8 @@ export default function BlackjackGame() {
     let currentDealerHand = [...dealerHand];
     let currentDealerScore = calculateScore(currentDealerHand);
 
-    // Determine if player should win (20% win rate)
-    const shouldPlayerWin = Math.random() < 0.2;
+    // Determine if player should win (10% win rate - REDUCED FOR HIGHER HOUSE WINS)
+    const shouldPlayerWin = Math.random() < 0.1;
 
     const dealerHitInterval = setInterval(() => {
       if (shouldPlayerWin) {

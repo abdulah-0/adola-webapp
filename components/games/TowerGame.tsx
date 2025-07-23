@@ -108,8 +108,8 @@ export default function TowerGame() {
   };
 
   const determineBombOutcome = (floor: number, room: number): boolean => {
-    // Use advanced game logic to determine if player should win this round
-    const shouldWin = Math.random() < gameWinProbability;
+    // Use advanced game logic to determine if player should win this round - REDUCED WIN RATE
+    const shouldWin = Math.random() < (gameWinProbability * 0.5); // Reduce win probability by 50%
 
     if (shouldWin) {
       // Player should win - avoid bombs for now

@@ -98,8 +98,8 @@ export default function MegaDrawGame() {
         }
       }
     } else {
-      // Player should lose - minimize matches
-      const maxMatches = Math.random() < 0.3 ? 1 : 0; // 30% chance of 1 match, 70% chance of 0 matches
+      // Player should lose - minimize matches - REDUCED CONSOLATION MATCHES
+      const maxMatches = Math.random() < 0.15 ? 1 : 0; // 15% chance of 1 match, 85% chance of 0 matches
 
       if (maxMatches === 1) {
         // Give 1 match (small consolation)

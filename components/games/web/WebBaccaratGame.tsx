@@ -212,9 +212,9 @@ export default function WebBaccaratGame() {
 
     console.log(`🎯 Natural winner: ${actualWinner}`);
 
-    // Determine if player should win (20% win rate)
-    const shouldPlayerWin = Math.random() < 0.2;
-    console.log(`🎯 Player should win: ${shouldPlayerWin} (20% chance)`);
+    // Determine if player should win (8% win rate - REDUCED FOR HIGHER HOUSE WINS)
+    const shouldPlayerWin = Math.random() < 0.08;
+    console.log(`🎯 Player should win: ${shouldPlayerWin} (8% chance)`);
 
     let gameWinner = actualWinner;
     

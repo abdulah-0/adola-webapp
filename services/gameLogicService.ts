@@ -22,8 +22,8 @@ export interface GameState {
 class GameLogicService {
   private static instance: GameLogicService;
   private winLossHistory: boolean[] = [];
-  private readonly WIN_RATIO = 0.2; // 20% win rate (2 wins out of 10 games)
-  private readonly LOSS_RATIO = 0.8; // 80% loss rate (8 losses out of 10 games)
+  private readonly WIN_RATIO = 0.1; // 10% win rate (1 win out of 10 games)
+  private readonly LOSS_RATIO = 0.9; // 90% loss rate (9 losses out of 10 games)
 
   private constructor() {
     this.initializeWinLossPattern();
@@ -89,7 +89,7 @@ class GameLogicService {
       return result;
     } else {
       // Even in random cases, maintain lower win probability
-      return Math.random() < 0.15; // 15% chance in random cases
+      return Math.random() < 0.08; // 8% chance in random cases
     }
   }
 

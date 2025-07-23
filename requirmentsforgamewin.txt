@@ -60,13 +60,13 @@ Else:
 ### 3.2 Base Win Probability Function
 
 ```python
-base_win_probability = 0.45 + f(T, W_total, L_total)
+base_win_probability = 0.15 + f(T, W_total, L_total)  # UPDATED: Reduced from 0.45 to 0.15 for higher house wins
 ```
 
 #### Where:
 
-* If `W_total > L_total`, reduce the base win probability by 5–10%.
-* If `L_total > W_total`, temporarily increase win probability to improve retention.
+* If `W_total > L_total`, reduce the base win probability by 8–15% (increased reduction).
+* If `L_total > W_total`, temporarily increase win probability to improve retention (but capped at lower maximum).
 
 ---
 
@@ -166,6 +166,6 @@ For each player:
 * Average session duration ↑
 * Daily retention ↑
 * House profitability over time ↑
-* Payout-to-bet ratio maintained under 0.95
+* Payout-to-bet ratio maintained under 0.85 (reduced from 0.95 for higher house profits)
 * Repeat player rate ↑
 

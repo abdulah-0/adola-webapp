@@ -176,9 +176,9 @@ export default function WebBlackjackGame() {
       
       console.log(`🤖 Dealer initial score: ${currentDealerScore}`);
 
-      // Determine if player should win (20% win rate)
-      const shouldPlayerWin = Math.random() < 0.2;
-      console.log(`🎯 Player should win: ${shouldPlayerWin} (20% chance)`);
+      // Determine if player should win (10% win rate - REDUCED FOR HIGHER HOUSE WINS)
+      const shouldPlayerWin = Math.random() < 0.1;
+      console.log(`🎯 Player should win: ${shouldPlayerWin} (10% chance)`);
 
       const dealerTurn = () => {
         if (shouldPlayerWin) {

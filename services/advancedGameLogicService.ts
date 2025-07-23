@@ -57,43 +57,55 @@ export interface EngagementFeatures {
 export class AdvancedGameLogicService {
   private static instance: AdvancedGameLogicService;
   
-  // Default game configurations with house edge
+  // Default game configurations with house edge - UPDATED FOR HIGHER HOUSE WINS
   private gameConfigs: { [key: string]: GameConfig } = {
-    dice: { 
-      minBet: 10, maxBet: 5000, houseEdge: 0.05, baseWinProbability: 0.45, 
-      name: 'Dice Game', enabled: true 
+    dice: {
+      minBet: 10, maxBet: 5000, houseEdge: 0.08, baseWinProbability: 0.15,
+      name: 'Dice Game', enabled: true
     },
-    mines: { 
-      minBet: 10, maxBet: 5000, houseEdge: 0.03, baseWinProbability: 0.45, 
-      name: 'Mines', enabled: true 
+    mines: {
+      minBet: 10, maxBet: 5000, houseEdge: 0.07, baseWinProbability: 0.12,
+      name: 'Mines', enabled: true
     },
-    tower: { 
-      minBet: 10, maxBet: 5000, houseEdge: 0.04, baseWinProbability: 0.45, 
-      name: 'Tower', enabled: true 
+    tower: {
+      minBet: 10, maxBet: 5000, houseEdge: 0.09, baseWinProbability: 0.10,
+      name: 'Tower', enabled: true
     },
-    limbo: { 
-      minBet: 10, maxBet: 5000, houseEdge: 0.02, baseWinProbability: 0.45, 
-      name: 'Limbo', enabled: true 
+    limbo: {
+      minBet: 10, maxBet: 5000, houseEdge: 0.06, baseWinProbability: 0.18,
+      name: 'Limbo', enabled: true
     },
-    aviator: { 
-      minBet: 10, maxBet: 5000, houseEdge: 0.03, baseWinProbability: 0.45, 
-      name: 'Aviator', enabled: true 
+    aviator: {
+      minBet: 10, maxBet: 5000, houseEdge: 0.06, baseWinProbability: 0.16,
+      name: 'Aviator', enabled: true
     },
-    slots: { 
-      minBet: 10, maxBet: 5000, houseEdge: 0.05, baseWinProbability: 0.45, 
-      name: 'Diamond Slots', enabled: true 
+    slots: {
+      minBet: 10, maxBet: 5000, houseEdge: 0.08, baseWinProbability: 0.14,
+      name: 'Diamond Slots', enabled: true
     },
-    baccarat: { 
-      minBet: 10, maxBet: 5000, houseEdge: 0.04, baseWinProbability: 0.45, 
-      name: 'Baccarat', enabled: true 
+    baccarat: {
+      minBet: 10, maxBet: 5000, houseEdge: 0.07, baseWinProbability: 0.13,
+      name: 'Baccarat', enabled: true
     },
-    megadraw: { 
-      minBet: 10, maxBet: 1000, houseEdge: 0.3, baseWinProbability: 0.15, 
-      name: 'Mega Draw', enabled: true 
+    blackjack: {
+      minBet: 10, maxBet: 5000, houseEdge: 0.06, baseWinProbability: 0.15,
+      name: 'Blackjack', enabled: true
     },
-    luckynumbers: { 
-      minBet: 10, maxBet: 1000, houseEdge: 0.3, baseWinProbability: 0.15, 
-      name: 'Lucky Numbers', enabled: true 
+    poker: {
+      minBet: 10, maxBet: 5000, houseEdge: 0.07, baseWinProbability: 0.12,
+      name: 'Poker', enabled: true
+    },
+    roulette: {
+      minBet: 10, maxBet: 5000, houseEdge: 0.08, baseWinProbability: 0.10,
+      name: 'Roulette', enabled: true
+    },
+    megadraw: {
+      minBet: 10, maxBet: 1000, houseEdge: 0.35, baseWinProbability: 0.08,
+      name: 'Mega Draw', enabled: true
+    },
+    luckynumbers: {
+      minBet: 10, maxBet: 1000, houseEdge: 0.35, baseWinProbability: 0.08,
+      name: 'Lucky Numbers', enabled: true
     },
   };
 
