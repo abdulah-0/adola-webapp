@@ -95,7 +95,12 @@ export default function WebMinesGame() {
   };
 
   const startGame = async (amount: number) => {
+    console.log(`🎲 WebMinesGame startGame called with amount: ${amount}`);
+    console.log(`🎲 Current balance: ${balance}, canPlaceBet: ${canPlaceBet(amount)}`);
+    console.log(`🎲 Game active: ${gameActive}, Mine count: ${mineCount}`);
+
     if (!canPlaceBet(amount)) {
+      console.log(`❌ Cannot place bet - insufficient balance`);
       Alert.alert('Insufficient Balance', 'You do not have enough balance to place this bet.');
       return;
     }
@@ -103,22 +108,11 @@ export default function WebMinesGame() {
     console.log(`🎲 Starting Mines game with PKR ${amount}, ${mineCount} mines`);
 
     try {
-      // Get game outcome from advanced logic service
-      const gameOutcome = await gameLogicService.determineGameOutcome(
-        user?.id || '',
-        'mines',
-        amount,
-        balance || 0
-      );
-
-      setGameWinProbability(gameOutcome.adjustedProbability);
-      setEngagementBonus(gameOutcome.engagementBonus || '');
-
-      console.log(`🎯 Game outcome determined: shouldWin=${gameOutcome.shouldWin}, probability=${gameOutcome.adjustedProbability}`);
-
       // Step 1: Deduct bet amount immediately with proper error handling
+      console.log(`💰 Placing bet: PKR ${amount}`);
       const betPlaced = await placeBet(amount, 'mines', `Mines game bet - ${mineCount} mines`);
       if (!betPlaced) {
+        console.log(`❌ Bet placement failed`);
         Alert.alert('Error', 'Failed to place bet. Please try again.');
         return;
       }
@@ -133,8 +127,12 @@ export default function WebMinesGame() {
       setRevealedSafeCells(0);
       setCurrentMultiplier(1);
 
+      // Use simple 20% win rate like other games
+      const shouldPlayerWin = Math.random() < 0.2;
+      console.log(`🎯 Player should win: ${shouldPlayerWin} (20% chance)`);
+
       // Create grid based on outcome
-      const grid = createMinesGrid(GRID_SIZE, mineCount, gameOutcome.shouldWin);
+      const grid = createMinesGrid(GRID_SIZE, mineCount, shouldPlayerWin);
       setMineGrid(grid);
       setRevealedGrid(Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(false)));
 
