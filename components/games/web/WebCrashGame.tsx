@@ -144,16 +144,32 @@ export default function WebCrashGame() {
     }, 3000);
   };
 
-  const handleBet = (amount: number) => {
+  const handleBet = async (amount: number) => {
     if (!canPlaceBet(amount)) {
       Alert.alert('Insufficient Balance', 'You do not have enough balance to place this bet.');
       return;
     }
 
     console.log(`🎲 Placing bet: PKR ${amount}`);
-    placeBet(amount);
-    setBetAmount(amount);
-    setHasBet(true);
+
+    try {
+      const betPlaced = await placeBet(amount, 'crash', 'Crash game bet placed');
+      if (!betPlaced) {
+        Alert.alert('Error', 'Failed to place bet. Please try again.');
+        return;
+      }
+
+      console.log(`✅ Bet placed successfully: PKR ${amount} deducted`);
+
+      // Force balance refresh to ensure UI updates
+      setTimeout(() => refreshBalance(), 500);
+
+      setBetAmount(amount);
+      setHasBet(true);
+    } catch (error) {
+      console.error('❌ Error placing bet:', error);
+      Alert.alert('Error', 'Failed to place bet. Please try again.');
+    }
   };
 
   const handleCashOut = () => {

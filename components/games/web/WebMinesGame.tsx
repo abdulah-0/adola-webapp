@@ -20,7 +20,7 @@ const GRID_SIZE = 5;
 
 export default function WebMinesGame() {
   const { user } = useApp();
-  const { balance, canPlaceBet, placeBet, addWinnings } = useWallet();
+  const { balance, canPlaceBet, placeBet, addWinnings, refreshBalance } = useWallet();
   const [mineCount, setMineCount] = useState(3);
   const [betAmount, setBetAmount] = useState(0);
   const [gameActive, setGameActive] = useState(false);
@@ -102,31 +102,47 @@ export default function WebMinesGame() {
 
     console.log(`🎲 Starting Mines game with PKR ${amount}, ${mineCount} mines`);
 
-    // Get game outcome from advanced logic service
-    const gameOutcome = await gameLogicService.determineGameOutcome(
-      user?.id || '',
-      'mines',
-      amount,
-      balance || 0
-    );
+    try {
+      // Get game outcome from advanced logic service
+      const gameOutcome = await gameLogicService.determineGameOutcome(
+        user?.id || '',
+        'mines',
+        amount,
+        balance || 0
+      );
 
-    setGameWinProbability(gameOutcome.adjustedProbability);
-    setEngagementBonus(gameOutcome.engagementBonus || '');
+      setGameWinProbability(gameOutcome.adjustedProbability);
+      setEngagementBonus(gameOutcome.engagementBonus || '');
 
-    console.log(`🎯 Game outcome determined: shouldWin=${gameOutcome.shouldWin}, probability=${gameOutcome.adjustedProbability}`);
+      console.log(`🎯 Game outcome determined: shouldWin=${gameOutcome.shouldWin}, probability=${gameOutcome.adjustedProbability}`);
 
-    placeBet(amount);
-    setBetAmount(amount);
-    setGameActive(true);
-    setRevealedSafeCells(0);
-    setCurrentMultiplier(1);
+      // Step 1: Deduct bet amount immediately with proper error handling
+      const betPlaced = await placeBet(amount, 'mines', `Mines game bet - ${mineCount} mines`);
+      if (!betPlaced) {
+        Alert.alert('Error', 'Failed to place bet. Please try again.');
+        return;
+      }
 
-    // Create grid based on outcome
-    const grid = createMinesGrid(GRID_SIZE, mineCount, gameOutcome.shouldWin);
-    setMineGrid(grid);
-    setRevealedGrid(Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(false)));
+      console.log(`✅ Bet placed successfully: PKR ${amount} deducted`);
 
-    console.log('✅ Mines game started successfully');
+      // Force balance refresh to ensure UI updates
+      setTimeout(() => refreshBalance(), 500);
+
+      setBetAmount(amount);
+      setGameActive(true);
+      setRevealedSafeCells(0);
+      setCurrentMultiplier(1);
+
+      // Create grid based on outcome
+      const grid = createMinesGrid(GRID_SIZE, mineCount, gameOutcome.shouldWin);
+      setMineGrid(grid);
+      setRevealedGrid(Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(false)));
+
+      console.log('✅ Mines game started successfully');
+    } catch (error) {
+      console.error('❌ Error starting Mines game:', error);
+      Alert.alert('Error', 'Failed to start game. Please try again.');
+    }
   };
 
   const revealCell = (row: number, col: number) => {
