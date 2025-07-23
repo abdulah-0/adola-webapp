@@ -9,11 +9,13 @@ import {
   ScrollView,
   Animated,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import { useApp } from '../../contexts/AppContext';
 import { useWallet } from '../../contexts/WalletContext';
 import BettingPanel from '../BettingPanel';
+import WebRouletteGame from './web/WebRouletteGame';
 
 const { width } = Dimensions.get('window');
 const WHEEL_SIZE = Math.min(width - 40, 300);
@@ -26,6 +28,11 @@ interface Bet {
 }
 
 export default function RouletteGame() {
+  // Use web-specific layout if on web platform
+  if (Platform.OS === 'web') {
+    return <WebRouletteGame />;
+  }
+
   const { user } = useApp();
   const { balance, canPlaceBet, placeBet, addWinnings, refreshBalance } = useWallet();
   const [isSpinning, setIsSpinning] = useState(false);
