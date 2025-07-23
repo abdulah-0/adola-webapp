@@ -21,6 +21,8 @@ const SYMBOLS = ['🍒', '🍋', '🍊', '🍇', '🔔', '⭐', '💎', '7️⃣
 const REELS = 3;
 
 export default function WebSlotsGame() {
+  console.log('🎰 WebSlotsGame component loaded');
+
   const { user } = useApp();
   const { balance, canPlaceBet, placeBet, addWinnings, refreshBalance } = useWallet();
   const [isSpinning, setIsSpinning] = useState(false);
@@ -365,8 +367,8 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   winCard: {
-    backgroundColor: Colors.success.background,
-    borderColor: Colors.success.border,
+    backgroundColor: Colors.primary.surface,
+    borderColor: Colors.primary.neonCyan,
   },
   loseCard: {
     backgroundColor: Colors.primary.surface,
@@ -385,7 +387,7 @@ const styles = StyleSheet.create({
   resultAmount: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: Colors.success.text,
+    color: Colors.primary.neonCyan,
   },
   paytableCard: {
     backgroundColor: Colors.primary.surface,

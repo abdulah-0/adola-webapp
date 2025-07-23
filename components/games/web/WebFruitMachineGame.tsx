@@ -439,23 +439,23 @@ const styles = StyleSheet.create({
   },
   creditsCard: {
     flex: 1,
-    backgroundColor: Colors.success.background,
+    backgroundColor: Colors.primary.surface,
     padding: 15,
     borderRadius: 15,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.success.border,
+    borderColor: Colors.primary.neonCyan,
   },
   creditsLabel: {
     fontSize: 12,
-    color: Colors.success.text,
+    color: Colors.primary.neonCyan,
     marginBottom: 5,
     fontWeight: 'bold',
   },
   creditsAmount: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: Colors.success.text,
+    color: Colors.primary.neonCyan,
   },
   fruitMachine: {
     backgroundColor: Colors.primary.surface,
@@ -512,8 +512,8 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   winCard: {
-    backgroundColor: Colors.success.background,
-    borderColor: Colors.success.border,
+    backgroundColor: Colors.primary.surface,
+    borderColor: Colors.primary.neonCyan,
   },
   loseCard: {
     backgroundColor: Colors.primary.surface,
@@ -537,7 +537,7 @@ const styles = StyleSheet.create({
   resultAmount: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: Colors.success.text,
+    color: Colors.primary.neonCyan,
   },
   jackpotResultAmount: {
     fontSize: 24,

@@ -25,8 +25,11 @@ const REELS = 3;
 export default function SlotsGame() {
   // Use web-specific layout if on web platform
   if (Platform.OS === 'web') {
+    console.log('🌐 Loading WebSlotsGame for web platform');
     return <WebSlotsGame />;
   }
+
+  console.log('📱 Loading mobile SlotsGame for platform:', Platform.OS);
 
   const { user } = useApp();
   const { balance, canPlaceBet, placeBet, addWinnings, refreshBalance } = useWallet();

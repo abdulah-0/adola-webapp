@@ -480,17 +480,17 @@ const styles = StyleSheet.create({
     color: Colors.primary.gold,
   },
   bonusCard: {
-    backgroundColor: Colors.success.background,
+    backgroundColor: Colors.primary.surface,
     padding: 15,
     borderRadius: 15,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.success.border,
+    borderColor: Colors.primary.neonCyan,
   },
   bonusText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: Colors.success.text,
+    color: Colors.primary.neonCyan,
   },
   slotMachine: {
     backgroundColor: Colors.primary.surface,
@@ -537,8 +537,8 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   winCard: {
-    backgroundColor: Colors.success.background,
-    borderColor: Colors.success.border,
+    backgroundColor: Colors.primary.surface,
+    borderColor: Colors.primary.neonCyan,
   },
   loseCard: {
     backgroundColor: Colors.primary.surface,
@@ -562,7 +562,7 @@ const styles = StyleSheet.create({
   resultAmount: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: Colors.success.text,
+    color: Colors.primary.neonCyan,
   },
   jackpotResultAmount: {
     fontSize: 24,
