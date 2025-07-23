@@ -199,27 +199,26 @@ export default function WebMinesGame() {
       if (success) {
         const message = `You won PKR ${finalPayout.toLocaleString()} with ${currentMultiplier.toFixed(2)}x multiplier!`;
 
+        console.log('🎉 Cash out successful, resetting game immediately...');
+
+        // Reset game immediately after successful cash out
+        resetGame();
+
+        console.log('🎉 Showing cash out success alert...');
         Alert.alert(
           'Cashed Out!',
           message,
-          [{ text: 'OK', onPress: () => {
-            console.log('🔄 Alert OK pressed, calling resetGame...');
-            resetGame();
-          }}]
+          [{ text: 'OK' }]
         );
       } else {
-        console.log('❌ Failed to add winnings');
-        Alert.alert('Error', 'Failed to add winnings. Please contact support.', [{ text: 'OK', onPress: () => {
-          console.log('🔄 Error alert OK pressed, calling resetGame...');
-          resetGame();
-        }}]);
+        console.log('❌ Failed to add winnings, resetting game...');
+        resetGame();
+        Alert.alert('Error', 'Failed to add winnings. Please contact support.', [{ text: 'OK' }]);
       }
     } catch (error) {
       console.error('❌ Error in cashOut:', error);
-      Alert.alert('Error', 'Failed to cash out. Please try again.', [{ text: 'OK', onPress: () => {
-        console.log('🔄 Exception alert OK pressed, calling resetGame...');
-        resetGame();
-      }}]);
+      resetGame();
+      Alert.alert('Error', 'Failed to cash out. Please try again.', [{ text: 'OK' }]);
     }
   };
 
@@ -255,6 +254,8 @@ export default function WebMinesGame() {
 
   const resetGame = () => {
     console.log('🔄 Resetting Mines game...');
+    console.log('🔍 Before reset - gameActive:', gameActive, 'betAmount:', betAmount, 'revealedSafeCells:', revealedSafeCells);
+
     setGameActive(false);
     setBetAmount(0);
     setRevealedSafeCells(0);
@@ -263,7 +264,14 @@ export default function WebMinesGame() {
     setRevealedGrid([]);
     setGameWinProbability(0);
     setEngagementBonus('');
+
     console.log('✅ Mines game reset complete');
+    console.log('🔍 After reset - gameActive should be false, betAmount should be 0');
+
+    // Force a small delay to ensure state updates are processed
+    setTimeout(() => {
+      console.log('🔍 State check after timeout - gameActive:', gameActive, 'betAmount:', betAmount);
+    }, 100);
   };
 
   const renderGrid = () => {
