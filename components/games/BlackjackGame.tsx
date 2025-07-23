@@ -8,11 +8,13 @@ import {
   Alert,
   ScrollView,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import { useApp } from '../../contexts/AppContext';
 import { useWallet } from '../../contexts/WalletContext';
 import BettingPanel from '../BettingPanel';
+import WebBlackjackGame from './web/WebBlackjackGame';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = Math.min(width - 40, 350);
@@ -24,6 +26,11 @@ interface Card {
 }
 
 export default function BlackjackGame() {
+  // Use web-specific layout if on web platform
+  if (Platform.OS === 'web') {
+    return <WebBlackjackGame />;
+  }
+
   const { user } = useApp();
   const { balance, canPlaceBet, placeBet, addWinnings, refreshBalance } = useWallet();
   const [gameActive, setGameActive] = useState(false);
