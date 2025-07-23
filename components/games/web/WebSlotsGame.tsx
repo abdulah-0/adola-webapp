@@ -199,8 +199,11 @@ export default function WebSlotsGame() {
     });
   };
 
-  return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+  console.log('🎰 WebSlotsGame rendering with balance:', balance);
+
+  try {
+    return (
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Game Title */}
       <View style={styles.section}>
         <Text style={styles.gameTitle}>🎰 Classic Slots</Text>
@@ -282,8 +285,17 @@ export default function WebSlotsGame() {
           disabled={isSpinning}
         />
       </View>
-    </ScrollView>
-  );
+      </ScrollView>
+    );
+  } catch (error) {
+    console.error('❌ Error in WebSlotsGame:', error);
+    return (
+      <View style={{ flex: 1, backgroundColor: '#0A0A0A', justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ color: '#FF5C8A', fontSize: 18 }}>Error loading slots game</Text>
+        <Text style={{ color: '#FFFFFF', fontSize: 14, marginTop: 10 }}>Please try again</Text>
+      </View>
+    );
+  }
 }
 
 const styles = StyleSheet.create({
