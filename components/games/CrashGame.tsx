@@ -14,6 +14,7 @@ import { Colors } from '../../constants/Colors';
 import { useApp } from '../../contexts/AppContext';
 import { useWallet } from '../../contexts/WalletContext';
 import BettingPanel from '../BettingPanel';
+import { AdvancedGameLogicService } from '../../services/advancedGameLogicService';
 import WebCrashGame from './web/WebCrashGame';
 
 const { width } = Dimensions.get('window');
@@ -36,10 +37,14 @@ export default function CrashGame() {
   const [cashOutMultiplier, setCashOutMultiplier] = useState<number | null>(null);
   const [gameHistory, setGameHistory] = useState<number[]>([]);
   const [waitingTime, setWaitingTime] = useState(5);
+  const [gameWinProbability, setGameWinProbability] = useState(0);
+  const [engagementBonus, setEngagementBonus] = useState<string>('');
 
   // Animation refs
   const rocketY = useRef(new Animated.Value(200)).current;
   const multiplierScale = useRef(new Animated.Value(1)).current;
+
+  const gameLogicService = AdvancedGameLogicService.getInstance();
 
   // Game loop ref
   const gameLoopRef = useRef<number | null>(null);
@@ -53,13 +58,44 @@ export default function CrashGame() {
     };
   }, []);
 
-  const generateCrashPoint = () => {
-    // Generate crash point with realistic distribution - REDUCED MAX OUTPUTS
-    const random = Math.random();
-    if (random < 0.5) return 1.0 + Math.random() * 1.0; // 1.0x - 2.0x (50% chance) - INCREASED LOW RANGE
-    if (random < 0.8) return 2.0 + Math.random() * 1.5; // 2.0x - 3.5x (30% chance) - REDUCED
-    if (random < 0.95) return 3.5 + Math.random() * 2.5; // 3.5x - 6.0x (15% chance) - REDUCED
-    return 6.0 + Math.random() * 4.0; // 6.0x - 10.0x (5% chance) - REDUCED FROM 100x
+  const generateCrashPoint = async () => {
+    if (!user?.id || !hasBet) {
+      // No bet placed, use standard distribution - REDUCED MAX OUTPUTS
+      const random = Math.random();
+      if (random < 0.5) return 1.0 + Math.random() * 1.0; // 1.0x - 2.0x (50% chance)
+      if (random < 0.8) return 2.0 + Math.random() * 1.5; // 2.0x - 3.5x (30% chance)
+      if (random < 0.95) return 3.5 + Math.random() * 2.5; // 3.5x - 6.0x (15% chance)
+      return 6.0 + Math.random() * 4.0; // 6.0x - 10.0x (5% chance)
+    }
+
+    // Calculate win probability using advanced game logic
+    const { probability, engagementBonus: bonus } = await gameLogicService.calculateWinProbability({
+      betAmount,
+      basePayout: 2.0, // Average crash multiplier
+      gameType: 'crash',
+      userId: user.id,
+      currentBalance: balance || 0,
+    });
+
+    setGameWinProbability(probability);
+    setEngagementBonus(bonus);
+
+    // Determine if player should win based on advanced game logic
+    const shouldPlayerWin = Math.random() < probability;
+
+    if (shouldPlayerWin) {
+      // Player should win - higher crash point
+      const random = Math.random();
+      if (random < 0.6) return 1.5 + Math.random() * 1.5; // 1.5x - 3.0x (60% chance)
+      if (random < 0.9) return 3.0 + Math.random() * 2.0; // 3.0x - 5.0x (30% chance)
+      return 5.0 + Math.random() * 3.0; // 5.0x - 8.0x (10% chance)
+    } else {
+      // Player should lose - lower crash point
+      const random = Math.random();
+      if (random < 0.7) return 1.0 + Math.random() * 0.5; // 1.0x - 1.5x (70% chance)
+      if (random < 0.95) return 1.5 + Math.random() * 0.8; // 1.5x - 2.3x (25% chance)
+      return 2.3 + Math.random() * 0.7; // 2.3x - 3.0x (5% chance)
+    }
   };
 
   const startWaitingPhase = () => {
@@ -88,9 +124,9 @@ export default function CrashGame() {
     }, 1000);
   };
 
-  const startFlyingPhase = () => {
+  const startFlyingPhase = async () => {
     setGameState('flying');
-    const newCrashPoint = generateCrashPoint();
+    const newCrashPoint = await generateCrashPoint();
     setCrashPoint(newCrashPoint);
 
     console.log(`🚀 Crash game flying phase started - hasBet: ${hasBet}, cashedOut: ${cashedOut}, crashPoint: ${newCrashPoint.toFixed(2)}x`);
@@ -148,13 +184,30 @@ export default function CrashGame() {
     }).start();
 
     // Process game result if user had a bet
-    if (hasBet && !cashedOut) {
+    if (hasBet && !cashedOut && user?.id) {
       // User lost - bet was already deducted when placed
       Alert.alert(
         'Crashed!',
         `The rocket crashed at ${finalMultiplier.toFixed(2)}x\nYou lost PKR ${betAmount}`,
         [{ text: 'OK' }]
       );
+
+      // Log the game loss for analytics
+      gameLogicService.logGameResult(user.id, 'crash', {
+        won: false,
+        multiplier: 0,
+        winAmount: 0,
+        betAmount,
+        newBalance: (balance || 0) - betAmount,
+        adjustedProbability: gameWinProbability,
+        houseEdge: gameLogicService.getGameConfig('crash').houseEdge,
+        engagementBonus
+      }, {
+        crashPoint: finalMultiplier,
+        cashedOut: false,
+        adjustedProbability: gameWinProbability,
+        houseEdge: gameLogicService.getGameConfig('crash').houseEdge
+      });
     }
 
     // Start next round after delay
@@ -166,9 +219,10 @@ export default function CrashGame() {
   const handleBet = async (amount: number) => {
     if (gameState !== 'waiting' || hasBet) return;
 
-    // Check if user can place bet
-    if (!canPlaceBet(amount)) {
-      Alert.alert('Insufficient Balance', 'You do not have enough PKR to place this bet.');
+    // Check if user can place bet using advanced game logic
+    if (!gameLogicService.canPlayGame(amount, balance || 0, 'crash')) {
+      const message = gameLogicService.getBalanceValidationMessage(amount, balance || 0, 'crash');
+      Alert.alert('Cannot Place Bet', message);
       return;
     }
 
@@ -214,6 +268,25 @@ export default function CrashGame() {
       `You cashed out at ${currentMultiplier.toFixed(2)}x\nYou won PKR ${winAmount}!`,
       [{ text: 'OK' }]
     );
+
+    // Log the game win for analytics
+    if (user?.id) {
+      await gameLogicService.logGameResult(user.id, 'crash', {
+        won: true,
+        multiplier: currentMultiplier,
+        winAmount,
+        betAmount,
+        newBalance: (balance || 0) + winAmount - betAmount,
+        adjustedProbability: gameWinProbability,
+        houseEdge: gameLogicService.getGameConfig('crash').houseEdge,
+        engagementBonus
+      }, {
+        crashPoint: currentMultiplier,
+        cashedOut: true,
+        adjustedProbability: gameWinProbability,
+        houseEdge: gameLogicService.getGameConfig('crash').houseEdge
+      });
+    }
   };
 
   return (

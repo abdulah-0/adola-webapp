@@ -14,6 +14,7 @@ import { Colors } from '../../../constants/Colors';
 import { useApp } from '../../../contexts/AppContext';
 import { useWallet } from '../../../contexts/WalletContext';
 import BettingPanel from '../../BettingPanel';
+import { AdvancedGameLogicService } from '../../../services/advancedGameLogicService';
 
 const { width } = Dimensions.get('window');
 
@@ -29,10 +30,14 @@ export default function WebCrashGame() {
   const [cashOutMultiplier, setCashOutMultiplier] = useState<number | null>(null);
   const [gameHistory, setGameHistory] = useState<number[]>([]);
   const [waitingTime, setWaitingTime] = useState(5);
+  const [gameWinProbability, setGameWinProbability] = useState(0);
+  const [engagementBonus, setEngagementBonus] = useState<string>('');
 
   // Animation refs
   const rocketY = useRef(new Animated.Value(200)).current;
   const multiplierScale = useRef(new Animated.Value(1)).current;
+
+  const gameLogicService = AdvancedGameLogicService.getInstance();
 
   // Game loop ref
   const gameLoopRef = useRef<number | null>(null);
