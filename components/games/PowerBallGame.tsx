@@ -198,8 +198,17 @@ export default function PowerBallGame() {
 
     // Simulate drawing delay
     setTimeout(async () => {
-      // Determine if player should win using advanced game logic
-      const shouldPlayerWin = Math.random() < gameWinProbability;
+      // Use advanced game logic to determine win/loss
+      const gameResult = await gameLogicService.calculateAdvancedGameResult({
+        betAmount,
+        basePayout: 50.0, // High payout for lottery games
+        gameType: 'powerball',
+        userId: user.id,
+        currentBalance: balance || 0,
+        gameSpecificData: { selectedNumbers, selectedPowerBall }
+      });
+
+      const shouldPlayerWin = gameResult.won;
 
       // Generate winning numbers and power ball based on win rate requirement
       const { winningNumbers, winningPowerBall } = generateStrategicNumbers(selectedNumbers, selectedPowerBall, shouldPlayerWin);
