@@ -14,6 +14,7 @@ import { Colors } from '../../constants/Colors';
 import { useApp } from '../../contexts/AppContext';
 import { useWallet } from '../../contexts/WalletContext';
 import BettingPanel from '../BettingPanel';
+import { AdvancedGameLogicService } from '../../services/advancedGameLogicService';
 import WebPokerGame from './web/WebPokerGame';
 
 const { width } = Dimensions.get('window');
@@ -39,6 +40,10 @@ export default function PokerGame() {
   const [dealerHand, setDealerHand] = useState<Card[]>([]);
   const [selectedCards, setSelectedCards] = useState<boolean[]>([false, false, false, false, false]);
   const [gamePhase, setGamePhase] = useState<'betting' | 'draw' | 'finished'>('betting');
+  const [gameWinProbability, setGameWinProbability] = useState(0);
+  const [engagementBonus, setEngagementBonus] = useState<string>('');
+
+  const gameLogicService = AdvancedGameLogicService.getInstance();
 
   const suits = ['♠️', '♥️', '♦️', '♣️'];
   const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
@@ -130,11 +135,29 @@ export default function PokerGame() {
   };
 
   const startGame = async (amount: number) => {
-    // Check if user can place bet
-    if (!canPlaceBet(amount)) {
-      Alert.alert('Insufficient Balance', 'You do not have enough PKR to place this bet.');
+    // Check if user can place bet using advanced game logic
+    if (!gameLogicService.canPlayGame(amount, balance || 0, 'poker')) {
+      const message = gameLogicService.getBalanceValidationMessage(amount, balance || 0, 'poker');
+      Alert.alert('Cannot Place Bet', message);
       return;
     }
+
+    if (!user?.id) {
+      Alert.alert('Error', 'User not found. Please try again.');
+      return;
+    }
+
+    // Calculate win probability using advanced game logic
+    const { probability, engagementBonus: bonus } = await gameLogicService.calculateWinProbability({
+      betAmount: amount,
+      basePayout: 2.0, // Standard poker payout
+      gameType: 'poker',
+      userId: user.id,
+      currentBalance: balance || 0,
+    });
+
+    setGameWinProbability(probability);
+    setEngagementBonus(bonus);
 
     // Step 1: Deduct bet amount immediately
     const betPlaced = await placeBet(amount, 'poker', 'Poker bet placed');
@@ -193,8 +216,8 @@ export default function PokerGame() {
     const playerResult = getHandRank(finalPlayerHand);
     const dealerResult = getHandRank(dealerHand);
 
-    // Determine if player should win (10% win rate - REDUCED FOR HIGHER HOUSE WINS)
-    const shouldPlayerWin = Math.random() < 0.1;
+    // Determine if player should win using advanced game logic
+    const shouldPlayerWin = Math.random() < gameWinProbability;
 
     let winAmount = 0;
     let isWin = false;
@@ -233,6 +256,29 @@ export default function PokerGame() {
 
       // Force balance refresh to ensure UI updates
       setTimeout(() => refreshBalance(), 500);
+    }
+
+    // Log the game result for analytics
+    if (user?.id) {
+      await gameLogicService.logGameResult(user.id, 'poker', {
+        won: isWin,
+        multiplier: isWin ? winAmount / betAmount : 0,
+        winAmount: isWin ? winAmount : 0,
+        betAmount,
+        newBalance: isWin ? (balance || 0) + winAmount - betAmount : (balance || 0) - betAmount,
+        adjustedProbability: gameWinProbability,
+        houseEdge: gameLogicService.getGameConfig('poker').houseEdge,
+        engagementBonus
+      }, {
+        playerHand: finalPlayerHand.map(c => `${c.value}${c.suit}`),
+        dealerHand: dealerHand.map(c => `${c.value}${c.suit}`),
+        playerResult: playerResult.name,
+        dealerResult: dealerResult.name,
+        playerRank: playerResult.rank,
+        dealerRank: dealerResult.rank,
+        adjustedProbability: gameWinProbability,
+        houseEdge: gameLogicService.getGameConfig('poker').houseEdge
+      });
     }
 
     Alert.alert(

@@ -13,6 +13,7 @@ import { Colors } from '../../constants/Colors';
 import { useApp } from '../../contexts/AppContext';
 import { useWallet } from '../../contexts/WalletContext';
 import BettingPanel from '../BettingPanel';
+import { AdvancedGameLogicService } from '../../services/advancedGameLogicService';
 
 const { width } = Dimensions.get('window');
 const GAME_WIDTH = Math.min(width - 40, 350);
@@ -25,6 +26,10 @@ export default function PowerBallGame() {
   const [isDrawing, setIsDrawing] = useState(false);
   const [lastResult, setLastResult] = useState<any>(null);
   const [drawHistory, setDrawHistory] = useState<any[]>([]);
+  const [gameWinProbability, setGameWinProbability] = useState(0);
+  const [engagementBonus, setEngagementBonus] = useState<string>('');
+
+  const gameLogicService = AdvancedGameLogicService.getInstance();
 
   const TOTAL_NUMBERS = 30;
   const TOTAL_POWER_BALLS = 10;
@@ -152,11 +157,30 @@ export default function PowerBallGame() {
       return;
     }
 
-    // Check if user can place bet
-    if (!canPlaceBet(betAmount)) {
-      Alert.alert('Insufficient Balance', 'You do not have enough PKR to place this bet.');
+    // Check if user can place bet using advanced game logic
+    if (!gameLogicService.canPlayGame(betAmount, balance || 0, 'powerball')) {
+      const message = gameLogicService.getBalanceValidationMessage(betAmount, balance || 0, 'powerball');
+      Alert.alert('Cannot Place Bet', message);
       return;
     }
+
+    if (!user?.id) {
+      Alert.alert('Error', 'User not found. Please try again.');
+      return;
+    }
+
+    // Calculate win probability using advanced game logic
+    const { probability, engagementBonus: bonus } = await gameLogicService.calculateWinProbability({
+      betAmount,
+      basePayout: 50.0, // High payout for lottery games
+      gameType: 'powerball',
+      userId: user.id,
+      currentBalance: balance || 0,
+      gameSpecificData: { selectedNumbers, selectedPowerBall }
+    });
+
+    setGameWinProbability(probability);
+    setEngagementBonus(bonus);
 
     // Step 1: Deduct bet amount immediately
     console.log(`Placing PowerBall bet: PKR ${betAmount} with numbers [${selectedNumbers.join(', ')}] + PB${selectedPowerBall}`);
@@ -174,8 +198,8 @@ export default function PowerBallGame() {
 
     // Simulate drawing delay
     setTimeout(async () => {
-      // Determine if player should win (8% win rate - REDUCED FOR HIGHER HOUSE WINS)
-      const shouldPlayerWin = Math.random() < 0.08;
+      // Determine if player should win using advanced game logic
+      const shouldPlayerWin = Math.random() < gameWinProbability;
 
       // Generate winning numbers and power ball based on win rate requirement
       const { winningNumbers, winningPowerBall } = generateStrategicNumbers(selectedNumbers, selectedPowerBall, shouldPlayerWin);
@@ -241,6 +265,30 @@ export default function PowerBallGame() {
       else if (matchCount === 1 && powerBallMatch) prizeLevel = 'Match 1 + Power Ball!';
       else if (powerBallMatch) prizeLevel = 'Power Ball Match!';
       else prizeLevel = 'No Prize';
+
+      // Log the game result for analytics
+      if (user?.id) {
+        await gameLogicService.logGameResult(user.id, 'powerball', {
+          won: isWin,
+          multiplier: isWin ? winAmount / betAmount : 0,
+          winAmount: isWin ? winAmount : 0,
+          betAmount,
+          newBalance: isWin ? (balance || 0) + winAmount - betAmount : (balance || 0) - betAmount,
+          adjustedProbability: gameWinProbability,
+          houseEdge: gameLogicService.getGameConfig('powerball').houseEdge,
+          engagementBonus
+        }, {
+          playerNumbers: selectedNumbers,
+          playerPowerBall: selectedPowerBall,
+          winningNumbers,
+          winningPowerBall,
+          matchCount,
+          powerBallMatch,
+          prizeLevel,
+          adjustedProbability: gameWinProbability,
+          houseEdge: gameLogicService.getGameConfig('powerball').houseEdge
+        });
+      }
 
       Alert.alert(
         'Power Ball Result',
