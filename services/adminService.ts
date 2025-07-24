@@ -78,7 +78,11 @@ export class AdminService {
         .filter(t => t.status === 'pending')
         .reduce((sum, t) => sum + Number(t.amount), 0);
 
-      const totalGameRevenue = gameSessions?.reduce((sum, session) => sum + Number(session.bet_amount), 0) || 0;
+      // Calculate real game revenue (house profit = total bets - total winnings)
+      const totalBets = gameSessions?.reduce((sum, session) => sum + Number(session.bet_amount || 0), 0) || 0;
+      const totalWinnings = gameSessions?.reduce((sum, session) => sum + Number(session.win_amount || 0), 0) || 0;
+      const totalGameRevenue = totalBets - totalWinnings; // This is the actual house profit (amount players lost)
+
       const totalReferralBonuses = transactions?.filter(t => t.type === 'referral_bonus').reduce((sum, t) => sum + Number(t.amount), 0) || 0;
 
       // Calculate today's stats
@@ -92,8 +96,11 @@ export class AdminService {
       const todayWithdrawals = withdrawals
         .filter(t => new Date(t.created_at) >= today && (t.status === 'approved' || t.status === 'completed'))
         .reduce((sum, t) => sum + Number(t.amount), 0);
-      const todayGameRevenue = gameSessions?.filter(session => new Date(session.created_at) >= today)
-        .reduce((sum, session) => sum + Number(session.bet_amount), 0) || 0;
+      // Calculate today's game revenue (house profit)
+      const todayGameSessions = gameSessions?.filter(session => new Date(session.created_at) >= today) || [];
+      const todayBets = todayGameSessions.reduce((sum, session) => sum + Number(session.bet_amount || 0), 0);
+      const todayWinnings = todayGameSessions.reduce((sum, session) => sum + Number(session.win_amount || 0), 0);
+      const todayGameRevenue = todayBets - todayWinnings; // House profit for today
 
       return {
         totalUsers,

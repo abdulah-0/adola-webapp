@@ -189,6 +189,19 @@ export default function AdminPanel() {
             </View>
 
             <View style={styles.statCard}>
+              <Text style={[styles.statValue, { color: Colors.primary.gold }]}>
+                Rs {realTimeStats.gaming.gameRevenue.toLocaleString()}
+              </Text>
+              <Text style={styles.statLabel}>Game Revenue</Text>
+              <Text style={styles.statSubtext}>
+                Amount players lost • {realTimeStats.gaming.totalGamesPlayed.toLocaleString()} games
+              </Text>
+            </View>
+          </View>
+
+          {/* Additional Financial Stats */}
+          <View style={styles.statsGrid}>
+            <View style={styles.statCard}>
               <Text style={[styles.statValue, {
                 color: realTimeStats.financial.netRevenue >= 0 ? Colors.primary.neonCyan : Colors.primary.hotPink
               }]}>
@@ -197,6 +210,16 @@ export default function AdminPanel() {
               <Text style={styles.statLabel}>Net Revenue</Text>
               <Text style={styles.statSubtext}>
                 {realTimeStats.financial.revenueGrowth >= 0 ? '📈' : '📉'} {Math.abs(realTimeStats.financial.revenueGrowth).toFixed(1)}%
+              </Text>
+            </View>
+
+            <View style={styles.statCard}>
+              <Text style={[styles.statValue, { color: Colors.primary.neonCyan }]}>
+                Rs {realTimeStats.gaming.totalBets.toLocaleString()}
+              </Text>
+              <Text style={styles.statLabel}>Total Bets</Text>
+              <Text style={styles.statSubtext}>
+                Rs {realTimeStats.gaming.totalWinnings.toLocaleString()} paid out
               </Text>
             </View>
           </View>

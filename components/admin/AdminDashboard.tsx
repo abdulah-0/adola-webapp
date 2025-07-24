@@ -15,6 +15,9 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
 
   useEffect(() => {
     loadDashboardData();
+    // Set up auto-refresh every 30 seconds for live statistics
+    const interval = setInterval(loadDashboardData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const loadDashboardData = async () => {
@@ -49,9 +52,19 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Admin Dashboard</Text>
-      
-      {/* Quick Stats */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Admin Dashboard</Text>
+          <View style={styles.liveIndicator}>
+            <View style={styles.liveDot} />
+            <Text style={styles.liveText}>🔴 LIVE</Text>
+          </View>
+        </View>
+
+      {/* Live Statistics */}
+      <View style={styles.liveStatsSection}>
+        <Text style={styles.sectionTitle}>📊 Live Platform Statistics</Text>
+        <Text style={styles.sectionSubtitle}>Real-time data • Auto-updates every 30 seconds</Text>
+      </View>
       <View style={styles.statsGrid}>
         <View style={styles.statCard}>
           <Ionicons name="people" size={24} color="#007AFF" />
@@ -75,10 +88,10 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
         </View>
 
         <View style={styles.statCard}>
-          <Ionicons name="game-controller" size={24} color="#ffaa00" />
-          <Text style={styles.statValue}>Rs {stats.totalGameRevenue.toLocaleString()}</Text>
+          <Ionicons name="trending-up" size={24} color="#00ff88" />
+          <Text style={[styles.statValue, { color: '#00ff88' }]}>Rs {stats.totalGameRevenue.toLocaleString()}</Text>
           <Text style={styles.statLabel}>Game Revenue</Text>
-          <Text style={styles.statSubtext}>House edge</Text>
+          <Text style={styles.statSubtext}>Amount players lost</Text>
         </View>
       </View>
 
@@ -99,8 +112,9 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
             <Text style={styles.todayLabel}>Withdrawals</Text>
           </View>
           <View style={styles.todayCard}>
-            <Text style={styles.todayValue}>Rs {stats.todayStats.gameRevenue}</Text>
+            <Text style={[styles.todayValue, { color: '#00ff88' }]}>Rs {stats.todayStats.gameRevenue.toLocaleString()}</Text>
             <Text style={styles.todayLabel}>Game Revenue</Text>
+            <Text style={styles.todaySubtext}>Players lost today</Text>
           </View>
         </View>
       </View>
@@ -204,13 +218,49 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
+  },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#ffffff',
-    textAlign: 'center',
-    marginTop: 20,
-    marginBottom: 20,
+  },
+  liveIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1e1e1e',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#ff4444',
+    marginRight: 6,
+  },
+  liveText: {
+    fontSize: 12,
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
+  liveStatsSection: {
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+  },
+  sectionSubtitle: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 2,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -276,6 +326,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#cccccc',
     textAlign: 'center',
+  },
+  todaySubtext: {
+    fontSize: 10,
+    color: '#999',
+    textAlign: 'center',
+    marginTop: 2,
   },
   actionsSection: {
     margin: 16,

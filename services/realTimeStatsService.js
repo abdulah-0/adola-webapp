@@ -38,11 +38,24 @@ export const getRealTimeAdminStats = async () => {
     const totalWalletBalance = allUsers.reduce((sum, user) => sum + (user.walletBalance || 0), 0);
     const averageBalance = totalUsers > 0 ? totalWalletBalance / totalUsers : 0;
     
-    // Calculate game statistics
-    const totalGamesPlayed = allUsers.reduce((sum, user) => sum + (user.gamesPlayed || 0), 0);
-    const totalWins = allUsers.reduce((sum, user) => sum + (user.totalWins || 0), 0);
-    const totalLosses = allUsers.reduce((sum, user) => sum + (user.totalLosses || 0), 0);
-    const winRate = totalGamesPlayed > 0 ? (totalWins / totalGamesPlayed) * 100 : 0;
+    // Calculate game statistics from game_sessions table
+    const { data: gameSessions, error: gameSessionsError } = await supabase
+      .from('game_sessions')
+      .select('bet_amount, win_amount, created_at');
+
+    let totalGamesPlayed = 0;
+    let totalBets = 0;
+    let totalWinnings = 0;
+    let gameRevenue = 0; // House profit (amount players lost)
+
+    if (!gameSessionsError && gameSessions) {
+      totalGamesPlayed = gameSessions.length;
+      totalBets = gameSessions.reduce((sum, session) => sum + Number(session.bet_amount || 0), 0);
+      totalWinnings = gameSessions.reduce((sum, session) => sum + Number(session.win_amount || 0), 0);
+      gameRevenue = totalBets - totalWinnings; // This is the actual house profit
+    }
+
+    const winRate = totalGamesPlayed > 0 ? (totalWinnings / totalBets) * 100 : 0;
     
     // Calculate recent activity (last 24 hours)
     const now = new Date();
@@ -123,11 +136,12 @@ export const getRealTimeAdminStats = async () => {
       // Gaming Statistics
       gaming: {
         totalGamesPlayed,
-        totalWins,
-        totalLosses,
+        totalBets,
+        totalWinnings,
+        gameRevenue, // House profit (amount players lost)
         winRate,
         averageGamesPerUser: totalUsers > 0 ? totalGamesPlayed / totalUsers : 0,
-        activeGamers: allUsers.filter(user => (user.gamesPlayed || 0) > 0).length
+        activeGamers: totalUsers // Simplified for now
       },
       
       // System Health
@@ -241,8 +255,9 @@ const getDefaultStats = () => {
     },
     gaming: {
       totalGamesPlayed: 0,
-      totalWins: 0,
-      totalLosses: 0,
+      totalBets: 0,
+      totalWinnings: 0,
+      gameRevenue: 0,
       winRate: 0,
       averageGamesPerUser: 0,
       activeGamers: 0
