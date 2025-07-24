@@ -120,12 +120,15 @@ export class AdvancedGameLogicService {
   };
 
   private constructor() {
-    this.loadGameConfigs();
+    // Don't call loadGameConfigs here - it's async and constructor can't wait
+    // It will be called when getInstance is first used
   }
 
   public static getInstance(): AdvancedGameLogicService {
     if (!AdvancedGameLogicService.instance) {
       AdvancedGameLogicService.instance = new AdvancedGameLogicService();
+      // Load configs immediately after instance creation
+      AdvancedGameLogicService.instance.loadGameConfigs();
     }
     return AdvancedGameLogicService.instance;
   }
@@ -133,29 +136,39 @@ export class AdvancedGameLogicService {
   // Load game configurations from database (admin configurable)
   private async loadGameConfigs(): Promise<void> {
     try {
+      console.log('🔄 Loading game configurations from database...');
       const { data: configs, error } = await supabase
         .from('game_configs')
         .select('*');
 
       if (error) {
-        console.log('📊 No game configs found in database, using defaults');
+        console.error('❌ Error loading game configs:', error);
+        console.log('📊 Using default game configurations');
         return;
       }
 
       if (configs && configs.length > 0) {
+        console.log(`📊 Found ${configs.length} game configurations in database`);
         configs.forEach(config => {
           if (this.gameConfigs[config.game_type]) {
+            const oldConfig = { ...this.gameConfigs[config.game_type] };
             this.gameConfigs[config.game_type] = {
               ...this.gameConfigs[config.game_type],
               houseEdge: config.house_edge,
               baseWinProbability: config.base_win_probability,
               enabled: config.enabled,
             };
+            console.log(`✅ Updated ${config.game_name}: ${(oldConfig.baseWinProbability * 100).toFixed(1)}% → ${(config.base_win_probability * 100).toFixed(1)}%`);
+          } else {
+            console.log(`⚠️ Unknown game type: ${config.game_type}`);
           }
         });
-        console.log('✅ Game configurations loaded from database');
+        console.log('✅ All game configurations loaded from database');
+      } else {
+        console.log('📊 No game configs found in database, using defaults');
       }
     } catch (error) {
+      console.error('❌ Error in loadGameConfigs:', error);
       console.log('📊 Using default game configurations');
     }
   }
@@ -173,28 +186,36 @@ export class AdvancedGameLogicService {
   // Update game configuration (for admin controls)
   public async updateGameConfig(gameType: string, config: Partial<GameConfig>): Promise<boolean> {
     try {
-      // Update local config
-      if (this.gameConfigs[gameType]) {
-        this.gameConfigs[gameType] = { ...this.gameConfigs[gameType], ...config };
-      }
+      console.log(`🔄 Updating game config for ${gameType}:`, config);
 
-      // Update database
+      // Update database first
+      const updateData: any = {
+        game_type: gameType,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Only include fields that are provided
+      if (config.houseEdge !== undefined) updateData.house_edge = config.houseEdge;
+      if (config.baseWinProbability !== undefined) updateData.base_win_probability = config.baseWinProbability;
+      if (config.enabled !== undefined) updateData.enabled = config.enabled;
+
       const { error } = await supabase
         .from('game_configs')
-        .upsert({
-          game_type: gameType,
-          house_edge: config.houseEdge,
-          base_win_probability: config.baseWinProbability,
-          enabled: config.enabled,
-          updated_at: new Date().toISOString(),
-        });
+        .upsert(updateData);
 
       if (error) {
-        console.error('❌ Error updating game config:', error);
+        console.error('❌ Error updating game config in database:', error);
         return false;
       }
 
-      console.log(`✅ Game config updated for ${gameType}`);
+      // Update local config after successful database update
+      if (this.gameConfigs[gameType]) {
+        const oldConfig = { ...this.gameConfigs[gameType] };
+        this.gameConfigs[gameType] = { ...this.gameConfigs[gameType], ...config };
+        console.log(`✅ Local config updated for ${gameType}: ${(oldConfig.baseWinProbability * 100).toFixed(1)}% → ${(this.gameConfigs[gameType].baseWinProbability * 100).toFixed(1)}%`);
+      }
+
+      console.log(`✅ Game config successfully updated for ${gameType}`);
       return true;
     } catch (error) {
       console.error('❌ Error in updateGameConfig:', error);

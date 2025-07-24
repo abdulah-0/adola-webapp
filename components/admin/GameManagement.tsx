@@ -89,7 +89,10 @@ export default function GameManagement() {
   const loadGameData = async () => {
     try {
       setLoading(true);
-      
+
+      // Ensure game configs are loaded from database first
+      await gameLogicService.reloadGameConfigs();
+
       // Load game configurations
       const configs = gameLogicService.getAllGameConfigs();
       setGameConfigs(configs);
@@ -218,26 +221,41 @@ export default function GameManagement() {
 
   const handleWinRateChange = async (gameType: string, winRate: number) => {
     try {
-      const config = gameConfigs[gameType];
-      if (!config) return;
+      console.log(`🎮 Admin changing win rate for ${gameType}: ${(winRate * 100).toFixed(1)}%`);
 
-      const updatedConfig = { ...config, baseWinProbability: winRate };
-      const success = await gameLogicService.updateGameConfig(gameType, updatedConfig);
+      const config = gameConfigs[gameType];
+      if (!config) {
+        console.error(`❌ No config found for game type: ${gameType}`);
+        return;
+      }
+
+      console.log(`📊 Current config for ${gameType}:`, config);
+
+      // Only pass the specific field that changed
+      const configUpdate = { baseWinProbability: winRate };
+      console.log(`🔄 Updating with:`, configUpdate);
+
+      const success = await gameLogicService.updateGameConfig(gameType, configUpdate);
 
       if (success) {
+        console.log(`✅ Database update successful for ${gameType}`);
+
         // Reload game configs from database to ensure consistency
         await gameLogicService.reloadGameConfigs();
 
-        setGameConfigs(prev => ({
-          ...prev,
-          [gameType]: updatedConfig
-        }));
+        // Get the updated configs from the service
+        const updatedConfigs = gameLogicService.getAllGameConfigs();
+        setGameConfigs(updatedConfigs);
+
         setSelectedWinRates(prev => ({
           ...prev,
           [gameType]: winRate
         }));
+
+        console.log(`🎉 Win rate change complete for ${gameType}: ${(winRate * 100).toFixed(1)}%`);
         Alert.alert('Success', `Win rate updated for ${config.name}. Changes will take effect immediately.`);
       } else {
+        console.error(`❌ Failed to update win rate for ${gameType}`);
         Alert.alert('Error', 'Failed to update win rate');
       }
     } catch (error) {
