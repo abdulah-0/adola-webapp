@@ -223,9 +223,13 @@ export class AdvancedGameLogicService {
 
       console.log(`📤 Sending to database:`, updateData);
 
+      // Use upsert with onConflict to specify which field to use for conflict resolution
       const { error } = await supabase
         .from('game_configs')
-        .upsert(updateData);
+        .upsert(updateData, {
+          onConflict: 'game_type',
+          ignoreDuplicates: false
+        });
 
       if (error) {
         console.error('❌ Error updating game config in database:', error);
