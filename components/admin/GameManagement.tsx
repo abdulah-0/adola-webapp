@@ -225,6 +225,9 @@ export default function GameManagement() {
       const success = await gameLogicService.updateGameConfig(gameType, updatedConfig);
 
       if (success) {
+        // Reload game configs from database to ensure consistency
+        await gameLogicService.reloadGameConfigs();
+
         setGameConfigs(prev => ({
           ...prev,
           [gameType]: updatedConfig
@@ -233,7 +236,7 @@ export default function GameManagement() {
           ...prev,
           [gameType]: winRate
         }));
-        Alert.alert('Success', `Win rate updated for ${config.name}`);
+        Alert.alert('Success', `Win rate updated for ${config.name}. Changes will take effect immediately.`);
       } else {
         Alert.alert('Error', 'Failed to update win rate');
       }

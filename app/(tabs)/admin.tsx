@@ -10,8 +10,9 @@ import PendingWithdrawals from '../../components/admin/PendingWithdrawals';
 import NotificationManager from '../../components/admin/NotificationManager';
 import GameStatistics from '../../components/admin/GameStatistics';
 import GameManagement from '../../components/admin/GameManagement';
+import DatabaseSetup from '../../components/admin/DatabaseSetup';
 
-type AdminScreen = 'dashboard' | 'deposits' | 'withdrawals' | 'users' | 'games' | 'statistics' | 'notifications';
+type AdminScreen = 'dashboard' | 'deposits' | 'withdrawals' | 'users' | 'games' | 'statistics' | 'notifications' | 'database';
 
 export default function AdminScreen() {
   const { user, logout } = useApp();
@@ -104,6 +105,8 @@ export default function AdminScreen() {
         return <GameStatistics />;
       case 'notifications':
         return <NotificationManager />;
+      case 'database':
+        return <DatabaseSetup />;
       default:
         return <AdminDashboard onNavigate={(screen: string) => setCurrentScreen(screen as AdminScreen)} />;
     }

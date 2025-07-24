@@ -160,6 +160,11 @@ export class AdvancedGameLogicService {
     }
   }
 
+  // Public method to reload game configurations (for admin updates)
+  public async reloadGameConfigs(): Promise<void> {
+    await this.loadGameConfigs();
+  }
+
   // Get game configuration
   public getGameConfig(gameType: string): GameConfig {
     return this.gameConfigs[gameType] || this.gameConfigs.dice;
