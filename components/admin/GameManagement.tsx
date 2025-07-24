@@ -30,8 +30,47 @@ interface GameAnalytics {
   popularityRank: number;
 }
 
+interface WinRatePreset {
+  name: string;
+  probability: number;
+  description: string;
+  color: string;
+  icon: string;
+}
+
+const WIN_RATE_PRESETS: WinRatePreset[] = [
+  {
+    name: 'High Winning Rate',
+    probability: 0.25, // 25% win rate
+    description: 'Players win frequently - Good for engagement',
+    color: '#00ff88',
+    icon: '📈'
+  },
+  {
+    name: 'Medium Winning Rate',
+    probability: 0.15, // 15% win rate
+    description: 'Balanced gameplay - Standard house edge',
+    color: '#ffaa00',
+    icon: '⚖️'
+  },
+  {
+    name: 'Low Winning Rate',
+    probability: 0.08, // 8% win rate
+    description: 'House favored - Higher profits',
+    color: '#ff6666',
+    icon: '📉'
+  },
+  {
+    name: 'No Winning Rate',
+    probability: 0.02, // 2% win rate (almost no wins)
+    description: 'Maximum house advantage - Rare wins only',
+    color: '#ff4444',
+    icon: '🚫'
+  }
+];
+
 export default function GameManagement() {
-  const [activeTab, setActiveTab] = useState<'configs' | 'analytics' | 'engagement'>('configs');
+  const [activeTab, setActiveTab] = useState<'winrates' | 'configs' | 'analytics' | 'engagement'>('winrates');
   const [gameConfigs, setGameConfigs] = useState<{ [key: string]: GameConfig }>({});
   const [engagementFeatures, setEngagementFeatures] = useState<EngagementFeatures | null>(null);
   const [gameAnalytics, setGameAnalytics] = useState<GameAnalytics[]>([]);
@@ -39,6 +78,7 @@ export default function GameManagement() {
   const [refreshing, setRefreshing] = useState(false);
   const [editingConfig, setEditingConfig] = useState<string | null>(null);
   const [tempConfig, setTempConfig] = useState<Partial<GameConfig>>({});
+  const [selectedWinRates, setSelectedWinRates] = useState<{ [key: string]: number }>({});
 
   const gameLogicService = AdvancedGameLogicService.getInstance();
 
@@ -175,6 +215,125 @@ export default function GameManagement() {
     gameLogicService.updateEngagementFeatures({ [feature]: value });
     setEngagementFeatures(updatedFeatures);
   };
+
+  const handleWinRateChange = async (gameType: string, winRate: number) => {
+    try {
+      const config = gameConfigs[gameType];
+      if (!config) return;
+
+      const updatedConfig = { ...config, baseWinProbability: winRate };
+      const success = await gameLogicService.updateGameConfig(gameType, updatedConfig);
+
+      if (success) {
+        setGameConfigs(prev => ({
+          ...prev,
+          [gameType]: updatedConfig
+        }));
+        setSelectedWinRates(prev => ({
+          ...prev,
+          [gameType]: winRate
+        }));
+        Alert.alert('Success', `Win rate updated for ${config.name}`);
+      } else {
+        Alert.alert('Error', 'Failed to update win rate');
+      }
+    } catch (error) {
+      console.error('Error updating win rate:', error);
+      Alert.alert('Error', 'Failed to update win rate');
+    }
+  };
+
+  const getWinRatePresetName = (probability: number): string => {
+    const preset = WIN_RATE_PRESETS.find(p => Math.abs(p.probability - probability) < 0.01);
+    return preset ? preset.name : 'Custom';
+  };
+
+  const getWinRateColor = (probability: number): string => {
+    const preset = WIN_RATE_PRESETS.find(p => Math.abs(p.probability - probability) < 0.01);
+    return preset ? preset.color : '#999999';
+  };
+
+  const renderWinRateManagement = () => (
+    <ScrollView
+      style={styles.tabContent}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>🎯 Game Win Rate Management</Text>
+        <Text style={styles.sectionSubtitle}>
+          Configure winning rates for each game. Changes apply immediately to all players.
+        </Text>
+      </View>
+
+      {Object.entries(gameConfigs).map(([gameType, config]) => (
+        <View key={gameType} style={styles.gameWinRateCard}>
+          <View style={styles.gameWinRateHeader}>
+            <View style={styles.gameWinRateInfo}>
+              <Text style={styles.gameWinRateName}>{config.name}</Text>
+              <Text style={[styles.gameWinRateStatus, { color: getWinRateColor(config.baseWinProbability) }]}>
+                {getWinRatePresetName(config.baseWinProbability)} • {(config.baseWinProbability * 100).toFixed(1)}%
+              </Text>
+            </View>
+            <View style={styles.gameWinRateToggle}>
+              <Switch
+                value={config.enabled}
+                onValueChange={(enabled) => handleWinRateChange(gameType, config.baseWinProbability)}
+                trackColor={{ false: '#767577', true: '#81b0ff' }}
+                thumbColor={config.enabled ? '#f5dd4b' : '#f4f3f4'}
+              />
+            </View>
+          </View>
+
+          <View style={styles.winRatePresets}>
+            {WIN_RATE_PRESETS.map((preset, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.winRatePresetButton,
+                  {
+                    backgroundColor: Math.abs(config.baseWinProbability - preset.probability) < 0.01
+                      ? preset.color + '20'
+                      : 'transparent',
+                    borderColor: Math.abs(config.baseWinProbability - preset.probability) < 0.01
+                      ? preset.color
+                      : '#333',
+                  }
+                ]}
+                onPress={() => handleWinRateChange(gameType, preset.probability)}
+              >
+                <Text style={styles.winRatePresetIcon}>{preset.icon}</Text>
+                <View style={styles.winRatePresetInfo}>
+                  <Text style={[styles.winRatePresetName, { color: preset.color }]}>
+                    {preset.name}
+                  </Text>
+                  <Text style={styles.winRatePresetDescription}>{preset.description}</Text>
+                  <Text style={styles.winRatePresetPercent}>
+                    {(preset.probability * 100).toFixed(1)}% win rate
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={styles.gameWinRateStats}>
+            <View style={styles.winRateStat}>
+              <Text style={styles.winRateStatValue}>{(config.baseWinProbability * 100).toFixed(1)}%</Text>
+              <Text style={styles.winRateStatLabel}>Player Win Rate</Text>
+            </View>
+            <View style={styles.winRateStat}>
+              <Text style={styles.winRateStatValue}>{((1 - config.baseWinProbability) * 100).toFixed(1)}%</Text>
+              <Text style={styles.winRateStatLabel}>House Win Rate</Text>
+            </View>
+            <View style={styles.winRateStat}>
+              <Text style={styles.winRateStatValue}>{(config.houseEdge * 100).toFixed(1)}%</Text>
+              <Text style={styles.winRateStatLabel}>House Edge</Text>
+            </View>
+          </View>
+        </View>
+      ))}
+    </ScrollView>
+  );
 
   const renderGameConfigs = () => (
     <ScrollView 
@@ -429,6 +588,20 @@ export default function GameManagement() {
       {/* Tab Navigation */}
       <View style={styles.tabContainer}>
         <TouchableOpacity
+          style={[styles.tab, activeTab === 'winrates' && styles.activeTab]}
+          onPress={() => setActiveTab('winrates')}
+        >
+          <Ionicons
+            name="trending-up"
+            size={20}
+            color={activeTab === 'winrates' ? '#fff' : '#007AFF'}
+          />
+          <Text style={[styles.tabText, activeTab === 'winrates' && styles.activeTabText]}>
+            Win Rates
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           style={[styles.tab, activeTab === 'configs' && styles.activeTab]}
           onPress={() => setActiveTab('configs')}
         >
@@ -472,6 +645,7 @@ export default function GameManagement() {
       </View>
 
       {/* Tab Content */}
+      {activeTab === 'winrates' && renderWinRateManagement()}
       {activeTab === 'configs' && renderGameConfigs()}
       {activeTab === 'analytics' && renderAnalytics()}
       {activeTab === 'engagement' && renderEngagementFeatures()}
@@ -689,5 +863,95 @@ const styles = {
     flexDirection: 'row' as const,
     justifyContent: 'space-between' as const,
     alignItems: 'center' as const,
+  },
+  // Win Rate Management Styles
+  gameWinRateCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  } as const,
+  gameWinRateHeader: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
+    marginBottom: 16,
+  },
+  gameWinRateInfo: {
+    flex: 1,
+  },
+  gameWinRateName: {
+    fontSize: 18,
+    fontWeight: 'bold' as const,
+    color: '#333',
+    marginBottom: 4,
+  },
+  gameWinRateStatus: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  gameWinRateToggle: {
+    marginLeft: 16,
+  },
+  winRatePresets: {
+    marginBottom: 16,
+  },
+  winRatePresetButton: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 2,
+    marginBottom: 8,
+  },
+  winRatePresetIcon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  winRatePresetInfo: {
+    flex: 1,
+  },
+  winRatePresetName: {
+    fontSize: 16,
+    fontWeight: 'bold' as const,
+    marginBottom: 2,
+  },
+  winRatePresetDescription: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 2,
+  },
+  winRatePresetPercent: {
+    fontSize: 12,
+    color: '#999',
+    fontWeight: '600' as const,
+  },
+  gameWinRateStats: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-around' as const,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  winRateStat: {
+    alignItems: 'center' as const,
+  },
+  winRateStatValue: {
+    fontSize: 18,
+    fontWeight: 'bold' as const,
+    color: '#333',
+    marginBottom: 4,
+  },
+  winRateStatLabel: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center' as const,
   },
 };
