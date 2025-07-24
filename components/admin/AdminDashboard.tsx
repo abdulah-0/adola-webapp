@@ -198,18 +198,6 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
           </View>
           <Ionicons name="chevron-forward" size={20} color="#666" />
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => onNavigate('database')}
-        >
-          <Ionicons name="server" size={24} color="#e74c3c" />
-          <View style={styles.actionContent}>
-            <Text style={styles.actionTitle}>Database Setup</Text>
-            <Text style={styles.actionSubtitle}>Setup game configs table for win rate management</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#666" />
-        </TouchableOpacity>
       </View>
       </ScrollView>
     </View>
