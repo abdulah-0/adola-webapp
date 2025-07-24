@@ -15,6 +15,7 @@ import { useApp } from '../../contexts/AppContext';
 import UserManagement from '../../components/admin/UserManagement';
 import TransactionManagement from '../../components/admin/TransactionManagement';
 import GameManagement from '../../components/admin/GameManagement';
+import GameStatistics from '../../components/admin/GameStatistics';
 import { getRealTimeAdminStats, getUserActivityStats } from '../../services/realTimeStatsService.js';
 import { getAllTransactionRequests, testTransactionStorage } from '../../services/transactionService.js';
 
@@ -121,6 +122,8 @@ export default function AdminPanel() {
         return <TransactionManagement />;
       case 'games':
         return <GameManagement />;
+      case 'statistics':
+        return <GameStatistics />;
       case 'overview':
       default:
         return renderOverview();
@@ -259,6 +262,14 @@ export default function AdminPanel() {
             >
               <Text style={styles.actionIcon}>🎮</Text>
               <Text style={styles.actionText}>Game Management</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => setCurrentSection('statistics')}
+            >
+              <Text style={styles.actionIcon}>📊</Text>
+              <Text style={styles.actionText}>Game Statistics</Text>
             </TouchableOpacity>
             
             <TouchableOpacity style={styles.actionButton}>

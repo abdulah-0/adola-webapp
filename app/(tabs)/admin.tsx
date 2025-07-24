@@ -8,8 +8,9 @@ import AdminDashboard from '../../components/admin/AdminDashboard';
 import PendingDeposits from '../../components/admin/PendingDeposits';
 import PendingWithdrawals from '../../components/admin/PendingWithdrawals';
 import NotificationManager from '../../components/admin/NotificationManager';
+import GameStatistics from '../../components/admin/GameStatistics';
 
-type AdminScreen = 'dashboard' | 'deposits' | 'withdrawals' | 'users' | 'games' | 'notifications';
+type AdminScreen = 'dashboard' | 'deposits' | 'withdrawals' | 'users' | 'games' | 'statistics' | 'notifications';
 
 export default function AdminScreen() {
   const { user, logout } = useApp();
@@ -100,10 +101,12 @@ export default function AdminScreen() {
         return (
           <View style={styles.comingSoonContainer}>
             <Ionicons name="game-controller" size={64} color="#666" />
-            <Text style={styles.comingSoonTitle}>Game Statistics</Text>
+            <Text style={styles.comingSoonTitle}>Game Management</Text>
             <Text style={styles.comingSoonText}>Coming Soon</Text>
           </View>
         );
+      case 'statistics':
+        return <GameStatistics />;
       case 'notifications':
         return <NotificationManager />;
       default:

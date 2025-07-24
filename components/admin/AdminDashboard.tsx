@@ -147,12 +147,24 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
 
         <TouchableOpacity
           style={styles.actionButton}
+          onPress={() => onNavigate('statistics')}
+        >
+          <Ionicons name="stats-chart" size={24} color="#00ff88" />
+          <View style={styles.actionContent}>
+            <Text style={styles.actionTitle}>Game Statistics</Text>
+            <Text style={styles.actionSubtitle}>View player activities and game performance</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#666" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.actionButton}
           onPress={() => onNavigate('games')}
         >
           <Ionicons name="game-controller" size={24} color="#ffaa00" />
           <View style={styles.actionContent}>
-            <Text style={styles.actionTitle}>Game Statistics</Text>
-            <Text style={styles.actionSubtitle}>View game performance and analytics</Text>
+            <Text style={styles.actionTitle}>Game Management</Text>
+            <Text style={styles.actionSubtitle}>Manage games and configurations</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#666" />
         </TouchableOpacity>
