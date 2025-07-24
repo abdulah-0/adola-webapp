@@ -200,16 +200,28 @@ export class AdvancedGameLogicService {
     try {
       console.log(`🔄 Updating game config for ${gameType}:`, config);
 
-      // Update database first
+      // Get the current game config to include required fields
+      const currentConfig = this.gameConfigs[gameType];
+      if (!currentConfig) {
+        console.error(`❌ No local config found for game type: ${gameType}`);
+        return false;
+      }
+
+      // Update database first - include all required fields for upsert
       const updateData: any = {
         game_type: gameType,
+        game_name: currentConfig.name, // Required field
         updated_at: new Date().toISOString(),
       };
 
-      // Only include fields that are provided
-      if (config.houseEdge !== undefined) updateData.house_edge = config.houseEdge;
-      if (config.baseWinProbability !== undefined) updateData.base_win_probability = config.baseWinProbability;
-      if (config.enabled !== undefined) updateData.enabled = config.enabled;
+      // Only include fields that are provided, with fallbacks to current values
+      updateData.house_edge = config.houseEdge !== undefined ? config.houseEdge : currentConfig.houseEdge;
+      updateData.base_win_probability = config.baseWinProbability !== undefined ? config.baseWinProbability : currentConfig.baseWinProbability;
+      updateData.enabled = config.enabled !== undefined ? config.enabled : currentConfig.enabled;
+      updateData.min_bet = currentConfig.minBet;
+      updateData.max_bet = currentConfig.maxBet;
+
+      console.log(`📤 Sending to database:`, updateData);
 
       const { error } = await supabase
         .from('game_configs')
