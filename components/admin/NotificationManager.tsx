@@ -23,6 +23,11 @@ export default function NotificationManager() {
   const [customNotifications, setCustomNotifications] = useState<CustomNotification[]>([]);
   const [loading, setLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // Debug modal state changes
+  useEffect(() => {
+    console.log('📱 Modal state changed:', showCreateModal);
+  }, [showCreateModal]);
   const [activeTab, setActiveTab] = useState<'default' | 'custom'>('custom');
 
   const notificationService = NotificationService.getInstance();
@@ -90,13 +95,18 @@ export default function NotificationManager() {
   };
 
   const createCustomNotification = async () => {
+    console.log('🔧 Creating notification...', { user, newNotification });
+
     if (!newNotification.title.trim() || !newNotification.message.trim()) {
       Alert.alert('Error', 'Please fill in title and message');
       return;
     }
 
-    if (!user?.id) {
-      Alert.alert('Error', 'User not found');
+    // Check for user ID
+    const userId = user?.id;
+    if (!userId) {
+      console.error('❌ User ID not found:', user);
+      Alert.alert('Error', 'User not found. Please try logging in again.');
       return;
     }
 
@@ -106,13 +116,16 @@ export default function NotificationManager() {
         .from('custom_notifications')
         .insert({
           ...newNotification,
-          created_by: user.id,
+          created_by: userId,
           starts_at: new Date().toISOString(),
         });
 
       if (error) {
-        console.error('Error creating notification:', error);
-        Alert.alert('Error', 'Failed to create notification');
+        console.error('❌ Error creating notification:', error);
+        Alert.alert(
+          'Database Error',
+          `Failed to create notification: ${error.message}\n\nMake sure the database tables are set up correctly.`
+        );
         return;
       }
 
@@ -266,7 +279,10 @@ export default function NotificationManager() {
             <Text style={styles.sectionTitle}>Custom Notifications</Text>
             <TouchableOpacity
               style={styles.createButton}
-              onPress={() => setShowCreateModal(true)}
+              onPress={() => {
+                console.log('📱 Create button pressed');
+                setShowCreateModal(true);
+              }}
             >
               <Ionicons name="add" size={20} color="white" />
               <Text style={styles.createButtonText}>Create New</Text>
@@ -397,11 +413,18 @@ export default function NotificationManager() {
         visible={showCreateModal}
         animationType="slide"
         presentationStyle="pageSheet"
+        transparent={false}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Create Custom Notification</Text>
-            <TouchableOpacity onPress={() => setShowCreateModal(false)}>
+            <TouchableOpacity
+              onPress={() => {
+                console.log('📱 Closing modal');
+                setShowCreateModal(false);
+              }}
+              style={{ padding: 8 }}
+            >
               <Ionicons name="close" size={24} color="#666" />
             </TouchableOpacity>
           </View>
@@ -575,7 +598,7 @@ const styles = StyleSheet.create({
   resetAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.primary.danger,
+    backgroundColor: '#ff4444',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
@@ -587,7 +610,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   notificationCard: {
-    backgroundColor: Colors.primary.cardBackground,
+    backgroundColor: Colors.primary.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -645,7 +668,7 @@ const styles = StyleSheet.create({
   resetButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.primary.warning,
+    backgroundColor: '#ffaa00',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
@@ -659,7 +682,7 @@ const styles = StyleSheet.create({
   infoSection: {
     margin: 20,
     padding: 16,
-    backgroundColor: Colors.primary.cardBackground,
+    backgroundColor: Colors.primary.card,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.primary.border,
