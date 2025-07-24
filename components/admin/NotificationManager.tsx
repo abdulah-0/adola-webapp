@@ -1,4 +1,4 @@
-// Notification Manager - Admin component to manage app notifications
+// Enhanced Notification Manager - Admin component to manage custom app notifications
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -7,19 +7,64 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  TextInput,
+  Modal,
+  Switch,
 } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import { Ionicons } from '@expo/vector-icons';
 import { NotificationService, APP_NOTIFICATIONS } from '../../services/notificationService';
+import { CustomNotificationService, CustomNotification } from '../../services/customNotificationService';
+import { supabase } from '../../lib/supabase';
+import { useApp } from '../../contexts/AppContext';
 
 export default function NotificationManager() {
   const [notificationStatus, setNotificationStatus] = useState<Record<string, boolean>>({});
+  const [customNotifications, setCustomNotifications] = useState<CustomNotification[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<'default' | 'custom'>('custom');
+
   const notificationService = NotificationService.getInstance();
+  const customNotificationService = CustomNotificationService.getInstance();
+  const { user } = useApp();
+
+  // Form state for creating new notifications
+  const [newNotification, setNewNotification] = useState({
+    title: '',
+    message: '',
+    icon: 'notifications',
+    color: '#007AFF',
+    priority: 5,
+    frequency_type: 'once' as 'once' | 'daily' | 'weekly' | 'monthly' | 'custom',
+    frequency_hours: 24,
+    show_during_games: false,
+    target_audience: 'all' as 'all' | 'new_users' | 'active_users' | 'vip_users',
+    enabled: true,
+  });
 
   useEffect(() => {
     loadNotificationStatus();
+    loadCustomNotifications();
   }, []);
+
+  const loadCustomNotifications = async () => {
+    try {
+      const { data: notifications, error } = await supabase
+        .from('custom_notifications')
+        .select('*')
+        .order('priority', { ascending: true });
+
+      if (error) {
+        console.error('Error loading custom notifications:', error);
+        return;
+      }
+
+      setCustomNotifications(notifications || []);
+    } catch (error) {
+      console.error('Error loading custom notifications:', error);
+    }
+  };
 
   const loadNotificationStatus = async () => {
     try {
@@ -42,6 +87,108 @@ export default function NotificationManager() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const createCustomNotification = async () => {
+    if (!newNotification.title.trim() || !newNotification.message.trim()) {
+      Alert.alert('Error', 'Please fill in title and message');
+      return;
+    }
+
+    if (!user?.id) {
+      Alert.alert('Error', 'User not found');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const { error } = await supabase
+        .from('custom_notifications')
+        .insert({
+          ...newNotification,
+          created_by: user.id,
+          starts_at: new Date().toISOString(),
+        });
+
+      if (error) {
+        console.error('Error creating notification:', error);
+        Alert.alert('Error', 'Failed to create notification');
+        return;
+      }
+
+      Alert.alert('Success', 'Notification created successfully!');
+      setShowCreateModal(false);
+      setNewNotification({
+        title: '',
+        message: '',
+        icon: 'notifications',
+        color: '#007AFF',
+        priority: 5,
+        frequency_type: 'once',
+        frequency_hours: 24,
+        show_during_games: false,
+        target_audience: 'all',
+        enabled: true,
+      });
+      await loadCustomNotifications();
+    } catch (error) {
+      console.error('Error creating notification:', error);
+      Alert.alert('Error', 'Failed to create notification');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleNotificationEnabled = async (notificationId: string, enabled: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('custom_notifications')
+        .update({ enabled })
+        .eq('id', notificationId);
+
+      if (error) {
+        console.error('Error updating notification:', error);
+        Alert.alert('Error', 'Failed to update notification');
+        return;
+      }
+
+      await loadCustomNotifications();
+    } catch (error) {
+      console.error('Error updating notification:', error);
+    }
+  };
+
+  const deleteCustomNotification = async (notificationId: string) => {
+    Alert.alert(
+      'Delete Notification',
+      'Are you sure you want to delete this notification?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { error } = await supabase
+                .from('custom_notifications')
+                .delete()
+                .eq('id', notificationId);
+
+              if (error) {
+                console.error('Error deleting notification:', error);
+                Alert.alert('Error', 'Failed to delete notification');
+                return;
+              }
+
+              Alert.alert('Success', 'Notification deleted successfully!');
+              await loadCustomNotifications();
+            } catch (error) {
+              console.error('Error deleting notification:', error);
+            }
+          }
+        }
+      ]
+    );
   };
 
   const resetAllNotifications = async () => {
@@ -76,7 +223,7 @@ export default function NotificationManager() {
   };
 
   const getStatusColor = (dismissed: boolean) => {
-    return dismissed ? Colors.primary.success : Colors.primary.warning;
+    return dismissed ? '#00ff88' : '#ffaa00';
   };
 
   const getStatusText = (dismissed: boolean) => {
@@ -88,8 +235,28 @@ export default function NotificationManager() {
       <View style={styles.header}>
         <Text style={styles.title}>📱 App Notifications Manager</Text>
         <Text style={styles.subtitle}>
-          Manage popup notifications that appear when users open the app
+          Create and manage custom notifications with frequency settings and game session awareness
         </Text>
+      </View>
+
+      {/* Tab Navigation */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'custom' && styles.activeTab]}
+          onPress={() => setActiveTab('custom')}
+        >
+          <Text style={[styles.tabText, activeTab === 'custom' && styles.activeTabText]}>
+            Custom Notifications
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'default' && styles.activeTab]}
+          onPress={() => setActiveTab('default')}
+        >
+          <Text style={[styles.tabText, activeTab === 'default' && styles.activeTabText]}>
+            Default Notifications
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.section}>
