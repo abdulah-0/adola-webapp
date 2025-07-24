@@ -14,6 +14,7 @@ import { Colors } from '../../constants/Colors';
 import { useApp } from '../../contexts/AppContext';
 import { useWallet } from '../../contexts/WalletContext';
 import BettingPanel from '../BettingPanel';
+import { AdvancedGameLogicService } from '../../services/advancedGameLogicService';
 import WebBlackjackGame from './web/WebBlackjackGame';
 
 const { width } = Dimensions.get('window');
@@ -41,6 +42,10 @@ export default function BlackjackGame() {
   const [dealerScore, setDealerScore] = useState(0);
   const [gamePhase, setGamePhase] = useState<'betting' | 'playing' | 'dealer' | 'finished'>('betting');
   const [showDealerCard, setShowDealerCard] = useState(false);
+  const [gameWinProbability, setGameWinProbability] = useState(0);
+  const [engagementBonus, setEngagementBonus] = useState<string>('');
+
+  const gameLogicService = AdvancedGameLogicService.getInstance();
 
   const suits = ['♠️', '♥️', '♦️', '♣️'];
   const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
@@ -91,11 +96,29 @@ export default function BlackjackGame() {
   };
 
   const startGame = async (amount: number) => {
-    // Check if user can place bet
-    if (!canPlaceBet(amount)) {
-      Alert.alert('Insufficient Balance', 'You do not have enough PKR to place this bet.');
+    // Check if user can place bet using advanced game logic
+    if (!gameLogicService.canPlayGame(amount, balance || 0, 'blackjack')) {
+      const message = gameLogicService.getBalanceValidationMessage(amount, balance || 0, 'blackjack');
+      Alert.alert('Cannot Place Bet', message);
       return;
     }
+
+    if (!user?.id) {
+      Alert.alert('Error', 'User not found. Please try again.');
+      return;
+    }
+
+    // Calculate win probability using advanced game logic
+    const { probability, engagementBonus: bonus } = await gameLogicService.calculateWinProbability({
+      betAmount: amount,
+      basePayout: 2.0, // Standard blackjack payout
+      gameType: 'blackjack',
+      userId: user.id,
+      currentBalance: balance || 0,
+    });
+
+    setGameWinProbability(probability);
+    setEngagementBonus(bonus);
 
     // Step 1: Deduct bet amount immediately
     const betPlaced = await placeBet(amount, 'blackjack', 'Blackjack bet placed');
@@ -263,6 +286,28 @@ export default function BlackjackGame() {
 
       // Force balance refresh to ensure UI updates
       setTimeout(() => refreshBalance(), 500);
+    }
+
+    // Log the game result for analytics
+    if (user?.id) {
+      await gameLogicService.logGameResult(user.id, 'blackjack', {
+        won: isWin,
+        multiplier: isWin ? winAmount / betAmount : 0,
+        winAmount: isWin ? winAmount : 0,
+        betAmount,
+        newBalance: isWin ? (balance || 0) + winAmount - betAmount : (balance || 0) - betAmount,
+        adjustedProbability: gameWinProbability,
+        houseEdge: gameLogicService.getGameConfig('blackjack').houseEdge,
+        engagementBonus
+      }, {
+        result,
+        playerScore,
+        dealerScore: calculateScore(dealerHand),
+        playerHand: playerHand.map(c => `${c.value}${c.suit}`),
+        dealerHand: dealerHand.map(c => `${c.value}${c.suit}`),
+        adjustedProbability: gameWinProbability,
+        houseEdge: gameLogicService.getGameConfig('blackjack').houseEdge
+      });
     }
 
     Alert.alert(
