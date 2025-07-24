@@ -9,6 +9,7 @@ import PendingDeposits from '../../components/admin/PendingDeposits';
 import PendingWithdrawals from '../../components/admin/PendingWithdrawals';
 import NotificationManager from '../../components/admin/NotificationManager';
 import GameStatistics from '../../components/admin/GameStatistics';
+import GameManagement from '../../components/admin/GameManagement';
 
 type AdminScreen = 'dashboard' | 'deposits' | 'withdrawals' | 'users' | 'games' | 'statistics' | 'notifications';
 
@@ -98,13 +99,7 @@ export default function AdminScreen() {
           </View>
         );
       case 'games':
-        return (
-          <View style={styles.comingSoonContainer}>
-            <Ionicons name="game-controller" size={64} color="#666" />
-            <Text style={styles.comingSoonTitle}>Game Management</Text>
-            <Text style={styles.comingSoonText}>Coming Soon</Text>
-          </View>
-        );
+        return <GameManagement />;
       case 'statistics':
         return <GameStatistics />;
       case 'notifications':
