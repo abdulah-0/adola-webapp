@@ -15,6 +15,7 @@ import { Colors } from '../../constants/Colors';
 import { useApp } from '../../contexts/AppContext';
 import { useWallet } from '../../contexts/WalletContext';
 import BettingPanel from '../BettingPanel';
+import { AdvancedGameLogicService } from '../../services/advancedGameLogicService';
 import WebRouletteGame from './web/WebRouletteGame';
 
 const { width } = Dimensions.get('window');
@@ -40,7 +41,10 @@ export default function RouletteGame() {
   const [bets, setBets] = useState<Bet[]>([]);
   const [selectedBetType, setSelectedBetType] = useState<string>('number');
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
-  
+  const [gameWinProbability, setGameWinProbability] = useState(0);
+  const [engagementBonus, setEngagementBonus] = useState<string>('');
+
+  const gameLogicService = AdvancedGameLogicService.getInstance();
   const wheelRotation = useRef(new Animated.Value(0)).current;
 
   // American Roulette numbers (0, 00, 1-36)
@@ -74,11 +78,30 @@ export default function RouletteGame() {
       return;
     }
 
-    // Check if user can place bet
-    if (!canPlaceBet(betAmount)) {
-      Alert.alert('Insufficient Balance', 'You do not have enough PKR to place this bet.');
+    // Check if user can place bet using advanced game logic
+    if (!gameLogicService.canPlayGame(betAmount, balance || 0, 'roulette')) {
+      const message = gameLogicService.getBalanceValidationMessage(betAmount, balance || 0, 'roulette');
+      Alert.alert('Cannot Place Bet', message);
       return;
     }
+
+    if (!user?.id) {
+      Alert.alert('Error', 'User not found. Please try again.');
+      return;
+    }
+
+    // Calculate win probability using advanced game logic
+    const { probability, engagementBonus: bonus } = await gameLogicService.calculateWinProbability({
+      betAmount,
+      basePayout: getBetPayout(selectedBetType), // Use actual bet payout
+      gameType: 'roulette',
+      userId: user.id,
+      currentBalance: balance || 0,
+      gameSpecificData: { betType: selectedBetType, selectedNumbers }
+    });
+
+    setGameWinProbability(probability);
+    setEngagementBonus(bonus);
 
     // Step 1: Deduct bet amount immediately
     console.log(`Placing roulette bet: PKR ${betAmount} on ${selectedBetType}`);
@@ -158,8 +181,8 @@ export default function RouletteGame() {
   };
 
   const determineFinalResult = (naturalResult: number | string, wouldNaturallyWin: boolean, currentBets: Bet[]): number | string => {
-    // 8% win rate logic with respect for natural wins - REDUCED FOR HIGHER HOUSE WINS
-    const shouldForceWin = Math.random() < 0.08;
+    // Use advanced game logic win probability
+    const shouldForceWin = Math.random() < gameWinProbability;
 
     console.log(`🎯 Natural result: ${naturalResult}, Would naturally win: ${wouldNaturallyWin}, Should force win: ${shouldForceWin}`);
 
@@ -355,6 +378,34 @@ export default function RouletteGame() {
     const winColor = getNumberColor(winning);
 
     console.log(`Roulette result: Winning number ${winning}, Total bet: PKR ${totalBetAmount}, Total winnings: PKR ${totalWinAmount}, Profit: PKR ${profit}`);
+
+    // Log the game result for analytics
+    if (user?.id) {
+      await gameLogicService.logGameResult(user.id, 'roulette', {
+        won: isOverallWin,
+        multiplier: isOverallWin ? totalWinAmount / totalBetAmount : 0,
+        winAmount: totalWinAmount,
+        betAmount: totalBetAmount,
+        newBalance: isOverallWin ? (balance || 0) + totalWinAmount - totalBetAmount : (balance || 0) - totalBetAmount,
+        adjustedProbability: gameWinProbability,
+        houseEdge: gameLogicService.getGameConfig('roulette').houseEdge,
+        engagementBonus
+      }, {
+        winningNumber: winning,
+        winningColor: winColor,
+        bets: currentBets.map(bet => ({
+          type: bet.type,
+          numbers: bet.numbers,
+          amount: bet.amount,
+          multiplier: bet.multiplier,
+          won: bet.numbers.includes(winning)
+        })),
+        totalBets: currentBets.length,
+        winningBets,
+        adjustedProbability: gameWinProbability,
+        houseEdge: gameLogicService.getGameConfig('roulette').houseEdge
+      });
+    }
 
     Alert.alert(
       'Roulette Result',
