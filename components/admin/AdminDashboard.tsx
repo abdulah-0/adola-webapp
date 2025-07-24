@@ -101,24 +101,65 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
 
       {/* Today's Stats */}
       <View style={styles.todaySection}>
-        <Text style={styles.sectionTitle}>Today's Activity</Text>
+        <Text style={styles.sectionTitle}>📅 Today's Activity</Text>
+        <Text style={styles.sectionSubtitle}>Live data • Updates every 30 seconds</Text>
+
+        {/* First Row - Users & Transactions */}
         <View style={styles.todayGrid}>
           <View style={styles.todayCard}>
             <Text style={styles.todayValue}>{stats.todayStats.newUsers}</Text>
             <Text style={styles.todayLabel}>New Users</Text>
           </View>
           <View style={styles.todayCard}>
-            <Text style={styles.todayValue}>Rs {stats.todayStats.deposits}</Text>
+            <Text style={styles.todayValue}>Rs {stats.todayStats.deposits.toLocaleString()}</Text>
             <Text style={styles.todayLabel}>Deposits</Text>
+            <Text style={styles.todaySubtext}>Approved today</Text>
           </View>
           <View style={styles.todayCard}>
-            <Text style={styles.todayValue}>Rs {stats.todayStats.withdrawals}</Text>
+            <Text style={styles.todayValue}>Rs {stats.todayStats.withdrawals.toLocaleString()}</Text>
             <Text style={styles.todayLabel}>Withdrawals</Text>
+            <Text style={styles.todaySubtext}>Processed today</Text>
           </View>
           <View style={styles.todayCard}>
             <Text style={[styles.todayValue, { color: '#00ff88' }]}>Rs {stats.todayStats.gameRevenue.toLocaleString()}</Text>
             <Text style={styles.todayLabel}>Game Revenue</Text>
-            <Text style={styles.todaySubtext}>Players lost today</Text>
+            <Text style={styles.todaySubtext}>House profit today</Text>
+          </View>
+        </View>
+
+        {/* Second Row - Pending & Gaming Activity */}
+        <View style={styles.todayGrid}>
+          <View style={styles.todayCard}>
+            <Text style={[styles.todayValue, { color: '#ffaa00' }]}>
+              {stats.todayStats.depositRequests || 0}
+            </Text>
+            <Text style={styles.todayLabel}>Deposit Requests</Text>
+            <Text style={styles.todaySubtext}>
+              Rs {(stats.todayStats.pendingDeposits || 0).toLocaleString()} pending
+            </Text>
+          </View>
+          <View style={styles.todayCard}>
+            <Text style={[styles.todayValue, { color: '#ffaa00' }]}>
+              {stats.todayStats.withdrawalRequests || 0}
+            </Text>
+            <Text style={styles.todayLabel}>Withdrawal Requests</Text>
+            <Text style={styles.todaySubtext}>
+              Rs {(stats.todayStats.pendingWithdrawals || 0).toLocaleString()} pending
+            </Text>
+          </View>
+          <View style={styles.todayCard}>
+            <Text style={[styles.todayValue, { color: '#007AFF' }]}>
+              {stats.todayStats.gamesPlayed || 0}
+            </Text>
+            <Text style={styles.todayLabel}>Games Played</Text>
+            <Text style={styles.todaySubtext}>Total sessions</Text>
+          </View>
+          <View style={styles.todayCard}>
+            <Text style={[styles.todayValue, { color: '#007AFF' }]}>
+              Rs {(stats.todayStats.totalBets || 0).toLocaleString()}
+            </Text>
+            <Text style={styles.todayLabel}>Total Bets</Text>
+            <Text style={styles.todaySubtext}>Amount wagered</Text>
           </View>
         </View>
       </View>
@@ -306,7 +347,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#ffffff',
-    marginBottom: 12,
+    marginBottom: 5,
+  },
+  sectionSubtitle: {
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 15,
+    fontStyle: 'italic',
   },
   todayGrid: {
     flexDirection: 'row',

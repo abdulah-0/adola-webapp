@@ -119,22 +119,64 @@ export class AdminService {
 
       const totalReferralBonuses = transactions?.filter(t => t.type === 'referral_bonus').reduce((sum, t) => sum + Number(t.amount), 0) || 0;
 
-      // Calculate today's stats
+      // Calculate today's stats with live data
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
       const todayUsers = users?.filter(user => new Date(user.created_at) >= today).length || 0;
+
+      // Today's approved deposits/withdrawals from wallet_transactions
       const todayDeposits = deposits
         .filter(t => new Date(t.created_at) >= today && (t.status === 'approved' || t.status === 'completed'))
         .reduce((sum, t) => sum + Number(t.amount), 0);
       const todayWithdrawals = withdrawals
         .filter(t => new Date(t.created_at) >= today && (t.status === 'approved' || t.status === 'completed'))
         .reduce((sum, t) => sum + Number(t.amount), 0);
+
+      // Today's pending amounts from dedicated request tables
+      let todayPendingDeposits = 0;
+      let todayPendingWithdrawals = 0;
+      let todayDepositRequests = 0;
+      let todayWithdrawalRequests = 0;
+
+      try {
+        const { data: todayDepositRequestsData } = await supabase
+          .from('deposit_requests')
+          .select('amount, status')
+          .gte('created_at', today.toISOString());
+
+        const { data: todayWithdrawalRequestsData } = await supabase
+          .from('withdrawal_requests')
+          .select('amount, status')
+          .gte('created_at', today.toISOString());
+
+        if (todayDepositRequestsData) {
+          todayDepositRequests = todayDepositRequestsData.length;
+          todayPendingDeposits = todayDepositRequestsData
+            .filter(req => req.status === 'pending')
+            .reduce((sum, req) => sum + Number(req.amount || 0), 0);
+        }
+
+        if (todayWithdrawalRequestsData) {
+          todayWithdrawalRequests = todayWithdrawalRequestsData.length;
+          todayPendingWithdrawals = todayWithdrawalRequestsData
+            .filter(req => req.status === 'pending')
+            .reduce((sum, req) => sum + Number(req.amount || 0), 0);
+        }
+      } catch (error) {
+        console.log('Note: Could not fetch today\'s request data from dedicated tables');
+      }
+
       // Calculate today's game revenue (house profit)
       const todayGameSessions = gameSessions?.filter(session => new Date(session.created_at) >= today) || [];
       const todayBets = todayGameSessions.reduce((sum, session) => sum + Number(session.bet_amount || 0), 0);
       const todayWinnings = todayGameSessions.reduce((sum, session) => sum + Number(session.win_amount || 0), 0);
       const todayGameRevenue = todayBets - todayWinnings; // House profit for today
+      const todayGamesPlayed = todayGameSessions.length;
+
+      console.log(`📊 Today's Activity - New Users: ${todayUsers}, Deposits: PKR ${todayDeposits}, Withdrawals: PKR ${todayWithdrawals}`);
+      console.log(`📊 Today's Activity - Pending: ${todayDepositRequests} deposit requests (PKR ${todayPendingDeposits}), ${todayWithdrawalRequests} withdrawal requests (PKR ${todayPendingWithdrawals})`);
+      console.log(`📊 Today's Activity - Games: ${todayGamesPlayed} played, PKR ${todayBets} bet, PKR ${todayGameRevenue} house profit`);
 
       return {
         totalUsers,
@@ -150,6 +192,12 @@ export class AdminService {
           deposits: todayDeposits,
           withdrawals: todayWithdrawals,
           gameRevenue: todayGameRevenue,
+          pendingDeposits: todayPendingDeposits,
+          pendingWithdrawals: todayPendingWithdrawals,
+          depositRequests: todayDepositRequests,
+          withdrawalRequests: todayWithdrawalRequests,
+          gamesPlayed: todayGamesPlayed,
+          totalBets: todayBets,
         },
       };
     } catch (error) {

@@ -31,6 +31,12 @@ export interface AdminDashboardStats {
     deposits: number;
     withdrawals: number;
     gameRevenue: number;
+    pendingDeposits: number;
+    pendingWithdrawals: number;
+    depositRequests: number;
+    withdrawalRequests: number;
+    gamesPlayed: number;
+    totalBets: number;
   };
 }
 
