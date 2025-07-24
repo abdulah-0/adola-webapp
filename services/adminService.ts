@@ -70,13 +70,47 @@ export class AdminService {
         .filter(t => t.status === 'approved' || t.status === 'completed')
         .reduce((sum, t) => sum + Number(t.amount), 0);
 
-      const pendingDepositsAmount = deposits
+      // Get pending amounts from wallet_transactions
+      const pendingDepositsFromWallet = deposits
         .filter(t => t.status === 'pending')
         .reduce((sum, t) => sum + Number(t.amount), 0);
 
-      const pendingWithdrawalsAmount = withdrawals
+      const pendingWithdrawalsFromWallet = withdrawals
         .filter(t => t.status === 'pending')
         .reduce((sum, t) => sum + Number(t.amount), 0);
+
+      // Also check dedicated deposit_requests and withdrawal_requests tables for accurate pending amounts
+      let pendingDepositsFromRequests = 0;
+      let pendingWithdrawalsFromRequests = 0;
+
+      try {
+        const { data: pendingDepositRequests } = await supabase
+          .from('deposit_requests')
+          .select('amount')
+          .eq('status', 'pending');
+
+        const { data: pendingWithdrawalRequests } = await supabase
+          .from('withdrawal_requests')
+          .select('amount')
+          .eq('status', 'pending');
+
+        if (pendingDepositRequests && pendingDepositRequests.length > 0) {
+          pendingDepositsFromRequests = pendingDepositRequests.reduce((sum, req) => sum + Number(req.amount || 0), 0);
+        }
+
+        if (pendingWithdrawalRequests && pendingWithdrawalRequests.length > 0) {
+          pendingWithdrawalsFromRequests = pendingWithdrawalRequests.reduce((sum, req) => sum + Number(req.amount || 0), 0);
+        }
+      } catch (error) {
+        console.log('Note: deposit_requests/withdrawal_requests tables may not exist yet');
+      }
+
+      // Use the higher amount (from dedicated tables if available, otherwise from wallet_transactions)
+      const pendingDepositsAmount = Math.max(pendingDepositsFromWallet, pendingDepositsFromRequests);
+      const pendingWithdrawalsAmount = Math.max(pendingWithdrawalsFromWallet, pendingWithdrawalsFromRequests);
+
+      console.log(`📊 Admin Dashboard Stats - Pending Deposits: PKR ${pendingDepositsAmount} (Wallet: ${pendingDepositsFromWallet}, Requests: ${pendingDepositsFromRequests})`);
+      console.log(`📊 Admin Dashboard Stats - Pending Withdrawals: PKR ${pendingWithdrawalsAmount} (Wallet: ${pendingWithdrawalsFromWallet}, Requests: ${pendingWithdrawalsFromRequests})`);
 
       // Calculate real game revenue (house profit = total bets - total winnings)
       const totalBets = gameSessions?.reduce((sum, session) => sum + Number(session.bet_amount || 0), 0) || 0;
