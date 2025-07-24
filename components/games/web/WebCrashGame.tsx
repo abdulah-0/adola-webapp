@@ -47,12 +47,12 @@ export default function WebCrashGame() {
   }, []);
 
   const generateCrashPoint = () => {
-    // Generate crash point with realistic distribution
+    // Generate crash point with realistic distribution - REDUCED MAX OUTPUTS
     const random = Math.random();
-    if (random < 0.5) return 1.0 + Math.random() * 1.0; // 50%: 1-2x
-    if (random < 0.8) return 2.0 + Math.random() * 3.0; // 30%: 2-5x
-    if (random < 0.95) return 5.0 + Math.random() * 10.0; // 15%: 5-15x
-    return 15.0 + Math.random() * 85.0; // 5%: 15-100x
+    if (random < 0.6) return 1.0 + Math.random() * 0.8; // 60%: 1-1.8x - INCREASED LOW RANGE
+    if (random < 0.85) return 1.8 + Math.random() * 1.7; // 25%: 1.8-3.5x - REDUCED
+    if (random < 0.98) return 3.5 + Math.random() * 2.5; // 13%: 3.5-6.0x - REDUCED
+    return 6.0 + Math.random() * 4.0; // 2%: 6.0-10.0x - REDUCED FROM 100x
   };
 
   const startWaitingPhase = () => {

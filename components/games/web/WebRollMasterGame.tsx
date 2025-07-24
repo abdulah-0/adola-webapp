@@ -49,18 +49,18 @@ export default function WebRollMasterGame() {
 
   const generateExplosionPoint = (shouldPlayerWin: boolean) => {
     if (shouldPlayerWin) {
-      // Higher chance of good multipliers for winning players
+      // Higher chance of good multipliers for winning players - REDUCED MAX OUTPUTS
       const random = Math.random();
-      if (random < 0.3) return 2.0 + Math.random() * 3.0; // 30%: 2-5x
-      if (random < 0.6) return 5.0 + Math.random() * 5.0; // 30%: 5-10x
-      if (random < 0.85) return 10.0 + Math.random() * 10.0; // 25%: 10-20x
-      return 20.0 + Math.random() * 30.0; // 15%: 20-50x
+      if (random < 0.5) return 1.5 + Math.random() * 1.5; // 50%: 1.5-3x - REDUCED
+      if (random < 0.8) return 3.0 + Math.random() * 2.0; // 30%: 3-5x - REDUCED
+      if (random < 0.95) return 5.0 + Math.random() * 3.0; // 15%: 5-8x - REDUCED
+      return 8.0 + Math.random() * 2.0; // 5%: 8-10x - REDUCED FROM 50x
     } else {
       // More likely to explode early for losing players
       const random = Math.random();
-      if (random < 0.6) return 1.0 + Math.random() * 1.0; // 60%: 1-2x
-      if (random < 0.85) return 2.0 + Math.random() * 3.0; // 25%: 2-5x
-      return 5.0 + Math.random() * 10.0; // 15%: 5-15x
+      if (random < 0.75) return 1.0 + Math.random() * 0.5; // 75%: 1-1.5x - REDUCED
+      if (random < 0.95) return 1.5 + Math.random() * 1.0; // 20%: 1.5-2.5x - REDUCED
+      return 2.5 + Math.random() * 1.0; // 5%: 2.5-3.5x - REDUCED
     }
   };
 

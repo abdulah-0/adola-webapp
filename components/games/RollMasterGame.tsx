@@ -55,19 +55,19 @@ export default function RollMasterGame() {
   }, []);
 
   const generateExplosionPoint = (shouldPlayerWin: boolean) => {
-    // Generate explosion point based on win rate requirement (20% win rate)
+    // Generate explosion point based on win rate requirement - REDUCED MAX OUTPUTS
     if (shouldPlayerWin && hasBet) {
-      // Player should win - explosion point should be higher to allow cash out
+      // Player should win - explosion point should be higher to allow cash out - REDUCED MAXIMUMS
       const random = Math.random();
-      if (random < 0.5) return 2.0 + Math.random() * 3.0; // 2.0x - 5.0x (50% chance)
-      if (random < 0.8) return 5.0 + Math.random() * 5.0; // 5.0x - 10.0x (30% chance)
-      return 10.0 + Math.random() * 15.0; // 10.0x - 25.0x (20% chance)
+      if (random < 0.6) return 1.5 + Math.random() * 1.5; // 1.5x - 3.0x (60% chance) - REDUCED
+      if (random < 0.9) return 3.0 + Math.random() * 2.0; // 3.0x - 5.0x (30% chance) - REDUCED
+      return 5.0 + Math.random() * 3.0; // 5.0x - 8.0x (10% chance) - REDUCED FROM 25x
     } else {
       // Player should lose or no bet - explosion point should be lower
       const random = Math.random();
-      if (random < 0.6) return 1.0 + Math.random() * 0.8; // 1.0x - 1.8x (60% chance)
-      if (random < 0.9) return 1.8 + Math.random() * 1.2; // 1.8x - 3.0x (30% chance)
-      return 3.0 + Math.random() * 2.0; // 3.0x - 5.0x (10% chance)
+      if (random < 0.7) return 1.0 + Math.random() * 0.5; // 1.0x - 1.5x (70% chance) - REDUCED
+      if (random < 0.95) return 1.5 + Math.random() * 0.8; // 1.5x - 2.3x (25% chance) - REDUCED
+      return 2.3 + Math.random() * 0.7; // 2.3x - 3.0x (5% chance) - REDUCED
     }
   };
 

@@ -36,29 +36,26 @@ export default function AviatorGame() {
 
   const gameLogicService = AdvancedGameLogicService.getInstance();
 
-  // Enhanced crash point generation with higher multipliers
+  // Enhanced crash point generation with REDUCED maximum multipliers
   const generateHighMultiplierCrashPoint = (): number => {
     const random = Math.random();
 
-    // Probability distribution for crash points
-    if (random < 0.40) {
-      // 40% chance: Low multipliers (1.0x - 3.0x)
-      return 1.0 + Math.random() * 2.0;
-    } else if (random < 0.70) {
-      // 30% chance: Medium multipliers (3.0x - 10.0x)
-      return 3.0 + Math.random() * 7.0;
+    // Probability distribution for crash points - REDUCED MAX OUTPUTS
+    if (random < 0.60) {
+      // 60% chance: Low multipliers (1.0x - 2.5x) - INCREASED LOW RANGE
+      return 1.0 + Math.random() * 1.5;
     } else if (random < 0.85) {
-      // 15% chance: High multipliers (10.0x - 50.0x)
-      return 10.0 + Math.random() * 40.0;
-    } else if (random < 0.95) {
-      // 10% chance: Very high multipliers (50.0x - 200.0x)
-      return 50.0 + Math.random() * 150.0;
+      // 25% chance: Medium multipliers (2.5x - 5.0x) - REDUCED
+      return 2.5 + Math.random() * 2.5;
+    } else if (random < 0.96) {
+      // 11% chance: High multipliers (5.0x - 10.0x) - REDUCED
+      return 5.0 + Math.random() * 5.0;
     } else if (random < 0.99) {
-      // 4% chance: Extreme multipliers (200.0x - 500.0x)
-      return 200.0 + Math.random() * 300.0;
+      // 3% chance: Very high multipliers (10.0x - 20.0x) - REDUCED FROM 200x
+      return 10.0 + Math.random() * 10.0;
     } else {
-      // 1% chance: Maximum multipliers (500.0x - 1000.0x)
-      return 500.0 + Math.random() * 500.0;
+      // 1% chance: Maximum multipliers (20.0x - 30.0x) - REDUCED FROM 1000x
+      return 20.0 + Math.random() * 10.0;
     }
   };
 
@@ -107,9 +104,9 @@ export default function AviatorGame() {
         const minCrashPoint = 2.0 + Math.random() * 3; // 2.0x - 5.0x minimum
         crashPoint = Math.max(minCrashPoint, baseMultiplier);
 
-        // Occasionally give massive wins (5% chance for 100x+ when player should win)
-        if (Math.random() < 0.05) {
-          crashPoint = 100.0 + Math.random() * 900.0; // 100x - 1000x
+        // Occasionally give higher wins (2% chance for 15x+ when player should win) - REDUCED
+        if (Math.random() < 0.02) {
+          crashPoint = 15.0 + Math.random() * 15.0; // 15x - 30x - REDUCED FROM 1000x
         }
       } else {
         // Player should lose - but still use enhanced distribution for excitement

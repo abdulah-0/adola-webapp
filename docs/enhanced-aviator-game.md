@@ -72,17 +72,16 @@ This ensures that very high multipliers don't take too long to reach, maintainin
 
 ### Core Changes
 
-#### Enhanced Crash Point Generation
+#### Enhanced Crash Point Generation - UPDATED FOR REDUCED MAX OUTPUTS
 ```typescript
 const generateHighMultiplierCrashPoint = (): number => {
   const random = Math.random();
-  
-  if (random < 0.40) return 1.0 + Math.random() * 2.0;      // 40%: 1-3x
-  if (random < 0.70) return 3.0 + Math.random() * 7.0;      // 30%: 3-10x
-  if (random < 0.85) return 10.0 + Math.random() * 40.0;    // 15%: 10-50x
-  if (random < 0.95) return 50.0 + Math.random() * 150.0;   // 10%: 50-200x
-  if (random < 0.99) return 200.0 + Math.random() * 300.0;  // 4%: 200-500x
-  return 500.0 + Math.random() * 500.0;                     // 1%: 500-1000x
+
+  if (random < 0.60) return 1.0 + Math.random() * 1.5;      // 60%: 1-2.5x (INCREASED LOW RANGE)
+  if (random < 0.85) return 2.5 + Math.random() * 2.5;      // 25%: 2.5-5x (REDUCED)
+  if (random < 0.96) return 5.0 + Math.random() * 5.0;      // 11%: 5-10x (REDUCED)
+  if (random < 0.99) return 10.0 + Math.random() * 10.0;    // 3%: 10-20x (REDUCED FROM 500x)
+  return 20.0 + Math.random() * 10.0;                       // 1%: 20-30x (REDUCED FROM 1000x)
 };
 ```
 

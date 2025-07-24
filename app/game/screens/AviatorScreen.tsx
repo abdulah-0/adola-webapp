@@ -123,7 +123,7 @@ export default function AviatorScreen() {
         minBet: 1,
         maxBet: 1000,
         bettingTime: 10,
-        maxMultiplier: 100,
+        maxMultiplier: 30, // REDUCED FROM 100
         crashProbability: 0.01,
       },
     };

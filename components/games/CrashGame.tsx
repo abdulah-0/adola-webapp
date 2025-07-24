@@ -54,12 +54,12 @@ export default function CrashGame() {
   }, []);
 
   const generateCrashPoint = () => {
-    // Generate crash point with realistic distribution
+    // Generate crash point with realistic distribution - REDUCED MAX OUTPUTS
     const random = Math.random();
-    if (random < 0.33) return 1.0 + Math.random() * 1.5; // 1.0x - 2.5x (33% chance)
-    if (random < 0.66) return 2.5 + Math.random() * 2.5; // 2.5x - 5.0x (33% chance)
-    if (random < 0.9) return 5.0 + Math.random() * 10; // 5.0x - 15.0x (24% chance)
-    return 15.0 + Math.random() * 85; // 15.0x - 100.0x (10% chance)
+    if (random < 0.5) return 1.0 + Math.random() * 1.0; // 1.0x - 2.0x (50% chance) - INCREASED LOW RANGE
+    if (random < 0.8) return 2.0 + Math.random() * 1.5; // 2.0x - 3.5x (30% chance) - REDUCED
+    if (random < 0.95) return 3.5 + Math.random() * 2.5; // 3.5x - 6.0x (15% chance) - REDUCED
+    return 6.0 + Math.random() * 4.0; // 6.0x - 10.0x (5% chance) - REDUCED FROM 100x
   };
 
   const startWaitingPhase = () => {
