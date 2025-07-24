@@ -259,18 +259,84 @@ export default function NotificationManager() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Current Notifications</Text>
-          <TouchableOpacity
-            style={styles.resetAllButton}
-            onPress={resetAllNotifications}
-            disabled={loading}
-          >
-            <Ionicons name="refresh" size={16} color={Colors.primary.background} />
-            <Text style={styles.resetAllButtonText}>Reset All</Text>
-          </TouchableOpacity>
+      {/* Content based on active tab */}
+      {activeTab === 'custom' ? (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Custom Notifications</Text>
+            <TouchableOpacity
+              style={styles.createButton}
+              onPress={() => setShowCreateModal(true)}
+            >
+              <Ionicons name="add" size={20} color="white" />
+              <Text style={styles.createButtonText}>Create New</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Custom Notifications List */}
+          {customNotifications.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="notifications-off" size={48} color="#666" />
+              <Text style={styles.emptyStateText}>No custom notifications yet</Text>
+              <Text style={styles.emptyStateSubtext}>Create your first notification to get started</Text>
+            </View>
+          ) : (
+            customNotifications.map((notification) => (
+              <View key={notification.id} style={styles.customNotificationCard}>
+                <View style={styles.notificationHeader}>
+                  <View style={styles.notificationIcon}>
+                    <Ionicons name={notification.icon as any} size={24} color={notification.color} />
+                  </View>
+                  <View style={styles.notificationContent}>
+                    <Text style={styles.notificationTitle}>{notification.title}</Text>
+                    <Text style={styles.notificationMessage}>{notification.message}</Text>
+                    <View style={styles.notificationMeta}>
+                      <Text style={styles.metaText}>
+                        {notification.frequency_type} • {notification.target_audience} • Priority {notification.priority}
+                      </Text>
+                      <Text style={styles.metaText}>
+                        👁️ {notification.total_views} views • ❌ {notification.total_dismissals} dismissals
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.notificationControls}>
+                    <Switch
+                      value={notification.enabled}
+                      onValueChange={(enabled) => toggleNotificationEnabled(notification.id, enabled)}
+                      trackColor={{ false: '#666', true: notification.color }}
+                    />
+                    <TouchableOpacity
+                      style={[styles.deleteButton, { opacity: loading ? 0.5 : 1 }]}
+                      onPress={() => deleteCustomNotification(notification.id)}
+                      disabled={loading}
+                    >
+                      <Ionicons name="trash" size={18} color="#ff4444" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                {!notification.show_during_games && (
+                  <View style={styles.gameWarning}>
+                    <Ionicons name="game-controller" size={16} color="#ffaa00" />
+                    <Text style={styles.gameWarningText}>Won't show during games</Text>
+                  </View>
+                )}
+              </View>
+            ))
+          )}
         </View>
+      ) : (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Default App Notifications</Text>
+            <TouchableOpacity
+              style={styles.resetAllButton}
+              onPress={resetAllNotifications}
+              disabled={loading}
+            >
+              <Ionicons name="refresh" size={16} color={Colors.primary.background} />
+              <Text style={styles.resetAllButtonText}>Reset All</Text>
+            </TouchableOpacity>
+          </View>
 
         {APP_NOTIFICATIONS.map((notification) => {
           const isDismissed = notificationStatus[notification.id] || false;
@@ -323,7 +389,138 @@ export default function NotificationManager() {
             </View>
           );
         })}
-      </View>
+        </View>
+      )}
+
+      {/* Create Notification Modal */}
+      <Modal
+        visible={showCreateModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Create Custom Notification</Text>
+            <TouchableOpacity onPress={() => setShowCreateModal(false)}>
+              <Ionicons name="close" size={24} color="#666" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.modalContent}>
+            {/* Title Input */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Title *</Text>
+              <TextInput
+                style={styles.textInput}
+                value={newNotification.title}
+                onChangeText={(text) => setNewNotification(prev => ({ ...prev, title: text }))}
+                placeholder="Enter notification title"
+                placeholderTextColor="#666"
+              />
+            </View>
+
+            {/* Message Input */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Message *</Text>
+              <TextInput
+                style={[styles.textInput, styles.textArea]}
+                value={newNotification.message}
+                onChangeText={(text) => setNewNotification(prev => ({ ...prev, message: text }))}
+                placeholder="Enter notification message"
+                placeholderTextColor="#666"
+                multiline
+                numberOfLines={3}
+              />
+            </View>
+
+            {/* Frequency Type */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Frequency</Text>
+              <View style={styles.frequencyButtons}>
+                {['once', 'daily', 'weekly', 'monthly', 'custom'].map((freq) => (
+                  <TouchableOpacity
+                    key={freq}
+                    style={[
+                      styles.frequencyButton,
+                      newNotification.frequency_type === freq && styles.frequencyButtonActive
+                    ]}
+                    onPress={() => setNewNotification(prev => ({ ...prev, frequency_type: freq as any }))}
+                  >
+                    <Text style={[
+                      styles.frequencyButtonText,
+                      newNotification.frequency_type === freq && styles.frequencyButtonTextActive
+                    ]}>
+                      {freq.charAt(0).toUpperCase() + freq.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Target Audience */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Target Audience</Text>
+              <View style={styles.frequencyButtons}>
+                {[
+                  { key: 'all', label: 'All Users' },
+                  { key: 'new_users', label: 'New Users' },
+                  { key: 'active_users', label: 'Active Users' },
+                  { key: 'vip_users', label: 'VIP Users' }
+                ].map((audience) => (
+                  <TouchableOpacity
+                    key={audience.key}
+                    style={[
+                      styles.frequencyButton,
+                      newNotification.target_audience === audience.key && styles.frequencyButtonActive
+                    ]}
+                    onPress={() => setNewNotification(prev => ({ ...prev, target_audience: audience.key as any }))}
+                  >
+                    <Text style={[
+                      styles.frequencyButtonText,
+                      newNotification.target_audience === audience.key && styles.frequencyButtonTextActive
+                    ]}>
+                      {audience.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Show During Games Toggle */}
+            <View style={styles.inputGroup}>
+              <View style={styles.switchRow}>
+                <Text style={styles.inputLabel}>Show During Games</Text>
+                <Switch
+                  value={newNotification.show_during_games}
+                  onValueChange={(value) => setNewNotification(prev => ({ ...prev, show_during_games: value }))}
+                  trackColor={{ false: '#666', true: '#007AFF' }}
+                />
+              </View>
+              <Text style={styles.inputHint}>
+                If disabled, notifications won't appear while users are playing games
+              </Text>
+            </View>
+          </ScrollView>
+
+          <View style={styles.modalFooter}>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setShowCreateModal(false)}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.saveButton, { opacity: loading ? 0.5 : 1 }]}
+              onPress={createCustomNotification}
+              disabled={loading}
+            >
+              <Text style={styles.saveButtonText}>
+                {loading ? 'Creating...' : 'Create Notification'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <View style={styles.infoSection}>
         <Text style={styles.infoTitle}>ℹ️ How It Works</Text>
@@ -477,5 +674,203 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.primary.textSecondary,
     lineHeight: 20,
+  },
+  // New styles for enhanced UI
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#1a1a1a',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderRadius: 10,
+    padding: 4,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  activeTab: {
+    backgroundColor: '#007AFF',
+  },
+  tabText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  activeTabText: {
+    color: 'white',
+  },
+  createButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  createButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyStateText: {
+    fontSize: 18,
+    color: '#666',
+    marginTop: 16,
+    fontWeight: '600',
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: '#888',
+    marginTop: 4,
+  },
+  customNotificationCard: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  notificationContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  notificationControls: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 8,
+  },
+  gameWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#333',
+  },
+  gameWarningText: {
+    fontSize: 12,
+    color: '#ffaa00',
+    marginLeft: 4,
+  },
+  deleteButton: {
+    padding: 8,
+    marginLeft: 8,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: Colors.primary.background,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: Colors.primary.text,
+  },
+  modalContent: {
+    flex: 1,
+    padding: 20,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.primary.text,
+    marginBottom: 8,
+  },
+  textInput: {
+    backgroundColor: '#1a1a1a',
+    borderWidth: 1,
+    borderColor: '#333',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    color: Colors.primary.text,
+  },
+  textArea: {
+    height: 80,
+    textAlignVertical: 'top',
+  },
+  frequencyButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  frequencyButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#1a1a1a',
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  frequencyButtonActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  frequencyButtonText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  frequencyButtonTextActive: {
+    color: 'white',
+  },
+  switchRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  inputHint: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 4,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#333',
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#333',
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  saveButton: {
+    flex: 2,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#007AFF',
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

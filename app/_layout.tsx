@@ -3,6 +3,7 @@ import { AppProvider } from '../contexts/AppContext';
 import { WalletProvider } from '../contexts/WalletContext';
 import AuthGuard from '../components/AuthGuard';
 import AppNotifications from '../components/notifications/AppNotifications';
+import CustomNotificationDisplay from '../components/notifications/CustomNotificationDisplay';
 import WebOptimizations from '../components/web/WebOptimizations';
 
 export default function RootLayout() {
@@ -19,6 +20,7 @@ export default function RootLayout() {
               <Stack.Screen name="admin/index" options={{ headerShown: false }} />
             </Stack>
             <AppNotifications />
+            <CustomNotificationDisplay />
           </AuthGuard>
         </WalletProvider>
       </AppProvider>
