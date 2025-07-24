@@ -14,6 +14,7 @@ import { Colors } from '../../constants/Colors';
 import { useApp } from '../../contexts/AppContext';
 import { useWallet } from '../../contexts/WalletContext';
 import BettingPanel from '../BettingPanel';
+import { AdvancedGameLogicService } from '../../services/advancedGameLogicService';
 import WebRollMasterGame from './web/WebRollMasterGame';
 
 const { width } = Dimensions.get('window');
@@ -36,6 +37,10 @@ export default function RollMasterGame() {
   const [cashOutMultiplier, setCashOutMultiplier] = useState<number | null>(null);
   const [gameHistory, setGameHistory] = useState<number[]>([]);
   const [waitingTime, setWaitingTime] = useState(5);
+  const [gameWinProbability, setGameWinProbability] = useState(0);
+  const [engagementBonus, setEngagementBonus] = useState<string>('');
+
+  const gameLogicService = AdvancedGameLogicService.getInstance();
 
   // Animation refs
   const bombScale = useRef(new Animated.Value(1)).current;
@@ -101,8 +106,8 @@ export default function RollMasterGame() {
   const startRollingPhase = () => {
     setGameState('rolling');
 
-    // Determine if player should win (20% win rate)
-    const shouldPlayerWin = Math.random() < 0.2;
+    // Determine if player should win using advanced game logic
+    const shouldPlayerWin = Math.random() < gameWinProbability;
     const newExplosionPoint = generateExplosionPoint(shouldPlayerWin);
     setExplosionPoint(newExplosionPoint);
 
@@ -187,13 +192,30 @@ export default function RollMasterGame() {
     setGameHistory(prev => [finalMultiplier, ...prev.slice(0, 9)]);
 
     // Process game result if user had a bet
-    if (hasBet && !cashedOut) {
+    if (hasBet && !cashedOut && user?.id) {
       // User lost - bet was already deducted when placed
       Alert.alert(
         'BOOM! 💥',
         `The bomb exploded at ${finalMultiplier.toFixed(2)}x\nYou lost PKR ${betAmount}`,
         [{ text: 'OK' }]
       );
+
+      // Log the game loss for analytics
+      gameLogicService.logGameResult(user.id, 'rollmaster', {
+        won: false,
+        multiplier: 0,
+        winAmount: 0,
+        betAmount,
+        newBalance: (balance || 0) - betAmount,
+        adjustedProbability: gameWinProbability,
+        houseEdge: gameLogicService.getGameConfig('rollmaster').houseEdge,
+        engagementBonus
+      }, {
+        explosionPoint: finalMultiplier,
+        cashedOut: false,
+        adjustedProbability: gameWinProbability,
+        houseEdge: gameLogicService.getGameConfig('rollmaster').houseEdge
+      });
     }
 
     // Start next round after delay
@@ -205,11 +227,29 @@ export default function RollMasterGame() {
   const handleBet = async (amount: number) => {
     if (gameState !== 'waiting' || hasBet) return;
 
-    // Check if user can place bet
-    if (!canPlaceBet(amount)) {
-      Alert.alert('Insufficient Balance', 'You do not have enough PKR to place this bet.');
+    // Check if user can place bet using advanced game logic
+    if (!gameLogicService.canPlayGame(amount, balance || 0, 'rollmaster')) {
+      const message = gameLogicService.getBalanceValidationMessage(amount, balance || 0, 'rollmaster');
+      Alert.alert('Cannot Place Bet', message);
       return;
     }
+
+    if (!user?.id) {
+      Alert.alert('Error', 'User not found. Please try again.');
+      return;
+    }
+
+    // Calculate win probability using advanced game logic
+    const { probability, engagementBonus: bonus } = await gameLogicService.calculateWinProbability({
+      betAmount: amount,
+      basePayout: 2.0, // Average rollmaster payout
+      gameType: 'rollmaster',
+      userId: user.id,
+      currentBalance: balance || 0,
+    });
+
+    setGameWinProbability(probability);
+    setEngagementBonus(bonus);
 
     // Deduct bet amount immediately
     const betPlaced = await placeBet(amount, 'rollmaster', 'Roll Master bet placed');
@@ -238,6 +278,26 @@ export default function RollMasterGame() {
       `You cashed out at ${currentMultiplier.toFixed(2)}x\nYou won PKR ${winAmount}!`,
       [{ text: 'OK' }]
     );
+
+    // Log the game win for analytics
+    if (user?.id) {
+      await gameLogicService.logGameResult(user.id, 'rollmaster', {
+        won: true,
+        multiplier: currentMultiplier,
+        winAmount,
+        betAmount,
+        newBalance: (balance || 0) + winAmount - betAmount,
+        adjustedProbability: gameWinProbability,
+        houseEdge: gameLogicService.getGameConfig('rollmaster').houseEdge,
+        engagementBonus
+      }, {
+        explosionPoint: explosionPoint || 0,
+        cashedOut: true,
+        cashOutMultiplier: currentMultiplier,
+        adjustedProbability: gameWinProbability,
+        houseEdge: gameLogicService.getGameConfig('rollmaster').houseEdge
+      });
+    }
   };
 
   const getBombEmoji = () => {

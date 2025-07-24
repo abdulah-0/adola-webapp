@@ -51,13 +51,44 @@ export default function WebCrashGame() {
     };
   }, []);
 
-  const generateCrashPoint = () => {
-    // Generate crash point with realistic distribution - REDUCED MAX OUTPUTS
-    const random = Math.random();
-    if (random < 0.6) return 1.0 + Math.random() * 0.8; // 60%: 1-1.8x - INCREASED LOW RANGE
-    if (random < 0.85) return 1.8 + Math.random() * 1.7; // 25%: 1.8-3.5x - REDUCED
-    if (random < 0.98) return 3.5 + Math.random() * 2.5; // 13%: 3.5-6.0x - REDUCED
-    return 6.0 + Math.random() * 4.0; // 2%: 6.0-10.0x - REDUCED FROM 100x
+  const generateCrashPoint = async () => {
+    if (!user?.id || !hasBet) {
+      // No bet placed, use standard distribution - REDUCED MAX OUTPUTS
+      const random = Math.random();
+      if (random < 0.6) return 1.0 + Math.random() * 0.8; // 60%: 1-1.8x
+      if (random < 0.85) return 1.8 + Math.random() * 1.7; // 25%: 1.8-3.5x
+      if (random < 0.98) return 3.5 + Math.random() * 2.5; // 13%: 3.5-6.0x
+      return 6.0 + Math.random() * 4.0; // 2%: 6.0-10.0x
+    }
+
+    // Calculate win probability using advanced game logic
+    const { probability, engagementBonus: bonus } = await gameLogicService.calculateWinProbability({
+      betAmount,
+      basePayout: 2.0, // Average crash multiplier
+      gameType: 'crash',
+      userId: user.id,
+      currentBalance: balance || 0,
+    });
+
+    setGameWinProbability(probability);
+    setEngagementBonus(bonus);
+
+    // Determine if player should win based on advanced game logic
+    const shouldPlayerWin = Math.random() < probability;
+
+    if (shouldPlayerWin) {
+      // Player should win - higher crash point
+      const random = Math.random();
+      if (random < 0.6) return 1.5 + Math.random() * 1.5; // 1.5x - 3.0x (60% chance)
+      if (random < 0.9) return 3.0 + Math.random() * 2.0; // 3.0x - 5.0x (30% chance)
+      return 5.0 + Math.random() * 3.0; // 5.0x - 8.0x (10% chance)
+    } else {
+      // Player should lose - lower crash point
+      const random = Math.random();
+      if (random < 0.7) return 1.0 + Math.random() * 0.5; // 1.0x - 1.5x (70% chance)
+      if (random < 0.95) return 1.5 + Math.random() * 0.8; // 1.5x - 2.3x (25% chance)
+      return 2.3 + Math.random() * 0.7; // 2.3x - 3.0x (5% chance)
+    }
   };
 
   const startWaitingPhase = () => {
@@ -86,9 +117,9 @@ export default function WebCrashGame() {
     }, 1000);
   };
 
-  const startGame = () => {
+  const startGame = async () => {
     console.log('🚀 Starting game');
-    const newCrashPoint = generateCrashPoint();
+    const newCrashPoint = await generateCrashPoint();
     setCrashPoint(newCrashPoint);
     setGameState('flying');
 
@@ -134,13 +165,30 @@ export default function WebCrashGame() {
     setGameHistory(prev => [finalMultiplier, ...prev.slice(0, 9)]);
 
     // Process game result if user had a bet
-    if (hasBet && !cashedOut) {
+    if (hasBet && !cashedOut && user?.id) {
       // User lost - bet was already deducted when placed
       Alert.alert(
         'Crashed!',
         `The rocket crashed at ${finalMultiplier.toFixed(2)}x\nYou lost PKR ${betAmount}`,
         [{ text: 'OK' }]
       );
+
+      // Log the game loss for analytics
+      gameLogicService.logGameResult(user.id, 'crash', {
+        won: false,
+        multiplier: 0,
+        winAmount: 0,
+        betAmount,
+        newBalance: (balance || 0) - betAmount,
+        adjustedProbability: gameWinProbability,
+        houseEdge: gameLogicService.getGameConfig('crash').houseEdge,
+        engagementBonus
+      }, {
+        crashPoint: finalMultiplier,
+        cashedOut: false,
+        adjustedProbability: gameWinProbability,
+        houseEdge: gameLogicService.getGameConfig('crash').houseEdge
+      });
     }
 
     // Start new round after delay
@@ -150,8 +198,10 @@ export default function WebCrashGame() {
   };
 
   const handleBet = async (amount: number) => {
-    if (!canPlaceBet(amount)) {
-      Alert.alert('Insufficient Balance', 'You do not have enough balance to place this bet.');
+    // Check if user can place bet using advanced game logic
+    if (!gameLogicService.canPlayGame(amount, balance || 0, 'crash')) {
+      const message = gameLogicService.getBalanceValidationMessage(amount, balance || 0, 'crash');
+      Alert.alert('Cannot Place Bet', message);
       return;
     }
 
@@ -199,6 +249,25 @@ export default function WebCrashGame() {
       `You cashed out at ${currentMultiplier.toFixed(2)}x\nYou won PKR ${winAmount}!`,
       [{ text: 'OK' }]
     );
+
+    // Log the game win for analytics
+    if (user?.id) {
+      gameLogicService.logGameResult(user.id, 'crash', {
+        won: true,
+        multiplier: currentMultiplier,
+        winAmount,
+        betAmount,
+        newBalance: (balance || 0) + winAmount - betAmount,
+        adjustedProbability: gameWinProbability,
+        houseEdge: gameLogicService.getGameConfig('crash').houseEdge,
+        engagementBonus
+      }, {
+        crashPoint: currentMultiplier,
+        cashedOut: true,
+        adjustedProbability: gameWinProbability,
+        houseEdge: gameLogicService.getGameConfig('crash').houseEdge
+      });
+    }
   };
 
   return (
