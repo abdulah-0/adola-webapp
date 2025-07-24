@@ -14,6 +14,7 @@ import { Colors } from '../../../constants/Colors';
 import { useApp } from '../../../contexts/AppContext';
 import { useWallet } from '../../../contexts/WalletContext';
 import BettingPanel from '../../BettingPanel';
+import { AdvancedGameLogicService } from '../../../services/advancedGameLogicService';
 
 const { width } = Dimensions.get('window');
 const WHEEL_SIZE = Math.min(width - 80, 300);
@@ -35,7 +36,10 @@ export default function WebRouletteGame() {
   const [bets, setBets] = useState<Bet[]>([]);
   const [selectedBetType, setSelectedBetType] = useState<string>('number');
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
-  
+  const [gameWinProbability, setGameWinProbability] = useState(0);
+  const [engagementBonus, setEngagementBonus] = useState<string>('');
+
+  const gameLogicService = AdvancedGameLogicService.getInstance();
   const wheelRotation = useRef(new Animated.Value(0)).current;
 
   // American Roulette numbers (0, 00, 1-36)
