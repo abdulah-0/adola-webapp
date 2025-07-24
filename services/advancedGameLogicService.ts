@@ -107,6 +107,18 @@ export class AdvancedGameLogicService {
       minBet: 10, maxBet: 1000, houseEdge: 0.35, baseWinProbability: 0.08,
       name: 'Lucky Numbers', enabled: true
     },
+    crash: {
+      minBet: 10, maxBet: 10000, houseEdge: 0.03, baseWinProbability: 0.20,
+      name: 'Crash Game', enabled: true
+    },
+    powerball: {
+      minBet: 10, maxBet: 1000, houseEdge: 0.15, baseWinProbability: 0.05,
+      name: 'PowerBall Lottery', enabled: true
+    },
+    rollmaster: {
+      minBet: 10, maxBet: 5000, houseEdge: 0.04, baseWinProbability: 0.18,
+      name: 'Roll Master', enabled: true
+    },
   };
 
   // Engagement features configuration
