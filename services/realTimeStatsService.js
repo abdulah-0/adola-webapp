@@ -80,14 +80,44 @@ export const getRealTimeAdminStats = async () => {
     
     const netRevenue = approvedDeposits - approvedWithdrawals;
     
-    // Calculate pending amounts
-    const pendingDepositAmount = allTransactions
+    // Calculate pending amounts from both wallet_transactions and specific request tables
+    let pendingDepositAmount = allTransactions
       .filter(t => t.type === 'deposit' && t.status === 'pending')
       .reduce((sum, t) => sum + t.amount, 0);
-      
-    const pendingWithdrawalAmount = allTransactions
+
+    let pendingWithdrawalAmount = allTransactions
       .filter(t => t.type === 'withdrawal' && t.status === 'pending')
       .reduce((sum, t) => sum + t.amount, 0);
+
+    // Also check deposit_requests and withdrawal_requests tables for more accurate pending amounts
+    try {
+      const { data: pendingDeposits } = await supabase
+        .from('deposit_requests')
+        .select('amount')
+        .eq('status', 'pending');
+
+      const { data: pendingWithdrawals } = await supabase
+        .from('withdrawal_requests')
+        .select('amount')
+        .eq('status', 'pending');
+
+      const pendingDepositCount = pendingDeposits ? pendingDeposits.length : 0;
+      const pendingWithdrawalCount = pendingWithdrawals ? pendingWithdrawals.length : 0;
+
+      if (pendingDeposits && pendingDeposits.length > 0) {
+        pendingDepositAmount = pendingDeposits.reduce((sum, req) => sum + Number(req.amount || 0), 0);
+      }
+
+      if (pendingWithdrawals && pendingWithdrawals.length > 0) {
+        pendingWithdrawalAmount = pendingWithdrawals.reduce((sum, req) => sum + Number(req.amount || 0), 0);
+      }
+
+      // Store counts for display
+      global.pendingDepositCount = pendingDepositCount;
+      global.pendingWithdrawalCount = pendingWithdrawalCount;
+    } catch (error) {
+      console.log('Note: Using wallet_transactions for pending amounts (request tables not available)');
+    }
     
     // System health metrics
     const systemHealth = {
@@ -118,6 +148,8 @@ export const getRealTimeAdminStats = async () => {
         netRevenue,
         pendingDepositAmount,
         pendingWithdrawalAmount,
+        pendingDepositCount: global.pendingDepositCount || 0,
+        pendingWithdrawalCount: global.pendingWithdrawalCount || 0,
         revenueGrowth: calculateRevenueGrowth(allTransactions)
       },
       
@@ -242,6 +274,8 @@ const getDefaultStats = () => {
       netRevenue: 0,
       pendingDepositAmount: 0,
       pendingWithdrawalAmount: 0,
+      pendingDepositCount: 0,
+      pendingWithdrawalCount: 0,
       revenueGrowth: 0
     },
     transactions: {

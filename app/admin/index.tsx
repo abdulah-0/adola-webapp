@@ -173,8 +173,8 @@ export default function AdminPanel() {
                 Rs {realTimeStats.financial.approvedDeposits.toLocaleString()}
               </Text>
               <Text style={styles.statLabel}>Total Deposits</Text>
-              <Text style={styles.statSubtext}>
-                {realTimeStats.transactions.totalRequests} total transactions
+              <Text style={[styles.statSubtext, { color: Colors.primary.gold, fontWeight: 'bold' }]}>
+                Rs {realTimeStats.financial.pendingDepositAmount.toLocaleString()} pending • {realTimeStats.financial.pendingDepositCount || 0} requests
               </Text>
             </View>
 
@@ -183,8 +183,8 @@ export default function AdminPanel() {
                 Rs {realTimeStats.financial.approvedWithdrawals.toLocaleString()}
               </Text>
               <Text style={styles.statLabel}>Total Withdrawals</Text>
-              <Text style={styles.statSubtext}>
-                {realTimeStats.transactions.approvalRate.toFixed(1)}% approval rate
+              <Text style={[styles.statSubtext, { color: Colors.primary.gold, fontWeight: 'bold' }]}>
+                Rs {realTimeStats.financial.pendingWithdrawalAmount.toLocaleString()} pending • {realTimeStats.financial.pendingWithdrawalCount || 0} requests
               </Text>
             </View>
 

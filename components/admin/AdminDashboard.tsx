@@ -77,14 +77,18 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
           <Ionicons name="trending-up" size={24} color="#00ff00" />
           <Text style={styles.statValue}>Rs {stats.totalDeposits.toLocaleString()}</Text>
           <Text style={styles.statLabel}>Total Deposits</Text>
-          <Text style={styles.statSubtext}>Rs {stats.pendingDeposits} pending</Text>
+          <Text style={[styles.statSubtext, { color: '#ffaa00', fontWeight: 'bold' }]}>
+            Rs {stats.pendingDeposits.toLocaleString()} pending approval
+          </Text>
         </View>
 
         <View style={styles.statCard}>
           <Ionicons name="trending-down" size={24} color="#ff6666" />
           <Text style={styles.statValue}>Rs {stats.totalWithdrawals.toLocaleString()}</Text>
           <Text style={styles.statLabel}>Total Withdrawals</Text>
-          <Text style={styles.statSubtext}>Rs {stats.pendingWithdrawals} pending</Text>
+          <Text style={[styles.statSubtext, { color: '#ffaa00', fontWeight: 'bold' }]}>
+            Rs {stats.pendingWithdrawals.toLocaleString()} pending approval
+          </Text>
         </View>
 
         <View style={styles.statCard}>
