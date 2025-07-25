@@ -126,7 +126,7 @@ export default function GameStatistics() {
           created_at
         `)
         .order('created_at', { ascending: false })
-        .limit(2000); // Increased limit for better daily tracking
+        .limit(10000); // Much higher limit to get all historical data
 
       if (gameError) throw gameError;
 
@@ -141,6 +141,8 @@ export default function GameStatistics() {
       }
 
       console.log('📊 Player activities user data:', users?.slice(0, 3));
+      console.log(`📊 Total users found: ${users?.length || 0}`);
+      console.log(`📊 Total game sessions found: ${gameStats?.length || 0}`);
 
       // Get wallet balances
       const { data: wallets, error: walletError } = await supabase
@@ -272,12 +274,26 @@ export default function GameStatistics() {
         }
       });
 
+      // Show ALL users - those who have played games and those who haven't
       const activities = Object.values(playerMap)
-        .filter(player => player.totalGamesPlayed > 0)
-        .sort((a, b) => b.totalWagered - a.totalWagered);
+        .sort((a, b) => {
+          // Sort by total wagered first, then by total games played, then by creation date
+          if (b.totalWagered !== a.totalWagered) {
+            return b.totalWagered - a.totalWagered;
+          }
+          if (b.totalGamesPlayed !== a.totalGamesPlayed) {
+            return b.totalGamesPlayed - a.totalGamesPlayed;
+          }
+          return 0;
+        });
 
       setPlayerActivities(activities);
-      console.log(`📊 Loaded ${activities.length} player activities`);
+      console.log(`📊 Loaded ${activities.length} player activities (${activities.filter(p => p.totalGamesPlayed > 0).length} have played games)`);
+      console.log('📊 Sample activities:', activities.slice(0, 3).map(p => ({
+        username: p.username,
+        totalGames: p.totalGamesPlayed,
+        totalWagered: p.totalWagered
+      })));
     } catch (error) {
       console.error('❌ Error loading player activities:', error);
     }
@@ -495,12 +511,15 @@ export default function GameStatistics() {
   const renderPlayerActivities = () => (
     <ScrollView showsVerticalScrollIndicator={false}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>👥 Player Game Activities</Text>
+        <Text style={styles.sectionTitle}>👥 All Platform Players</Text>
         <Text style={styles.sectionSubtitle}>
-          {playerActivities.length} players • {playerActivities.filter(p => p.isOnline).length} online • {playerActivities.reduce((sum, p) => sum + p.todayGamesPlayed, 0)} games today
+          {playerActivities.length} total players • {playerActivities.filter(p => p.totalGamesPlayed > 0).length} have played games • {playerActivities.filter(p => p.isOnline).length} online now
         </Text>
         <Text style={styles.sectionSubtitle}>
-          Today's total wagered: PKR {playerActivities.reduce((sum, p) => sum + p.todayWagered, 0).toLocaleString()}
+          Today: {playerActivities.reduce((sum, p) => sum + p.todayGamesPlayed, 0)} games • PKR {playerActivities.reduce((sum, p) => sum + p.todayWagered, 0).toLocaleString()} wagered
+        </Text>
+        <Text style={styles.sectionSubtitle}>
+          All-time: PKR {playerActivities.reduce((sum, p) => sum + p.totalWagered, 0).toLocaleString()} total wagered
         </Text>
       </View>
 
@@ -560,16 +579,25 @@ export default function GameStatistics() {
               <Text style={styles.statLabel}>Last Played:</Text>
               <Text style={styles.statValue}>{player.lastGameTime}</Text>
             </View>
-            <View style={styles.statRow}>
-              <Text style={styles.statLabel}>Today's Games:</Text>
-              <Text style={styles.statValue}>{player.todayGamesPlayed} games • PKR {player.todayWagered.toLocaleString()}</Text>
-            </View>
-            <View style={styles.statRow}>
-              <Text style={styles.statLabel}>Today's P&L:</Text>
-              <Text style={[styles.statValue, { color: player.todayNetProfit >= 0 ? Colors.primary.neonCyan : Colors.primary.hotPink }]}>
-                {player.todayNetProfit >= 0 ? '+' : ''}PKR {player.todayNetProfit.toLocaleString()}
-              </Text>
-            </View>
+            {player.totalGamesPlayed > 0 ? (
+              <>
+                <View style={styles.statRow}>
+                  <Text style={styles.statLabel}>Today's Games:</Text>
+                  <Text style={styles.statValue}>{player.todayGamesPlayed} games • PKR {player.todayWagered.toLocaleString()}</Text>
+                </View>
+                <View style={styles.statRow}>
+                  <Text style={styles.statLabel}>Today's P&L:</Text>
+                  <Text style={[styles.statValue, { color: player.todayNetProfit >= 0 ? Colors.primary.neonCyan : Colors.primary.hotPink }]}>
+                    {player.todayNetProfit >= 0 ? '+' : ''}PKR {player.todayNetProfit.toLocaleString()}
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <View style={styles.statRow}>
+                <Text style={styles.statLabel}>Status:</Text>
+                <Text style={[styles.statValue, { color: Colors.primary.textSecondary }]}>No games played yet</Text>
+              </View>
+            )}
           </View>
 
           <View style={styles.playerMetrics}>
