@@ -131,9 +131,14 @@ export default function GameStatistics() {
       // Get user details
       const { data: users, error: userError } = await supabase
         .from('users')
-        .select('id, username, email, created_at');
+        .select('id, username, email, auth_user_id, created_at');
 
-      if (userError) throw userError;
+      if (userError) {
+        console.error('❌ Error fetching users:', userError);
+        throw userError;
+      }
+
+      console.log('📊 Player activities user data:', users?.slice(0, 3));
 
       // Get wallet balances
       const { data: wallets, error: walletError } = await supabase
@@ -146,9 +151,14 @@ export default function GameStatistics() {
       const playerMap: { [key: string]: PlayerGameActivity } = {};
 
       users?.forEach(user => {
+        // Create a better display name
+        const displayName = user.username ||
+                           (user.email ? user.email.split('@')[0] : null) ||
+                           `User-${user.id.slice(-4)}`;
+
         playerMap[user.id] = {
           userId: user.id,
-          username: user.username || 'Unknown',
+          username: displayName,
           email: user.email || 'No email',
           currentGame: null,
           lastGameTime: 'Never',
@@ -359,17 +369,40 @@ export default function GameStatistics() {
 
       // Get user details for live sessions
       const userIds = [...new Set(sessions?.map(s => s.user_id) || [])];
+
+      if (userIds.length === 0) {
+        setLiveSessions([]);
+        console.log('📊 No live sessions found');
+        return;
+      }
+
       const { data: users, error: userError } = await supabase
         .from('users')
-        .select('id, username')
+        .select('id, username, email, auth_user_id')
         .in('id', userIds);
 
-      if (userError) throw userError;
+      if (userError) {
+        console.error('❌ Error fetching users for live sessions:', userError);
+        // Continue with unknown usernames rather than failing completely
+      }
+
+      console.log('📊 Live sessions user data:', { userIds, users });
 
       const userMap = users?.reduce((acc, user) => {
-        acc[user.id] = user.username || 'Unknown';
+        // Try username first, then email, then fallback
+        const displayName = user.username ||
+                           (user.email ? user.email.split('@')[0] : null) ||
+                           `User-${user.id.slice(-4)}`;
+        acc[user.id] = displayName;
         return acc;
       }, {} as { [key: string]: string }) || {};
+
+      // Add fallback for any missing users
+      userIds.forEach(userId => {
+        if (!userMap[userId]) {
+          userMap[userId] = `User-${userId.slice(-4)}`;
+        }
+      });
 
       // Process live sessions
       const sessionMap: { [key: string]: LiveGameSession } = {};
@@ -403,6 +436,7 @@ export default function GameStatistics() {
 
       setLiveSessions(liveSessions);
       console.log(`📊 Loaded ${liveSessions.length} live sessions`);
+      console.log('📊 Live sessions sample:', liveSessions.slice(0, 2));
     } catch (error) {
       console.error('❌ Error loading live sessions:', error);
     }
