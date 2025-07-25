@@ -61,6 +61,12 @@ export default function NotificationManager() {
         .order('priority', { ascending: true });
 
       if (error) {
+        // If table doesn't exist, show empty state
+        if (error.code === '42501' || error.code === '42P01') {
+          console.log('📱 Custom notifications tables not set up yet - showing empty state');
+          setCustomNotifications([]);
+          return;
+        }
         console.error('Error loading custom notifications:', error);
         return;
       }
@@ -68,6 +74,7 @@ export default function NotificationManager() {
       setCustomNotifications(notifications || []);
     } catch (error) {
       console.error('Error loading custom notifications:', error);
+      setCustomNotifications([]);
     }
   };
 
@@ -122,10 +129,19 @@ export default function NotificationManager() {
 
       if (error) {
         console.error('❌ Error creating notification:', error);
-        Alert.alert(
-          'Database Error',
-          `Failed to create notification: ${error.message}\n\nMake sure the database tables are set up correctly.`
-        );
+
+        // If table doesn't exist, show setup instructions
+        if (error.code === '42501' || error.code === '42P01') {
+          Alert.alert(
+            'Database Setup Required',
+            'The custom notifications tables need to be set up first.\n\nPlease run the database setup script in Supabase SQL Editor.\n\nContact support if you need help with the setup.'
+          );
+        } else {
+          Alert.alert(
+            'Database Error',
+            `Failed to create notification: ${error.message}`
+          );
+        }
         return;
       }
 

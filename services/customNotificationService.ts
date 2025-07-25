@@ -59,7 +59,7 @@ export class CustomNotificationService {
     try {
       // First check if user is currently in a game session
       const isInGame = await this.isUserInGameSession(userId);
-      
+
       // Get all active notifications
       const { data: notifications, error } = await supabase
         .from('custom_notifications')
@@ -70,6 +70,11 @@ export class CustomNotificationService {
         .order('priority', { ascending: true });
 
       if (error) {
+        // If table doesn't exist, return null gracefully
+        if (error.code === '42501' || error.code === '42P01') {
+          console.log('📱 Custom notifications tables not set up yet - no notifications to show');
+          return null;
+        }
         console.error('Error fetching notifications:', error);
         return null;
       }
@@ -117,6 +122,11 @@ export class CustomNotificationService {
         .eq('is_active', true);
 
       if (error) {
+        // If table doesn't exist, assume no active sessions
+        if (error.code === '42501' || error.code === '42P01') {
+          console.log('📱 Custom notifications tables not set up yet - skipping game session check');
+          return false;
+        }
         console.error('Error checking game sessions:', error);
         return false;
       }
