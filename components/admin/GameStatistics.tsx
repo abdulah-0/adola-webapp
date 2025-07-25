@@ -9,6 +9,7 @@ import {
   Alert,
   RefreshControl,
   Dimensions,
+  TextInput,
 } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import { supabase } from '../../lib/supabase';
@@ -82,6 +83,10 @@ export default function GameStatistics() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(new Date());
+
+  // Search functionality
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredPlayerActivities, setFilteredPlayerActivities] = useState<PlayerGameActivity[]>([]);
 
   useEffect(() => {
     loadGameStatistics();
@@ -288,6 +293,7 @@ export default function GameStatistics() {
         });
 
       setPlayerActivities(activities);
+      setFilteredPlayerActivities(activities); // Initialize filtered list
       console.log(`📊 Loaded ${activities.length} player activities (${activities.filter(p => p.totalGamesPlayed > 0).length} have played games)`);
       console.log('📊 Sample activities:', activities.slice(0, 3).map(p => ({
         username: p.username,
@@ -498,6 +504,39 @@ export default function GameStatistics() {
     }
   };
 
+  // Search functionality
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+
+    if (!query.trim()) {
+      setFilteredPlayerActivities(playerActivities);
+      return;
+    }
+
+    const filtered = playerActivities.filter(player => {
+      const searchTerm = query.toLowerCase().trim();
+
+      // Search in username
+      const usernameMatch = player.username.toLowerCase().includes(searchTerm);
+
+      // Search in email
+      const emailMatch = player.email.toLowerCase().includes(searchTerm);
+
+      // Search in user ID (last 8 characters for easier searching)
+      const userIdMatch = player.userId.toLowerCase().includes(searchTerm);
+
+      return usernameMatch || emailMatch || userIdMatch;
+    });
+
+    setFilteredPlayerActivities(filtered);
+    console.log(`🔍 Search "${query}" found ${filtered.length} players`);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setFilteredPlayerActivities(playerActivities);
+  };
+
   const renderTabButton = (tab: 'players' | 'games' | 'live', title: string, icon: string) => (
     <TouchableOpacity
       style={[styles.tabButton, activeTab === tab && styles.activeTabButton]}
@@ -523,7 +562,33 @@ export default function GameStatistics() {
         </Text>
       </View>
 
-      {playerActivities.map((player, index) => (
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchInputContainer}>
+          <Ionicons name="search" size={20} color={Colors.primary.textSecondary} style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search by username, email, or user ID..."
+            placeholderTextColor={Colors.primary.textSecondary}
+            value={searchQuery}
+            onChangeText={handleSearch}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={clearSearch} style={styles.clearSearchButton}>
+              <Ionicons name="close-circle" size={20} color={Colors.primary.textSecondary} />
+            </TouchableOpacity>
+          )}
+        </View>
+        {searchQuery.length > 0 && (
+          <Text style={styles.searchResults}>
+            {filteredPlayerActivities.length} of {playerActivities.length} players found
+          </Text>
+        )}
+      </View>
+
+      {filteredPlayerActivities.map((player, index) => (
         <View key={player.userId} style={styles.playerCard}>
           <View style={styles.playerHeader}>
             <View style={styles.playerInfo}>
@@ -624,6 +689,20 @@ export default function GameStatistics() {
           </View>
         </View>
       ))}
+
+      {/* Empty Search Results */}
+      {searchQuery.length > 0 && filteredPlayerActivities.length === 0 && (
+        <View style={styles.emptySearchState}>
+          <Ionicons name="search" size={48} color={Colors.primary.textSecondary} />
+          <Text style={styles.emptySearchTitle}>No players found</Text>
+          <Text style={styles.emptySearchText}>
+            No players match "{searchQuery}". Try searching by username, email, or user ID.
+          </Text>
+          <TouchableOpacity style={styles.clearSearchButtonLarge} onPress={clearSearch}>
+            <Text style={styles.clearSearchButtonText}>Clear Search</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </ScrollView>
   );
 
@@ -931,6 +1010,69 @@ const styles = StyleSheet.create({
   sectionSubtitle: {
     fontSize: 14,
     color: Colors.primary.textSecondary,
+  },
+  // Search Styles
+  searchContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 15,
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primary.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.primary.border,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: Colors.primary.text,
+    paddingVertical: 4,
+  },
+  clearSearchButton: {
+    padding: 4,
+  },
+  searchResults: {
+    fontSize: 12,
+    color: Colors.primary.textSecondary,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  emptySearchState: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+  },
+  emptySearchTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: Colors.primary.text,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptySearchText: {
+    fontSize: 14,
+    color: Colors.primary.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  clearSearchButtonLarge: {
+    backgroundColor: Colors.primary.gold,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  clearSearchButtonText: {
+    color: Colors.primary.background,
+    fontSize: 14,
+    fontWeight: '600',
   },
   // Player Activity Styles
   playerCard: {
