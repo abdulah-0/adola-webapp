@@ -151,10 +151,18 @@ export default function GameStatistics() {
       const playerMap: { [key: string]: PlayerGameActivity } = {};
 
       users?.forEach(user => {
-        // Create a better display name
-        const displayName = user.username ||
-                           (user.email ? user.email.split('@')[0] : null) ||
-                           `User-${user.id.slice(-4)}`;
+        // Priority: username > full email > auth_user_id > user ID
+        let displayName;
+
+        if (user.username && user.username.trim()) {
+          displayName = user.username.trim();
+        } else if (user.email && user.email.trim()) {
+          displayName = user.email.trim(); // Show full email for better identification
+        } else if (user.auth_user_id && user.auth_user_id.trim()) {
+          displayName = `Auth-${user.auth_user_id.slice(-8)}`; // Show auth ID for identification
+        } else {
+          displayName = `ID-${user.id.slice(-8)}`; // Show more of the user ID
+        }
 
         playerMap[user.id] = {
           userId: user.id,
@@ -389,10 +397,19 @@ export default function GameStatistics() {
       console.log('📊 Live sessions user data:', { userIds, users });
 
       const userMap = users?.reduce((acc, user) => {
-        // Try username first, then email, then fallback
-        const displayName = user.username ||
-                           (user.email ? user.email.split('@')[0] : null) ||
-                           `User-${user.id.slice(-4)}`;
+        // Priority: username > full email > auth_user_id > user ID
+        let displayName;
+
+        if (user.username && user.username.trim()) {
+          displayName = user.username.trim();
+        } else if (user.email && user.email.trim()) {
+          displayName = user.email.trim(); // Show full email for better identification
+        } else if (user.auth_user_id && user.auth_user_id.trim()) {
+          displayName = `Auth-${user.auth_user_id.slice(-8)}`; // Show auth ID for identification
+        } else {
+          displayName = `ID-${user.id.slice(-8)}`; // Show more of the user ID
+        }
+
         acc[user.id] = displayName;
         return acc;
       }, {} as { [key: string]: string }) || {};
@@ -400,7 +417,7 @@ export default function GameStatistics() {
       // Add fallback for any missing users
       userIds.forEach(userId => {
         if (!userMap[userId]) {
-          userMap[userId] = `User-${userId.slice(-4)}`;
+          userMap[userId] = `ID-${userId.slice(-8)}`; // Show more characters for better identification
         }
       });
 
@@ -478,6 +495,7 @@ export default function GameStatistics() {
                 {player.isOnline && <View style={styles.onlineIndicator} />}
               </View>
               <Text style={styles.playerEmail}>{player.email}</Text>
+              <Text style={styles.playerUserId}>ID: {player.userId.slice(-8)}</Text>
             </View>
             <View style={styles.playerStats}>
               <Text style={styles.playerBalance}>PKR {player.currentBalance.toLocaleString()}</Text>
@@ -625,6 +643,7 @@ export default function GameStatistics() {
                 <View style={styles.liveIndicator} />
               </View>
               <Text style={styles.sessionGame}>{session.gameName}</Text>
+              <Text style={styles.sessionUserId}>User ID: {session.userId.slice(-8)}</Text>
             </View>
             <View style={styles.sessionStats}>
               <Text style={styles.sessionBet}>PKR {session.betAmount.toLocaleString()}</Text>
@@ -856,6 +875,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.primary.textSecondary,
   },
+  playerUserId: {
+    fontSize: 10,
+    color: Colors.primary.textSecondary,
+    fontFamily: 'monospace',
+    marginTop: 2,
+  },
   playerStats: {
     alignItems: 'flex-end',
   },
@@ -1026,6 +1051,12 @@ const styles = StyleSheet.create({
   sessionGame: {
     fontSize: 12,
     color: Colors.primary.textSecondary,
+  },
+  sessionUserId: {
+    fontSize: 10,
+    color: Colors.primary.textSecondary,
+    fontFamily: 'monospace',
+    marginTop: 2,
   },
   sessionStats: {
     alignItems: 'flex-end',
