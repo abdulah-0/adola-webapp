@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import { supabase } from '../../lib/supabase';
+import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 
 const { width } = Dimensions.get('window');
 
@@ -470,6 +472,16 @@ export default function GameStatistics() {
     loadGameStatistics();
   };
 
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await Clipboard.setStringAsync(text);
+      Alert.alert('Copied!', `${label} copied to clipboard`);
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+      Alert.alert('Error', 'Failed to copy to clipboard');
+    }
+  };
+
   const renderTabButton = (tab: 'players' | 'games' | 'live', title: string, icon: string) => (
     <TouchableOpacity
       style={[styles.tabButton, activeTab === tab && styles.activeTabButton]}
@@ -498,10 +510,34 @@ export default function GameStatistics() {
             <View style={styles.playerInfo}>
               <View style={styles.playerNameRow}>
                 <Text style={styles.playerName}>{player.username}</Text>
+                <TouchableOpacity
+                  style={styles.copyButton}
+                  onPress={() => copyToClipboard(player.username, 'Username')}
+                >
+                  <Ionicons name="copy" size={14} color={Colors.primary.textSecondary} />
+                </TouchableOpacity>
                 {player.isOnline && <View style={styles.onlineIndicator} />}
               </View>
-              <Text style={styles.playerEmail}>{player.email}</Text>
-              <Text style={styles.playerUserId}>ID: {player.userId}</Text>
+              <View style={styles.emailRow}>
+                <Text style={styles.playerEmail}>{player.email}</Text>
+                {player.email !== 'No email' && (
+                  <TouchableOpacity
+                    style={styles.copyButton}
+                    onPress={() => copyToClipboard(player.email, 'Email')}
+                  >
+                    <Ionicons name="copy" size={12} color={Colors.primary.textSecondary} />
+                  </TouchableOpacity>
+                )}
+              </View>
+              <View style={styles.userIdRow}>
+                <Text style={styles.playerUserId}>ID: {player.userId}</Text>
+                <TouchableOpacity
+                  style={styles.copyButton}
+                  onPress={() => copyToClipboard(player.userId, 'User ID')}
+                >
+                  <Ionicons name="copy" size={12} color={Colors.primary.textSecondary} />
+                </TouchableOpacity>
+              </View>
             </View>
             <View style={styles.playerStats}>
               <Text style={styles.playerBalance}>PKR {player.currentBalance.toLocaleString()}</Text>
@@ -646,10 +682,24 @@ export default function GameStatistics() {
             <View style={styles.sessionInfo}>
               <View style={styles.sessionNameRow}>
                 <Text style={styles.sessionUsername}>{session.username}</Text>
+                <TouchableOpacity
+                  style={styles.copyButton}
+                  onPress={() => copyToClipboard(session.username, 'Username')}
+                >
+                  <Ionicons name="copy" size={14} color={Colors.primary.textSecondary} />
+                </TouchableOpacity>
                 <View style={styles.liveIndicator} />
               </View>
               <Text style={styles.sessionGame}>{session.gameName}</Text>
-              <Text style={styles.sessionUserId}>User ID: {session.userId}</Text>
+              <View style={styles.userIdRow}>
+                <Text style={styles.sessionUserId}>User ID: {session.userId}</Text>
+                <TouchableOpacity
+                  style={styles.copyButton}
+                  onPress={() => copyToClipboard(session.userId, 'User ID')}
+                >
+                  <Ionicons name="copy" size={12} color={Colors.primary.textSecondary} />
+                </TouchableOpacity>
+              </View>
             </View>
             <View style={styles.sessionStats}>
               <Text style={styles.sessionBet}>PKR {session.betAmount.toLocaleString()}</Text>
@@ -682,6 +732,18 @@ export default function GameStatistics() {
                 PKR {(-session.sessionProfit).toLocaleString()}
               </Text>
             </View>
+
+            {/* Copy All Session Data Button */}
+            <TouchableOpacity
+              style={styles.copyAllButton}
+              onPress={() => {
+                const sessionData = `Player: ${session.username}\nGame: ${session.gameName}\nUser ID: ${session.userId}\nBet Amount: PKR ${session.betAmount}\nSession P&L: PKR ${session.sessionProfit}\nTotal Bets: ${session.totalBetsInSession}`;
+                copyToClipboard(sessionData, 'Session Data');
+              }}
+            >
+              <Ionicons name="copy" size={16} color={Colors.primary.text} />
+              <Text style={styles.copyAllButtonText}>Copy Session Data</Text>
+            </TouchableOpacity>
           </View>
         </View>
       ))}
@@ -880,12 +942,29 @@ const styles = StyleSheet.create({
   playerEmail: {
     fontSize: 12,
     color: Colors.primary.textSecondary,
+    flex: 1,
   },
   playerUserId: {
     fontSize: 10,
     color: Colors.primary.textSecondary,
     fontFamily: 'monospace',
+    flex: 1,
+  },
+  emailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  userIdRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 2,
+  },
+  copyButton: {
+    padding: 4,
+    marginLeft: 6,
+    borderRadius: 4,
+    backgroundColor: Colors.primary.background,
   },
   playerStats: {
     alignItems: 'flex-end',
@@ -1062,7 +1141,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: Colors.primary.textSecondary,
     fontFamily: 'monospace',
-    marginTop: 2,
+    flex: 1,
   },
   sessionStats: {
     alignItems: 'flex-end',
@@ -1094,6 +1173,24 @@ const styles = StyleSheet.create({
   sessionDetailValue: {
     fontSize: 12,
     color: Colors.primary.text,
+    fontWeight: '500',
+  },
+  copyAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.primary.surface,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: Colors.primary.border,
+  },
+  copyAllButtonText: {
+    fontSize: 12,
+    color: Colors.primary.text,
+    marginLeft: 6,
     fontWeight: '500',
   },
   // Empty State
