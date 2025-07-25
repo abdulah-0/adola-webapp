@@ -111,10 +111,6 @@ export default function GameStatistics() {
 
   const loadPlayerActivities = async () => {
     try {
-      // Get today's date for daily stats
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
       // Get user game statistics with recent activity (focus on today + recent history)
       const { data: gameStats, error: gameError } = await supabase
         .from('game_sessions')
@@ -185,8 +181,8 @@ export default function GameStatistics() {
 
       // Process game sessions with enhanced daily tracking
       const gameCountMap: { [key: string]: { [game: string]: number } } = {};
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const todayDate = new Date();
+      todayDate.setHours(0, 0, 0, 0);
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
       gameStats?.forEach(session => {
@@ -207,7 +203,7 @@ export default function GameStatistics() {
         player.averageBet = player.totalGamesPlayed > 0 ? player.totalWagered / player.totalGamesPlayed : 0;
 
         // Daily tracking
-        if (sessionTime >= today) {
+        if (sessionTime >= todayDate) {
           player.todayGamesPlayed++;
           player.todayWagered += session.bet_amount || 0;
           player.todayWon += session.win_amount || 0;
