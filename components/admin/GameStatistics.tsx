@@ -30,6 +30,14 @@ interface PlayerGameActivity {
   isOnline: boolean;
   favoriteGame: string;
   currentBalance: number;
+  // Enhanced daily tracking
+  todayGamesPlayed: number;
+  todayWagered: number;
+  todayWon: number;
+  todayNetProfit: number;
+  last7DaysGames: number;
+  last7DaysWagered: number;
+  gamesPerDay: { [date: string]: { games: number; wagered: number; won: number } };
 }
 
 interface GamePerformance {
@@ -103,7 +111,11 @@ export default function GameStatistics() {
 
   const loadPlayerActivities = async () => {
     try {
-      // Get user game statistics with recent activity
+      // Get today's date for daily stats
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Get user game statistics with recent activity (focus on today + recent history)
       const { data: gameStats, error: gameError } = await supabase
         .from('game_sessions')
         .select(`
@@ -116,7 +128,7 @@ export default function GameStatistics() {
           created_at
         `)
         .order('created_at', { ascending: false })
-        .limit(1000);
+        .limit(2000); // Increased limit for better daily tracking
 
       if (gameError) throw gameError;
 
@@ -153,6 +165,14 @@ export default function GameStatistics() {
           isOnline: false,
           favoriteGame: 'None',
           currentBalance: 0,
+          // Enhanced daily tracking
+          todayGamesPlayed: 0,
+          todayWagered: 0,
+          todayWon: 0,
+          todayNetProfit: 0,
+          last7DaysGames: 0,
+          last7DaysWagered: 0,
+          gamesPerDay: {},
         };
       });
 
@@ -163,19 +183,50 @@ export default function GameStatistics() {
         }
       });
 
-      // Process game sessions
+      // Process game sessions with enhanced daily tracking
       const gameCountMap: { [key: string]: { [game: string]: number } } = {};
-      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
       gameStats?.forEach(session => {
         const player = playerMap[session.user_id];
         if (!player) return;
 
+        const sessionTime = new Date(session.created_at);
+        const sessionDate = new Date(sessionTime);
+        sessionDate.setHours(0, 0, 0, 0);
+        const dateKey = sessionDate.toISOString().split('T')[0];
+
+        // Total stats
         player.totalGamesPlayed++;
         player.totalWagered += session.bet_amount || 0;
         player.totalWon += session.win_amount || 0;
         player.netProfit = player.totalWon - player.totalWagered;
         player.winRate = player.totalGamesPlayed > 0 ? (player.totalWon / player.totalWagered) * 100 : 0;
         player.averageBet = player.totalGamesPlayed > 0 ? player.totalWagered / player.totalGamesPlayed : 0;
+
+        // Daily tracking
+        if (sessionTime >= today) {
+          player.todayGamesPlayed++;
+          player.todayWagered += session.bet_amount || 0;
+          player.todayWon += session.win_amount || 0;
+          player.todayNetProfit = player.todayWon - player.todayWagered;
+        }
+
+        // Last 7 days tracking
+        if (sessionTime >= sevenDaysAgo) {
+          player.last7DaysGames++;
+          player.last7DaysWagered += session.bet_amount || 0;
+        }
+
+        // Games per day tracking
+        if (!player.gamesPerDay[dateKey]) {
+          player.gamesPerDay[dateKey] = { games: 0, wagered: 0, won: 0 };
+        }
+        player.gamesPerDay[dateKey].games++;
+        player.gamesPerDay[dateKey].wagered += session.bet_amount || 0;
+        player.gamesPerDay[dateKey].won += session.win_amount || 0;
 
         // Track last game time
         if (!player.lastGameTime || player.lastGameTime === 'Never') {
@@ -190,7 +241,6 @@ export default function GameStatistics() {
         gameCountMap[session.user_id][session.game_id] = (gameCountMap[session.user_id][session.game_id] || 0) + 1;
 
         // Check if online (played in last 10 minutes)
-        const sessionTime = new Date(session.created_at);
         const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
         if (sessionTime > tenMinutesAgo) {
           player.isOnline = true;
@@ -382,7 +432,10 @@ export default function GameStatistics() {
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>👥 Player Game Activities</Text>
         <Text style={styles.sectionSubtitle}>
-          {playerActivities.length} players • {playerActivities.filter(p => p.isOnline).length} online
+          {playerActivities.length} players • {playerActivities.filter(p => p.isOnline).length} online • {playerActivities.reduce((sum, p) => sum + p.todayGamesPlayed, 0)} games today
+        </Text>
+        <Text style={styles.sectionSubtitle}>
+          Today's total wagered: PKR {playerActivities.reduce((sum, p) => sum + p.todayWagered, 0).toLocaleString()}
         </Text>
       </View>
 
@@ -417,24 +470,38 @@ export default function GameStatistics() {
               <Text style={styles.statLabel}>Last Played:</Text>
               <Text style={styles.statValue}>{player.lastGameTime}</Text>
             </View>
+            <View style={styles.statRow}>
+              <Text style={styles.statLabel}>Today's Games:</Text>
+              <Text style={styles.statValue}>{player.todayGamesPlayed} games • PKR {player.todayWagered.toLocaleString()}</Text>
+            </View>
+            <View style={styles.statRow}>
+              <Text style={styles.statLabel}>Today's P&L:</Text>
+              <Text style={[styles.statValue, { color: player.todayNetProfit >= 0 ? Colors.primary.neonCyan : Colors.primary.hotPink }]}>
+                {player.todayNetProfit >= 0 ? '+' : ''}PKR {player.todayNetProfit.toLocaleString()}
+              </Text>
+            </View>
           </View>
 
           <View style={styles.playerMetrics}>
             <View style={styles.metric}>
               <Text style={styles.metricValue}>{player.totalGamesPlayed}</Text>
-              <Text style={styles.metricLabel}>Games</Text>
+              <Text style={styles.metricLabel}>Total Games</Text>
+            </View>
+            <View style={styles.metric}>
+              <Text style={styles.metricValue}>{player.todayGamesPlayed}</Text>
+              <Text style={styles.metricLabel}>Today</Text>
             </View>
             <View style={styles.metric}>
               <Text style={styles.metricValue}>PKR {player.totalWagered.toLocaleString()}</Text>
-              <Text style={styles.metricLabel}>Wagered</Text>
-            </View>
-            <View style={styles.metric}>
-              <Text style={styles.metricValue}>PKR {player.totalWon.toLocaleString()}</Text>
-              <Text style={styles.metricLabel}>Won</Text>
+              <Text style={styles.metricLabel}>Total Wagered</Text>
             </View>
             <View style={styles.metric}>
               <Text style={styles.metricValue}>{player.winRate.toFixed(1)}%</Text>
               <Text style={styles.metricLabel}>Win Rate</Text>
+            </View>
+            <View style={styles.metric}>
+              <Text style={styles.metricValue}>{player.last7DaysGames}</Text>
+              <Text style={styles.metricLabel}>7-Day Games</Text>
             </View>
           </View>
         </View>
@@ -541,13 +608,23 @@ export default function GameStatistics() {
               <Text style={styles.sessionDetailValue}>{session.sessionStart}</Text>
             </View>
             <View style={styles.sessionDetailRow}>
-              <Text style={styles.sessionDetailLabel}>Total Bets:</Text>
+              <Text style={styles.sessionDetailLabel}>Total Bets in Session:</Text>
               <Text style={styles.sessionDetailValue}>{session.totalBetsInSession}</Text>
+            </View>
+            <View style={styles.sessionDetailRow}>
+              <Text style={styles.sessionDetailLabel}>Session Wagered:</Text>
+              <Text style={styles.sessionDetailValue}>PKR {(session.betAmount * session.totalBetsInSession).toLocaleString()}</Text>
             </View>
             <View style={styles.sessionDetailRow}>
               <Text style={styles.sessionDetailLabel}>Session P&L:</Text>
               <Text style={[styles.sessionDetailValue, { color: session.sessionProfit >= 0 ? Colors.primary.neonCyan : Colors.primary.hotPink }]}>
                 {session.sessionProfit >= 0 ? '+' : ''}PKR {session.sessionProfit.toLocaleString()}
+              </Text>
+            </View>
+            <View style={styles.sessionDetailRow}>
+              <Text style={styles.sessionDetailLabel}>House Profit from Session:</Text>
+              <Text style={[styles.sessionDetailValue, { color: Colors.primary.gold }]}>
+                PKR {(-session.sessionProfit).toLocaleString()}
               </Text>
             </View>
           </View>
