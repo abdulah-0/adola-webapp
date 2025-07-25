@@ -151,17 +151,17 @@ export default function GameStatistics() {
       const playerMap: { [key: string]: PlayerGameActivity } = {};
 
       users?.forEach(user => {
-        // Priority: username > full email > auth_user_id > user ID
+        // Priority: username > full email > full auth_user_id > user ID
         let displayName;
 
         if (user.username && user.username.trim()) {
-          displayName = user.username.trim();
+          displayName = user.username.trim(); // Show complete username
         } else if (user.email && user.email.trim()) {
-          displayName = user.email.trim(); // Show full email for better identification
+          displayName = user.email.trim(); // Show complete email
         } else if (user.auth_user_id && user.auth_user_id.trim()) {
-          displayName = `Auth-${user.auth_user_id.slice(-8)}`; // Show auth ID for identification
+          displayName = user.auth_user_id.trim(); // Show complete auth_user_id
         } else {
-          displayName = `ID-${user.id.slice(-8)}`; // Show more of the user ID
+          displayName = `UserID-${user.id}`; // Show complete user ID with prefix
         }
 
         playerMap[user.id] = {
@@ -395,19 +395,25 @@ export default function GameStatistics() {
       }
 
       console.log('📊 Live sessions user data:', { userIds, users });
+      console.log('📊 Sample user data:', users?.slice(0, 2).map(u => ({
+        id: u.id,
+        username: u.username,
+        email: u.email,
+        auth_user_id: u.auth_user_id
+      })));
 
       const userMap = users?.reduce((acc, user) => {
-        // Priority: username > full email > auth_user_id > user ID
+        // Priority: username > full email > full auth_user_id > user ID
         let displayName;
 
         if (user.username && user.username.trim()) {
-          displayName = user.username.trim();
+          displayName = user.username.trim(); // Show complete username
         } else if (user.email && user.email.trim()) {
-          displayName = user.email.trim(); // Show full email for better identification
+          displayName = user.email.trim(); // Show complete email
         } else if (user.auth_user_id && user.auth_user_id.trim()) {
-          displayName = `Auth-${user.auth_user_id.slice(-8)}`; // Show auth ID for identification
+          displayName = user.auth_user_id.trim(); // Show complete auth_user_id
         } else {
-          displayName = `ID-${user.id.slice(-8)}`; // Show more of the user ID
+          displayName = `UserID-${user.id}`; // Show complete user ID with prefix
         }
 
         acc[user.id] = displayName;
@@ -417,7 +423,7 @@ export default function GameStatistics() {
       // Add fallback for any missing users
       userIds.forEach(userId => {
         if (!userMap[userId]) {
-          userMap[userId] = `ID-${userId.slice(-8)}`; // Show more characters for better identification
+          userMap[userId] = `UserID-${userId}`; // Show complete user ID
         }
       });
 
@@ -495,7 +501,7 @@ export default function GameStatistics() {
                 {player.isOnline && <View style={styles.onlineIndicator} />}
               </View>
               <Text style={styles.playerEmail}>{player.email}</Text>
-              <Text style={styles.playerUserId}>ID: {player.userId.slice(-8)}</Text>
+              <Text style={styles.playerUserId}>ID: {player.userId}</Text>
             </View>
             <View style={styles.playerStats}>
               <Text style={styles.playerBalance}>PKR {player.currentBalance.toLocaleString()}</Text>
@@ -643,7 +649,7 @@ export default function GameStatistics() {
                 <View style={styles.liveIndicator} />
               </View>
               <Text style={styles.sessionGame}>{session.gameName}</Text>
-              <Text style={styles.sessionUserId}>User ID: {session.userId.slice(-8)}</Text>
+              <Text style={styles.sessionUserId}>User ID: {session.userId}</Text>
             </View>
             <View style={styles.sessionStats}>
               <Text style={styles.sessionBet}>PKR {session.betAmount.toLocaleString()}</Text>
