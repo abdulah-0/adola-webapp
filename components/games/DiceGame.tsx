@@ -15,7 +15,6 @@ import { useApp } from '../../contexts/AppContext';
 import { useWallet } from '../../contexts/WalletContext';
 import BettingPanel from '../BettingPanel';
 import { AdvancedGameLogicService } from '../../services/advancedGameLogicService';
-import { CustomNotificationService } from '../../services/customNotificationService';
 
 const { width } = Dimensions.get('window');
 
@@ -28,27 +27,6 @@ export default function DiceGame() {
   const [lastResult, setLastResult] = useState<any>(null);
 
   const gameLogicService = AdvancedGameLogicService.getInstance();
-  const customNotificationService = CustomNotificationService.getInstance();
-
-  // Game session tracking
-  useEffect(() => {
-    if (user?.id) {
-      // Start game session when component mounts
-      customNotificationService.startGameSession(user.id, 'dice');
-
-      return () => {
-        // End game session when component unmounts
-        customNotificationService.endGameSession(user.id, 'dice');
-      };
-    }
-  }, [user?.id]);
-
-  // Update game session activity during gameplay
-  const updateGameActivity = () => {
-    if (user?.id) {
-      customNotificationService.updateGameSessionActivity(user.id, 'dice');
-    }
-  };
 
   const playDiceGame = async (targetNumber: number, betType: 'over' | 'under', betAmount: number) => {
     if (!user?.id) {
@@ -59,9 +37,6 @@ export default function DiceGame() {
         details: { diceResult: 1, targetNumber, betType }
       };
     }
-
-    // Update game session activity
-    updateGameActivity();
 
     // Calculate base multiplier based on bet type
     let baseMultiplier = 1;
