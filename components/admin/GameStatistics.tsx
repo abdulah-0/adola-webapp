@@ -118,6 +118,23 @@ export default function GameStatistics() {
 
   const loadPlayerActivities = async () => {
     try {
+      // First, let's check what tables exist and their structure
+      console.log('📊 Checking game sessions table...');
+
+      // Try to get a small sample first to check structure
+      const { data: sampleData, error: sampleError } = await supabase
+        .from('game_sessions')
+        .select('*')
+        .limit(1);
+
+      if (sampleError) {
+        console.error('❌ Error accessing game_sessions table:', sampleError);
+        // Maybe the table has a different name? Let's try alternatives
+        console.log('📊 Trying alternative table names...');
+      } else {
+        console.log('📊 Sample game session structure:', sampleData?.[0]);
+      }
+
       // Get user game statistics with recent activity (focus on today + recent history)
       const { data: gameStats, error: gameError } = await supabase
         .from('game_sessions')
@@ -133,7 +150,10 @@ export default function GameStatistics() {
         .order('created_at', { ascending: false })
         .limit(10000); // Much higher limit to get all historical data
 
-      if (gameError) throw gameError;
+      if (gameError) {
+        console.error('❌ Error fetching game sessions:', gameError);
+        throw gameError;
+      }
 
       // Get user details
       const { data: users, error: userError } = await supabase
@@ -148,6 +168,14 @@ export default function GameStatistics() {
       console.log('📊 Player activities user data:', users?.slice(0, 3));
       console.log(`📊 Total users found: ${users?.length || 0}`);
       console.log(`📊 Total game sessions found: ${gameStats?.length || 0}`);
+      console.log('📊 Sample game sessions:', gameStats?.slice(0, 5).map(gs => ({
+        user_id: gs.user_id,
+        game_name: gs.game_name,
+        bet_amount: gs.bet_amount,
+        win_amount: gs.win_amount,
+        is_win: gs.is_win,
+        created_at: gs.created_at
+      })));
 
       // Get wallet balances
       const { data: wallets, error: walletError } = await supabase
@@ -212,9 +240,17 @@ export default function GameStatistics() {
       todayDate.setHours(0, 0, 0, 0);
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
+      console.log('📊 Processing game sessions...');
+      let processedSessions = 0;
+      let skippedSessions = 0;
+
       gameStats?.forEach(session => {
         const player = playerMap[session.user_id];
-        if (!player) return;
+        if (!player) {
+          skippedSessions++;
+          return;
+        }
+        processedSessions++;
 
         const sessionTime = new Date(session.created_at);
         const sessionDate = new Date(sessionTime);
@@ -278,6 +314,9 @@ export default function GameStatistics() {
           playerMap[userId].favoriteGame = favoriteGame || 'None';
         }
       });
+
+      console.log(`📊 Session processing complete: ${processedSessions} processed, ${skippedSessions} skipped`);
+      console.log('📊 Sample processed player:', Object.values(playerMap).find(p => p.totalGamesPlayed > 0));
 
       // Show ALL users - those who have played games and those who haven't
       const activities = Object.values(playerMap)
