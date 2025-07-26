@@ -155,7 +155,7 @@ export default function GameStatistics() {
         throw gameError;
       }
 
-      // Get user details
+      // Get user details - include auth_user_id for matching
       const { data: users, error: userError } = await supabase
         .from('users')
         .select('id, username, email, auth_user_id, created_at');
@@ -186,6 +186,7 @@ export default function GameStatistics() {
 
       // Process player activities
       const playerMap: { [key: string]: PlayerGameActivity } = {};
+      const userIdMappings: { [key: string]: string } = {}; // Maps game session user_id to player map key
 
       users?.forEach(user => {
         // Priority: username > full email > full auth_user_id > user ID
@@ -225,12 +226,22 @@ export default function GameStatistics() {
           last7DaysWagered: 0,
           gamesPerDay: {},
         };
+
+        // Create mappings for different possible user ID formats
+        userIdMappings[user.id] = user.id; // Direct ID mapping
+        if (user.auth_user_id) {
+          userIdMappings[user.auth_user_id] = user.id; // Auth ID mapping
+        }
       });
+
+      console.log('📊 Created user ID mappings:', Object.keys(userIdMappings).length);
+      console.log('📊 Sample mappings:', Object.entries(userIdMappings).slice(0, 3));
 
       // Add wallet balances
       wallets?.forEach(wallet => {
-        if (playerMap[wallet.user_id]) {
-          playerMap[wallet.user_id].currentBalance = wallet.balance || 0;
+        const mappedUserId = userIdMappings[wallet.user_id];
+        if (mappedUserId && playerMap[mappedUserId]) {
+          playerMap[mappedUserId].currentBalance = wallet.balance || 0;
         }
       });
 
@@ -245,9 +256,15 @@ export default function GameStatistics() {
       let skippedSessions = 0;
 
       gameStats?.forEach(session => {
-        const player = playerMap[session.user_id];
+        // Try to find the player using different ID mappings
+        const mappedUserId = userIdMappings[session.user_id];
+        const player = mappedUserId ? playerMap[mappedUserId] : null;
+
         if (!player) {
           skippedSessions++;
+          if (skippedSessions <= 5) { // Log first few mismatches for debugging
+            console.log(`📊 Skipped session - user_id: ${session.user_id}, no matching player found`);
+          }
           return;
         }
         processedSessions++;
