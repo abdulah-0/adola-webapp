@@ -196,13 +196,13 @@ export default function GameStatistics() {
       console.log('📊 Checking transactions table...');
 
       // First, check what tables exist for financial data
-      const { data: sampleTransaction, error: sampleError } = await supabase
+      const { data: sampleTransaction, error: transactionTableError } = await supabase
         .from('transactions')
         .select('*')
         .limit(1);
 
-      if (sampleError) {
-        console.error('❌ Error accessing transactions table:', sampleError);
+      if (transactionTableError) {
+        console.error('❌ Error accessing transactions table:', transactionTableError);
         console.log('📊 Trying alternative table names...');
 
         // Try alternative table names
@@ -213,7 +213,7 @@ export default function GameStatistics() {
             .select('*')
             .limit(1);
 
-          if (!altError && altData) {
+          if (!altError && altData && altData.length > 0) {
             console.log(`📊 Found alternative table: ${tableName}`, altData[0]);
             break;
           }
