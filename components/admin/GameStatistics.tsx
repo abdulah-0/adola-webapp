@@ -195,56 +195,41 @@ export default function GameStatistics() {
       // Get deposit and withdrawal data - try multiple approaches
       console.log('📊 Checking transactions table...');
 
-      // First, check what tables exist for financial data
+      // Check wallet_transactions table structure
       const { data: sampleTransaction, error: transactionTableError } = await supabase
-        .from('transactions')
+        .from('wallet_transactions')
         .select('*')
         .limit(1);
 
       if (transactionTableError) {
-        console.error('❌ Error accessing transactions table:', transactionTableError);
-        console.log('📊 Trying alternative table names...');
-
-        // Try alternative table names
-        const alternativeTableNames = ['wallet_transactions', 'payments', 'deposits', 'withdrawals', 'financial_transactions'];
-        for (const tableName of alternativeTableNames) {
-          const { data: altData, error: altError } = await supabase
-            .from(tableName)
-            .select('*')
-            .limit(1);
-
-          if (!altError && altData && altData.length > 0) {
-            console.log(`📊 Found alternative table: ${tableName}`, altData[0]);
-            break;
-          }
-        }
+        console.error('❌ Error accessing wallet_transactions table:', transactionTableError);
       } else {
-        console.log('📊 Sample transaction structure:', sampleTransaction?.[0]);
+        console.log('📊 Sample wallet_transaction structure:', sampleTransaction?.[0]);
       }
 
-      // Try to get all transactions first to see the data structure
+      // Try to get all wallet_transactions first to see the data structure
       const { data: allTransactions, error: allTransError } = await supabase
-        .from('transactions')
+        .from('wallet_transactions')
         .select('*')
         .limit(100);
 
       if (allTransError) {
-        console.error('❌ Error fetching all transactions:', allTransError);
+        console.error('❌ Error fetching all wallet_transactions:', allTransError);
       } else {
-        console.log(`📊 Total transactions in table: ${allTransactions?.length || 0}`);
+        console.log(`📊 Total wallet_transactions in table: ${allTransactions?.length || 0}`);
         console.log('📊 All transaction types found:', [...new Set(allTransactions?.map(t => t.type))]);
         console.log('📊 All transaction statuses found:', [...new Set(allTransactions?.map(t => t.status))]);
-        console.log('📊 Sample transactions:', allTransactions?.slice(0, 3));
+        console.log('📊 Sample wallet_transactions:', allTransactions?.slice(0, 3));
       }
 
-      // Get deposit and withdrawal data with broader criteria
+      // Get deposit and withdrawal data from the correct table
       const { data: transactions, error: transactionError } = await supabase
-        .from('transactions')
+        .from('wallet_transactions')
         .select('user_id, type, amount, status, created_at')
         .order('created_at', { ascending: false });
 
       if (transactionError) {
-        console.error('❌ Error fetching transactions:', transactionError);
+        console.error('❌ Error fetching wallet_transactions:', transactionError);
         // Continue without transaction data rather than failing
       }
 
