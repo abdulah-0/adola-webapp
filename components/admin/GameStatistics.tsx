@@ -41,6 +41,14 @@ interface PlayerGameActivity {
   last7DaysGames: number;
   last7DaysWagered: number;
   gamesPerDay: { [date: string]: { games: number; wagered: number; won: number } };
+  // Financial tracking
+  totalDeposits: number;
+  totalWithdrawals: number;
+  depositCount: number;
+  withdrawalCount: number;
+  lastDepositTime: string;
+  lastWithdrawalTime: string;
+  netFinancialFlow: number; // deposits - withdrawals
 }
 
 interface GamePerformance {
@@ -184,6 +192,22 @@ export default function GameStatistics() {
 
       if (walletError) throw walletError;
 
+      // Get deposit and withdrawal data
+      const { data: transactions, error: transactionError } = await supabase
+        .from('transactions')
+        .select('user_id, type, amount, status, created_at')
+        .in('type', ['deposit', 'withdrawal'])
+        .eq('status', 'completed')
+        .order('created_at', { ascending: false });
+
+      if (transactionError) {
+        console.error('❌ Error fetching transactions:', transactionError);
+        // Continue without transaction data rather than failing
+      }
+
+      console.log(`📊 Total transactions found: ${transactions?.length || 0}`);
+      console.log('📊 Sample transactions:', transactions?.slice(0, 3));
+
       // Process player activities
       const playerMap: { [key: string]: PlayerGameActivity } = {};
       const userIdMappings: { [key: string]: string } = {}; // Maps game session user_id to player map key
@@ -225,6 +249,14 @@ export default function GameStatistics() {
           last7DaysGames: 0,
           last7DaysWagered: 0,
           gamesPerDay: {},
+          // Financial tracking
+          totalDeposits: 0,
+          totalWithdrawals: 0,
+          depositCount: 0,
+          withdrawalCount: 0,
+          lastDepositTime: 'Never',
+          lastWithdrawalTime: 'Never',
+          netFinancialFlow: 0,
         };
 
         // Create mappings for different possible user ID formats
@@ -236,6 +268,34 @@ export default function GameStatistics() {
 
       console.log('📊 Created user ID mappings:', Object.keys(userIdMappings).length);
       console.log('📊 Sample mappings:', Object.entries(userIdMappings).slice(0, 3));
+
+      // Process transactions (deposits and withdrawals)
+      transactions?.forEach(transaction => {
+        const mappedUserId = userIdMappings[transaction.user_id];
+        const player = mappedUserId ? playerMap[mappedUserId] : null;
+
+        if (!player) return;
+
+        const amount = transaction.amount || 0;
+        const transactionTime = new Date(transaction.created_at).toLocaleString();
+
+        if (transaction.type === 'deposit') {
+          player.totalDeposits += amount;
+          player.depositCount++;
+          if (player.lastDepositTime === 'Never') {
+            player.lastDepositTime = transactionTime;
+          }
+        } else if (transaction.type === 'withdrawal') {
+          player.totalWithdrawals += amount;
+          player.withdrawalCount++;
+          if (player.lastWithdrawalTime === 'Never') {
+            player.lastWithdrawalTime = transactionTime;
+          }
+        }
+
+        // Calculate net financial flow
+        player.netFinancialFlow = player.totalDeposits - player.totalWithdrawals;
+      });
 
       // Add wallet balances
       wallets?.forEach(wallet => {
@@ -614,7 +674,10 @@ export default function GameStatistics() {
           Today: {playerActivities.reduce((sum, p) => sum + p.todayGamesPlayed, 0)} games • PKR {playerActivities.reduce((sum, p) => sum + p.todayWagered, 0).toLocaleString()} wagered
         </Text>
         <Text style={styles.sectionSubtitle}>
-          All-time: PKR {playerActivities.reduce((sum, p) => sum + p.totalWagered, 0).toLocaleString()} total wagered
+          All-time: PKR {playerActivities.reduce((sum, p) => sum + p.totalWagered, 0).toLocaleString()} wagered • PKR {playerActivities.reduce((sum, p) => sum + p.totalDeposits, 0).toLocaleString()} deposited
+        </Text>
+        <Text style={styles.sectionSubtitle}>
+          Platform balances: PKR {playerActivities.reduce((sum, p) => sum + p.currentBalance, 0).toLocaleString()} total • PKR {playerActivities.reduce((sum, p) => sum + p.netFinancialFlow, 0).toLocaleString()} net flow
         </Text>
       </View>
 
@@ -719,6 +782,32 @@ export default function GameStatistics() {
                 <Text style={[styles.statValue, { color: Colors.primary.textSecondary }]}>No games played yet</Text>
               </View>
             )}
+
+            {/* Financial Information */}
+            <View style={styles.statRow}>
+              <Text style={styles.statLabel}>Total Deposits:</Text>
+              <Text style={[styles.statValue, { color: Colors.primary.neonCyan }]}>
+                PKR {player.totalDeposits.toLocaleString()} ({player.depositCount} deposits)
+              </Text>
+            </View>
+            <View style={styles.statRow}>
+              <Text style={styles.statLabel}>Total Withdrawals:</Text>
+              <Text style={[styles.statValue, { color: Colors.primary.hotPink }]}>
+                PKR {player.totalWithdrawals.toLocaleString()} ({player.withdrawalCount} withdrawals)
+              </Text>
+            </View>
+            <View style={styles.statRow}>
+              <Text style={styles.statLabel}>Current Balance:</Text>
+              <Text style={[styles.statValue, { color: Colors.primary.gold, fontWeight: 'bold' }]}>
+                PKR {player.currentBalance.toLocaleString()}
+              </Text>
+            </View>
+            <View style={styles.statRow}>
+              <Text style={styles.statLabel}>Net Financial Flow:</Text>
+              <Text style={[styles.statValue, { color: player.netFinancialFlow >= 0 ? Colors.primary.neonCyan : Colors.primary.hotPink }]}>
+                {player.netFinancialFlow >= 0 ? '+' : ''}PKR {player.netFinancialFlow.toLocaleString()}
+              </Text>
+            </View>
           </View>
 
           <View style={styles.playerMetrics}>
@@ -735,12 +824,16 @@ export default function GameStatistics() {
               <Text style={styles.metricLabel}>Total Wagered</Text>
             </View>
             <View style={styles.metric}>
-              <Text style={styles.metricValue}>{player.winRate.toFixed(1)}%</Text>
-              <Text style={styles.metricLabel}>Win Rate</Text>
+              <Text style={styles.metricValue}>PKR {player.totalDeposits.toLocaleString()}</Text>
+              <Text style={styles.metricLabel}>Total Deposits</Text>
             </View>
             <View style={styles.metric}>
-              <Text style={styles.metricValue}>{player.last7DaysGames}</Text>
-              <Text style={styles.metricLabel}>7-Day Games</Text>
+              <Text style={styles.metricValue}>PKR {player.currentBalance.toLocaleString()}</Text>
+              <Text style={styles.metricLabel}>Current Balance</Text>
+            </View>
+            <View style={styles.metric}>
+              <Text style={styles.metricValue}>{player.winRate.toFixed(1)}%</Text>
+              <Text style={styles.metricLabel}>Win Rate</Text>
             </View>
           </View>
         </View>
