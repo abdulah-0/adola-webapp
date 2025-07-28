@@ -192,12 +192,55 @@ export default function GameStatistics() {
 
       if (walletError) throw walletError;
 
-      // Get deposit and withdrawal data
+      // Get deposit and withdrawal data - try multiple approaches
+      console.log('📊 Checking transactions table...');
+
+      // First, check what tables exist for financial data
+      const { data: sampleTransaction, error: sampleError } = await supabase
+        .from('transactions')
+        .select('*')
+        .limit(1);
+
+      if (sampleError) {
+        console.error('❌ Error accessing transactions table:', sampleError);
+        console.log('📊 Trying alternative table names...');
+
+        // Try alternative table names
+        const alternativeTableNames = ['wallet_transactions', 'payments', 'deposits', 'withdrawals', 'financial_transactions'];
+        for (const tableName of alternativeTableNames) {
+          const { data: altData, error: altError } = await supabase
+            .from(tableName)
+            .select('*')
+            .limit(1);
+
+          if (!altError && altData) {
+            console.log(`📊 Found alternative table: ${tableName}`, altData[0]);
+            break;
+          }
+        }
+      } else {
+        console.log('📊 Sample transaction structure:', sampleTransaction?.[0]);
+      }
+
+      // Try to get all transactions first to see the data structure
+      const { data: allTransactions, error: allTransError } = await supabase
+        .from('transactions')
+        .select('*')
+        .limit(100);
+
+      if (allTransError) {
+        console.error('❌ Error fetching all transactions:', allTransError);
+      } else {
+        console.log(`📊 Total transactions in table: ${allTransactions?.length || 0}`);
+        console.log('📊 All transaction types found:', [...new Set(allTransactions?.map(t => t.type))]);
+        console.log('📊 All transaction statuses found:', [...new Set(allTransactions?.map(t => t.status))]);
+        console.log('📊 Sample transactions:', allTransactions?.slice(0, 3));
+      }
+
+      // Get deposit and withdrawal data with broader criteria
       const { data: transactions, error: transactionError } = await supabase
         .from('transactions')
         .select('user_id, type, amount, status, created_at')
-        .in('type', ['deposit', 'withdrawal'])
-        .eq('status', 'completed')
         .order('created_at', { ascending: false });
 
       if (transactionError) {
@@ -206,7 +249,7 @@ export default function GameStatistics() {
       }
 
       console.log(`📊 Total transactions found: ${transactions?.length || 0}`);
-      console.log('📊 Sample transactions:', transactions?.slice(0, 3));
+      console.log('📊 Filtered transactions sample:', transactions?.slice(0, 5));
 
       // Process player activities
       const playerMap: { [key: string]: PlayerGameActivity } = {};
@@ -270,32 +313,64 @@ export default function GameStatistics() {
       console.log('📊 Sample mappings:', Object.entries(userIdMappings).slice(0, 3));
 
       // Process transactions (deposits and withdrawals)
+      console.log('📊 Processing transactions...');
+      let processedTransactions = 0;
+      let skippedTransactions = 0;
+      let depositCount = 0;
+      let withdrawalCount = 0;
+
       transactions?.forEach(transaction => {
         const mappedUserId = userIdMappings[transaction.user_id];
         const player = mappedUserId ? playerMap[mappedUserId] : null;
 
-        if (!player) return;
+        if (!player) {
+          skippedTransactions++;
+          if (skippedTransactions <= 5) {
+            console.log(`📊 Skipped transaction - user_id: ${transaction.user_id}, type: ${transaction.type}, amount: ${transaction.amount}`);
+          }
+          return;
+        }
 
-        const amount = transaction.amount || 0;
+        const amount = parseFloat(transaction.amount) || 0;
         const transactionTime = new Date(transaction.created_at).toLocaleString();
+        const transactionType = transaction.type?.toLowerCase();
 
-        if (transaction.type === 'deposit') {
+        // Handle different possible transaction types and statuses
+        const isCompleted = !transaction.status ||
+                           transaction.status === 'completed' ||
+                           transaction.status === 'success' ||
+                           transaction.status === 'approved';
+
+        if (!isCompleted) {
+          console.log(`📊 Skipping non-completed transaction: ${transaction.status}`);
+          return;
+        }
+
+        if (transactionType === 'deposit' || transactionType === 'credit') {
           player.totalDeposits += amount;
           player.depositCount++;
+          depositCount++;
           if (player.lastDepositTime === 'Never') {
             player.lastDepositTime = transactionTime;
           }
-        } else if (transaction.type === 'withdrawal') {
+          processedTransactions++;
+        } else if (transactionType === 'withdrawal' || transactionType === 'debit') {
           player.totalWithdrawals += amount;
           player.withdrawalCount++;
+          withdrawalCount++;
           if (player.lastWithdrawalTime === 'Never') {
             player.lastWithdrawalTime = transactionTime;
           }
+          processedTransactions++;
         }
 
         // Calculate net financial flow
         player.netFinancialFlow = player.totalDeposits - player.totalWithdrawals;
       });
+
+      console.log(`📊 Transaction processing complete: ${processedTransactions} processed, ${skippedTransactions} skipped`);
+      console.log(`📊 Deposits: ${depositCount}, Withdrawals: ${withdrawalCount}`);
+      console.log('📊 Sample player with transactions:', Object.values(playerMap).find(p => p.totalDeposits > 0 || p.totalWithdrawals > 0));
 
       // Add wallet balances
       wallets?.forEach(wallet => {
