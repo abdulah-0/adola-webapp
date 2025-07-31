@@ -7,17 +7,14 @@
       "config": {
         "distDir": "dist"
       }
-    },
-    {
-      "src": "pages/api/**/*.js",
-      "use": "@vercel/node"
     }
   ],
+  "functions": {
+    "pages/api/odds-proxy.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
     {
       "src": "/static/(.*)",
       "headers": {
