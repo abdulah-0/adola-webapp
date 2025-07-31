@@ -70,12 +70,11 @@ const BasketballBettingGame: React.FC = () => {
       for (const sport of basketballSports) {
         try {
           console.log(`🔍 Fetching ${sport} matches...`);
-          const encodedUrl = encodeURIComponent(`https://api.the-odds-api.com/v4/sports/${sport}/events?apiKey=${API_KEY}&dateFormat=iso&oddsFormat=decimal`);
-          const response = await fetch(`https://api.allorigins.win/get?url=${encodedUrl}`);
+          const targetUrl = `https://api.the-odds-api.com/v4/sports/${sport}/events?apiKey=${API_KEY}&dateFormat=iso&oddsFormat=decimal`;
+          const response = await fetch(`https://corsproxy.io/?${encodeURIComponent(targetUrl)}`);
           
           if (response.ok) {
-            const proxyResponse = await response.json();
-            const data = JSON.parse(proxyResponse.contents);
+            const data = await response.json();
             console.log(`✅ Found ${data.length} ${sport} matches`);
 
             if (data && data.length > 0) {
@@ -229,7 +228,8 @@ const BasketballBettingGame: React.FC = () => {
       
       for (const sport of basketballSports) {
         try {
-          const response = await fetch(`/api/odds-proxy?endpoint=sports/${sport}/events/${match.id}/odds&markets=h2h,spreads,totals&oddsFormat=decimal&dateFormat=iso`);
+          const targetUrl = `https://api.the-odds-api.com/v4/sports/${sport}/events/${match.id}/odds?apiKey=${API_KEY}&markets=h2h,spreads,totals&oddsFormat=decimal&dateFormat=iso`;
+          const response = await fetch(`https://corsproxy.io/?${encodeURIComponent(targetUrl)}`);
           
           if (response.ok) {
             const data = await response.json();

@@ -22,9 +22,9 @@ export const testAPIConnection = async () => {
     const API_KEY = process.env.EXPO_PUBLIC_ODDS_API_KEY;
     console.log('🔑 API Key:', API_KEY ? `${API_KEY.substring(0, 8)}...` : 'MISSING');
 
-    // Test with a simple sports list call using direct fetch
+    // Test with a simple sports list call using different CORS proxy
     const targetUrl = `https://api.the-odds-api.com/v4/sports?apiKey=${API_KEY}`;
-    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
 
     console.log('🔗 Using CORS proxy:', proxyUrl);
     const response = await fetch(proxyUrl);
@@ -33,11 +33,10 @@ export const testAPIConnection = async () => {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const proxyData = await response.json();
+    const actualData = await response.json();
     console.log('✅ API Connection successful!');
 
-    // Parse the response from CORS proxy
-    const actualData = JSON.parse(proxyData.contents);
+    // Direct response from corsproxy.io (no need to parse contents)
     console.log('📊 Available sports:', Array.isArray(actualData) ? actualData.length : 'Not an array');
     console.log('🔍 Response data type:', typeof actualData);
 
