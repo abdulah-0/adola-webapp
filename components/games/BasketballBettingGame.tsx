@@ -70,12 +70,14 @@ const BasketballBettingGame: React.FC = () => {
       for (const sport of basketballSports) {
         try {
           console.log(`🔍 Fetching ${sport} matches...`);
-          const response = await fetch(`/api/odds-proxy?endpoint=sports/${sport}/events&dateFormat=iso&oddsFormat=decimal`);
+          const encodedUrl = encodeURIComponent(`https://api.the-odds-api.com/v4/sports/${sport}/events?apiKey=${API_KEY}&dateFormat=iso&oddsFormat=decimal`);
+          const response = await fetch(`https://api.allorigins.win/get?url=${encodedUrl}`);
           
           if (response.ok) {
-            const data = await response.json();
+            const proxyResponse = await response.json();
+            const data = JSON.parse(proxyResponse.contents);
             console.log(`✅ Found ${data.length} ${sport} matches`);
-            
+
             if (data && data.length > 0) {
               // Convert API format to our format
               const convertedMatches = data.map((match: any) => ({

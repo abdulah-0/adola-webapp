@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const oddsAPI = axios.create({
-  baseURL: '/api/odds-proxy',
+  baseURL: 'https://api.allorigins.win/get?url=',
   timeout: 10000,
 });
 
@@ -23,16 +23,17 @@ export const testAPIConnection = async () => {
     console.log('🔑 API Key:', API_KEY ? `${API_KEY.substring(0, 8)}...` : 'MISSING');
 
     // Test with a simple sports list call
-    const response = await oddsAPI.get('', {
-      params: { endpoint: 'sports' }
-    });
+    const encodedUrl = encodeURIComponent(`https://api.the-odds-api.com/v4/sports?apiKey=${API_KEY}`);
+    const response = await oddsAPI.get(encodedUrl);
 
     console.log('✅ API Connection successful!');
-    console.log('📊 Available sports:', Array.isArray(response.data) ? response.data.length : 'Not an array');
-    console.log('🔍 Response data type:', typeof response.data);
-    console.log('📋 Response data sample:', response.data);
 
-    const sportsArray = Array.isArray(response.data) ? response.data : [];
+    // Parse the response from CORS proxy
+    const actualData = JSON.parse(response.data.contents);
+    console.log('📊 Available sports:', Array.isArray(actualData) ? actualData.length : 'Not an array');
+    console.log('🔍 Response data type:', typeof actualData);
+
+    const sportsArray = Array.isArray(actualData) ? actualData : [];
     console.log('🏏 Cricket sports available:', sportsArray.filter(s => s.key && s.key.includes('cricket')));
 
     return { success: true, sports: sportsArray };
@@ -182,20 +183,15 @@ export const getLiveOdds = async (matchId) => {
 
     for (const sport of cricketSports) {
       try {
-        const response = await oddsAPI.get('', {
-          params: {
-            endpoint: `sports/${sport}/events/${matchId}/odds`,
-            markets: 'h2h,totals,spreads',
-            oddsFormat: 'decimal',
-            dateFormat: 'iso'
-          }
-        });
+        const encodedUrl = encodeURIComponent(`https://api.the-odds-api.com/v4/sports/${sport}/events/${matchId}/odds?apiKey=${API_KEY}&markets=h2h,totals,spreads&oddsFormat=decimal&dateFormat=iso`);
+        const response = await oddsAPI.get(encodedUrl);
 
-        if (response.data && response.data.bookmakers) {
+        const actualData = JSON.parse(response.data.contents);
+        if (actualData && actualData.bookmakers) {
           console.log(`✅ Found real odds for ${sport} match`);
 
           // Process odds with house margin
-          const processedOdds = response.data.bookmakers.map(bookmaker => ({
+          const processedOdds = actualData.bookmakers.map(bookmaker => ({
             ...bookmaker,
             markets: bookmaker.markets.map(market => ({
               ...market,
