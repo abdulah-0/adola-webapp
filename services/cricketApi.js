@@ -28,10 +28,14 @@ export const testAPIConnection = async () => {
     });
 
     console.log('✅ API Connection successful!');
-    console.log('📊 Available sports:', response.data?.length || 0);
-    console.log('🏏 Cricket sports available:', response.data?.filter(s => s.key.includes('cricket')));
+    console.log('📊 Available sports:', Array.isArray(response.data) ? response.data.length : 'Not an array');
+    console.log('🔍 Response data type:', typeof response.data);
+    console.log('📋 Response data sample:', response.data);
 
-    return { success: true, sports: response.data };
+    const sportsArray = Array.isArray(response.data) ? response.data : [];
+    console.log('🏏 Cricket sports available:', sportsArray.filter(s => s.key && s.key.includes('cricket')));
+
+    return { success: true, sports: sportsArray };
   } catch (error) {
     console.error('❌ API Connection failed:', error.message);
     console.log('📊 Error details:', error.response?.data);
