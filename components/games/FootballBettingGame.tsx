@@ -70,7 +70,7 @@ const FootballBettingGame: React.FC = () => {
       for (const sport of footballSports) {
         try {
           console.log(`🔍 Fetching ${sport} matches...`);
-          const response = await fetch(`https://api.the-odds-api.com/v4/sports/${sport}/events?apiKey=${API_KEY}&dateFormat=iso&oddsFormat=decimal`);
+          const response = await fetch(`/api/odds-proxy?endpoint=sports/${sport}/events&dateFormat=iso&oddsFormat=decimal`);
 
           if (response.ok) {
             const data = await response.json();
@@ -226,7 +226,7 @@ const FootballBettingGame: React.FC = () => {
 
       for (const sport of footballSports) {
         try {
-          const response = await fetch(`https://api.the-odds-api.com/v4/sports/${sport}/events/${match.id}/odds?apiKey=${API_KEY}&markets=h2h,totals,btts&oddsFormat=decimal&dateFormat=iso`);
+          const response = await fetch(`/api/odds-proxy?endpoint=sports/${sport}/events/${match.id}/odds&markets=h2h,totals,btts&oddsFormat=decimal&dateFormat=iso`);
 
           if (response.ok) {
             const data = await response.json();

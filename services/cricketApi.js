@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const oddsAPI = axios.create({
-  baseURL: 'https://api.the-odds-api.com/v4',
+  baseURL: '/api/odds-proxy',
   timeout: 10000,
 });
 
@@ -23,8 +23,8 @@ export const testAPIConnection = async () => {
     console.log('🔑 API Key:', API_KEY ? `${API_KEY.substring(0, 8)}...` : 'MISSING');
 
     // Test with a simple sports list call
-    const response = await oddsAPI.get('/sports', {
-      params: { apiKey: API_KEY }
+    const response = await oddsAPI.get('', {
+      params: { endpoint: 'sports' }
     });
 
     console.log('✅ API Connection successful!');
@@ -60,29 +60,31 @@ export const getLiveCricketMatches = async () => {
 
     for (const sport of cricketSports) {
       try {
-        console.log(`🔍 Fetching ${sport} matches...`);
-        const url = `/sports/${sport}/events`;
-        const params = {
-          apiKey: API_KEY,
-          dateFormat: 'iso',
-          oddsFormat: 'decimal'
-        };
+        console.log(`🔍 Fetching ${sport} matches via proxy...`);
+        const proxyUrl = `/api/odds-proxy?endpoint=sports/${sport}/events&dateFormat=iso&oddsFormat=decimal`;
 
-        console.log(`📡 Making API call to: ${oddsAPI.defaults.baseURL}${url}`);
-        console.log(`📋 With params:`, params);
+        console.log(`📡 Making proxy API call to: ${proxyUrl}`);
 
-        const response = await oddsAPI.get(url, { params });
+        const response = await fetch(proxyUrl);
+        const data = await response.json();
 
-        console.log(`📊 API Response status: ${response.status}`);
-        console.log(`📊 API Response headers:`, response.headers);
-        console.log(`📊 API Response data length:`, response.data?.length || 0);
-        console.log(`🔢 Requests remaining:`, response.headers['x-requests-remaining']);
-        console.log(`🔢 Requests used:`, response.headers['x-requests-used']);
+        console.log(`📊 Proxy Response status: ${response.status}`);
+        console.log(`📊 Proxy Response data length:`, data?.length || 0);
 
-        if (response.data && response.data.length > 0) {
-          console.log(`✅ Found ${response.data.length} ${sport} matches`);
-          console.log(`📋 Sample match:`, response.data[0]);
-          allMatches = [...allMatches, ...response.data];
+        if (response.ok && data && data.length > 0) {
+          console.log(`✅ Found ${data.length} ${sport} matches`);
+          console.log(`📋 Sample match:`, data[0]);
+
+          // Convert API format to our format
+          const convertedMatches = data.map(match => ({
+            id: match.id,
+            home_team: match.home_team,
+            away_team: match.away_team,
+            league: sport.replace('cricket_', '').replace(/_/g, ' ').toUpperCase(),
+            commence_time: match.commence_time,
+            isDemo: false
+          }));
+          allMatches = [...allMatches, ...convertedMatches];
         } else {
           console.log(`📭 No matches in ${sport} response`);
         }
@@ -176,9 +178,9 @@ export const getLiveOdds = async (matchId) => {
 
     for (const sport of cricketSports) {
       try {
-        const response = await oddsAPI.get(`/sports/${sport}/events/${matchId}/odds`, {
+        const response = await oddsAPI.get('', {
           params: {
-            apiKey: API_KEY,
+            endpoint: `sports/${sport}/events/${matchId}/odds`,
             markets: 'h2h,totals,spreads',
             oddsFormat: 'decimal',
             dateFormat: 'iso'
@@ -361,13 +363,13 @@ export const manualAPITest = async () => {
   try {
     // Test 1: Get available sports
     console.log('📋 Test 1: Getting available sports...');
-    const sportsResponse = await fetch(`https://api.the-odds-api.com/v4/sports?apiKey=${API_KEY}`);
+    const sportsResponse = await fetch(`/api/odds-proxy?endpoint=sports`);
     const sportsData = await sportsResponse.json();
     console.log('✅ Sports API Response:', sportsData);
 
     // Test 2: Get cricket events
     console.log('📋 Test 2: Getting cricket events...');
-    const cricketResponse = await fetch(`https://api.the-odds-api.com/v4/sports/cricket_test_match/events?apiKey=${API_KEY}&dateFormat=iso`);
+    const cricketResponse = await fetch(`/api/odds-proxy?endpoint=sports/cricket_test_match/events&dateFormat=iso`);
     const cricketData = await cricketResponse.json();
     console.log('✅ Cricket API Response:', cricketData);
 
