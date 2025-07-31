@@ -1,4 +1,5 @@
 {
+  "_comment": "Updated CSP to allow Odds API connections for sports betting",
   "version": 2,
   "builds": [
     {
