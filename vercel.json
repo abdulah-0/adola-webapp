@@ -9,11 +9,6 @@
       }
     }
   ],
-  "functions": {
-    "pages/api/odds-proxy.js": {
-      "runtime": "nodejs18.x"
-    }
-  },
   "routes": [
     {
       "src": "/static/(.*)",
