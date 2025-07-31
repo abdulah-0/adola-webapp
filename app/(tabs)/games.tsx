@@ -53,6 +53,7 @@ export default function GamesScreen() {
     { id: 'all', name: 'All Games', icon: '🎮' },
     { id: 'casino', name: 'Casino', icon: '🎰' },
     { id: 'card', name: 'Card Games', icon: '🃏' },
+    { id: 'sports', name: 'Sports', icon: '⚽' },
   ];
 
   const games = [
@@ -237,7 +238,52 @@ export default function GamesScreen() {
       players: { current: 3421, max: 10000 },
       status: 'available',
     },
+    {
+      id: 'cricket-betting',
+      name: 'Cricket Betting',
+      description: 'Live cricket betting with real-time odds',
+      category: 'sports',
+      icon: '🏏',
+      color: Colors.primary.gold,
+      players: { current: 1567, max: 5000 },
+      status: 'available',
+    },
+    {
+      id: 'football-betting',
+      name: 'Football Betting',
+      description: 'Live football betting and predictions',
+      category: 'sports',
+      icon: '⚽',
+      color: Colors.primary.neonCyan,
+      players: { current: 2341, max: 8000 },
+      status: 'available',
+    },
+    {
+      id: 'basketball-betting',
+      name: 'Basketball Betting',
+      description: 'NBA and international basketball betting',
+      category: 'sports',
+      icon: '🏀',
+      color: Colors.primary.hotPink,
+      players: { current: 1876, max: 6000 },
+      status: 'available',
+    },
+    {
+      id: 'tennis-betting',
+      name: 'Tennis Betting',
+      description: 'Live tennis matches and tournaments',
+      category: 'sports',
+      icon: '🎾',
+      color: Colors.primary.gold,
+      players: { current: 1234, max: 4000 },
+      status: 'available',
+    },
   ];
+
+  // Debug logging
+  console.log('📋 Categories available:', categories.map(c => c.name));
+  console.log('🎮 Total games:', games.length);
+  console.log('🏏 Sports games:', games.filter(g => g.category === 'sports').map(g => g.name));
 
   const filteredGames = games.filter(game => {
     const matchesSearch = game.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -245,6 +291,11 @@ export default function GamesScreen() {
     const matchesCategory = selectedCategory === 'all' || game.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
+
+  // Debug filtering
+  console.log('🔍 Selected category:', selectedCategory);
+  console.log('🎯 Filtered games count:', filteredGames.length);
+  console.log('🎮 Filtered games:', filteredGames.map(g => `${g.name} (${g.category})`));
 
   const handleGamePress = (gameId: string) => {
     // Navigate to individual game

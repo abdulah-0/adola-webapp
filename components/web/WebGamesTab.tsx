@@ -30,6 +30,7 @@ export default function WebGamesTab({ games, onGamePress }: WebGamesTabProps) {
     { id: 'all', name: 'All Games', icon: '🎮', count: games.length },
     { id: 'casino', name: 'Casino', icon: '🎰', count: games.filter(g => g.category === 'casino').length },
     { id: 'card', name: 'Card Games', icon: '🃏', count: games.filter(g => g.category === 'card').length },
+    { id: 'sports', name: 'Sports', icon: '⚽', count: games.filter(g => g.category === 'sports').length },
   ];
 
   const filteredGames = games.filter(game => {

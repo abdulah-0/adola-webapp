@@ -1,0 +1,230 @@
+## Cricket Betting Game Implementation Requirements  
+
+---
+
+### **1. Game Flow & Core Mechanics**  
+
+#### **1.1 Betting Sequence**  
+```mermaid
+sequenceDiagram
+  participant User
+  participant UI
+  participant Game Engine
+  participant Odds API
+  
+  User->>UI: Selects live match
+  UI->>Game Engine: Fetch available markets
+  Game Engine->>Odds API: GET markets (API Key: 2444b2bca3d41b5ddfd2c7cfae5371a9)
+  Odds API-->>Game Engine: "Next Ball", "Over Runs", "Method of Dismissal"
+  UI->>User: Display markets with odds
+  User->>UI: Selects "Next Ball: 6 Runs" @4.50 odds
+  UI->>Game Engine: Place bet ($10)
+  Game Engine->>Database: Lock bet & deduct funds
+  Ball Outcome->>Game Engine: "6 Runs" result
+  Game Engine->>User: Auto-settle $45 ($10×4.50)
+```
+
+#### **1.2 House Profit Model**  
+| Revenue Source       | Mechanism                          | Example                      |
+|----------------------|------------------------------------|------------------------------|
+| **Commission**       | 5-10% on net winnings             | User wins $45 → Pays $2.25 fee |
+| **Odds Margin**      | Built-in overround (5-15%)         | True odds 2.00 → Offered 1.85 |
+| **Voided Bets**      | Keep stake on unsettled markets    | Match abandoned → Stake kept |
+
+---
+
+### **2. UI/UX Specifications**  
+
+#### **2.1 Core Screens**  
+1. **Live Match Lobby**  
+   - Real-time match timeline with ball-by-ball commentary  
+   - Floating odds panel with 3 key markets:  
+     ```
+     [ Next Ball ]  [ Current Over ]  [ Next Wicket ]
+       4 @ 3.20      8+ Runs @ 2.10     Bowled @ 4.50
+       6 @ 4.50                         Caught @ 3.25
+       W @ 5.00
+     ```
+
+2. **Market Depth View**  
+   ```jsx
+   <MarketCard title="Over 15.1-15.6 Runs">
+     <OddsButton label="Under 6.5" odds={1.95} />
+     <OddsButton label="7-9 Runs" odds={2.80} />
+     <OddsButton label="10+ Runs" odds={4.20} />
+     <CountdownTimer endTime={match.currentOverEnd} />
+   </MarketCard>
+   ```
+
+3. **Bet Slip**  
+   - Dynamic slip showing:  
+     - Selected market  
+     - Potential payout (stake × odds - commission)  
+     - Countdown to market closure  
+   - One-tap stake buttons: $1, $5, $10, $25  
+
+#### **2.2 Visual Design Principles**  
+- **Color Coding**:  
+  - Red: Wicket markets  
+  - Green: Run-based markets  
+  - Amber: Time-sensitive offers  
+- **Animations**:  
+  - Odds change pulsing (red/green fade)  
+  - Winning bet confetti explosion  
+- **Haptic Feedback**:  
+  - Vibrate on bet placement/settlement  
+
+---
+
+### **3. Game Engine Implementation**  
+
+#### **3.1 Odds Integration Flow**  
+```javascript
+// Supabase Edge Function
+export async function getLiveOdds(matchId) {
+  const API_KEY = Deno.env.get('ODDS_API_KEY');
+  const response = await fetch(
+    `https://api.the-odds-api.com/v4/sports/cricket_ipl/events/${matchId}/odds?apiKey=${API_KEY}&markets=next_ball`
+  );
+  
+  // Process odds with house margin
+  return response.data.map(market => ({
+    ...market,
+    odds: applyHouseMargin(market.odds) // Adds 5-15% overround
+  }));
+}
+
+function applyHouseMargin(odds) {
+  return Object.keys(odds).reduce((acc, key) => {
+    acc[key] = odds[key] * 0.92; // 8% margin
+    return acc;
+  }, {});
+}
+```
+
+#### **3.2 Settlement Logic**  
+```mermaid
+graph TD
+  A[Ball Outcome] --> B{Market Resolution}
+  B -->|Win| C[Payout = Stake * Odds * 0.95]
+  B -->|Loss| D[Stake to house]
+  B -->|Void| E[Refund stake]
+  C --> F[Deduct 5% commission]
+  F --> G[Credit user balance]
+```
+
+---
+
+### **4. Revenue Optimization Features**  
+
+#### **4.1 Dynamic Odds Adjustment**  
+- Algorithm factors:  
+  ```python
+  def calculate_dynamic_odds(true_odds, user_behavior):
+      # Increase margin on popular bets
+      if user_behavior['bets_placed'] > 100:
+          return true_odds * 0.85
+      # Decrease margin for market balancing
+      elif user_behavior['exposure'] > 5000:
+          return true_odds * 0.97
+      else:
+          return true_odds * 0.92
+  ```
+
+#### **4.2 House-Favorable Rules**  
+1. **Dead Ball Rule**:  
+   - Void bets if delivery deemed dead ball  
+2. **Tied Market Resolution**:  
+   - "Exactly 6 Runs" market loses if 7 scored  
+3. **Minimum Odds**:  
+   - No odds below 1.20 regardless of probability  
+
+---
+
+### **5. Player Engagement Features**  
+
+#### **5.1 Social Triggers**  
+```mermaid
+pie
+  title Loss Recovery Mechanics
+  “Partial Refund Offers” : 35
+  “Bonus Bet on Next Market” : 25
+  “Odds Boost for Rebet” : 40
+```
+
+#### **5.2 Gamification Elements**  
+- **Achievements**:  
+  "Over Specialist" badge for 10+ over bets  
+- **Leaderboards**:  
+  Weekly profit rankings with prizes  
+- **Live Streaks**:  
+  Consecutive win counters with multipliers  
+
+---
+
+### **6. Risk Management**  
+
+#### **6.1 Exposure Controls**  
+| Risk Parameter       | Threshold    | Action                     |
+|----------------------|--------------|----------------------------|
+| Per Market Exposure  | > $500       | Auto-adjust odds downward |
+| User Win Streak      | 5+ wins      | Require KYC for higher bets|
+| Unusual Bet Patterns | > 3x avg     | Manual review trigger     |
+
+#### **6.2 Automated Limits**  
+```javascript
+// In bet placement function
+if (calculateUserExposure(userId) > MAX_EXPOSURE) {
+  return { error: "Market limit reached" };
+}
+if (userWinStreak(userId) >= 5) {
+  odds = applyStreakPenalty(odds); // Reduce by 10-25%
+}
+```
+
+---
+
+### **7. Critical UI Components**  
+
+#### **7.1 Odds Button**  
+```jsx
+<Pressable 
+  onPress={onSelection}
+  style={({pressed}) => [
+    styles.oddsButton,
+    pressed && styles.pressed,
+    isSelected && styles.selected
+  ]}>
+  <Text style={styles.selectionText}>{selection}</Text>
+  <Text style={styles.oddsText}>{odds.toFixed(2)}</Text>
+  {isFavourite && <StarIcon color="gold" />}
+</Pressable>
+```
+
+#### **7.2 Countdown Timer**  
+```jsx
+<CountdownCircle
+  seconds={30}
+  radius={20}
+  strokeWidth={3}
+  onComplete={autoCancelBet}
+  renderTime={(time) => <Text>{time}</Text>}
+/>
+```
+
+---
+
+### **8. Monetization Summary**  
+
+| Revenue Stream       | Implementation                              | Profit Margin |
+|----------------------|--------------------------------------------|---------------|
+| **Betting Margin**   | 5-15% built into odds                      | 8% avg        |
+| **Winning Commission**| 5% deduction on payouts                   | 100% capture  |
+| **Inactive Balances**| Keep unused funds >30 days                 | 2-5% monthly  |
+| **Data Monetization**| Sell betting patterns (opt-in)             | $5-10 CPM     |
+
+**Projected Earnings**:  
+- 1,000 daily users → $8,000-$12,000 monthly profit  
+- 5% house edge → $50 revenue per $1,000 wagered  
+
+This document provides complete implementation guidance for a cricket betting game with optimized monetization, focused exclusively on game flow, UI/UX, and revenue mechanics using your existing payment system and Odds API key.

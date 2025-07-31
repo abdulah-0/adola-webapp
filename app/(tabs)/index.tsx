@@ -79,6 +79,7 @@ export default function HomeScreen() {
 
   const featuredGames = [
     { name: 'Aviator', icon: '✈️', players: '1.2k', color: Colors.primary.neonCyan, route: '/game/aviator' },
+    { name: 'Cricket Betting', icon: '🏏', players: '1.5k', color: Colors.primary.gold, route: '/game/cricket-betting' },
     { name: 'Dice', icon: '🎲', players: '856', color: Colors.primary.hotPink, route: '/game/dice' },
     { name: 'Slots', icon: '🎰', players: '2.1k', color: Colors.primary.gold, route: '/game/slots' },
     { name: 'Roulette', icon: '🎡', players: '743', color: Colors.primary.neonCyan, route: '/game/roulette' },

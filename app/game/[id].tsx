@@ -24,6 +24,7 @@ import FruitMachineScreen from './screens/FruitMachineScreen';
 import MegaDrawScreen from './screens/MegaDrawScreen';
 import LuckyNumbersScreen from './screens/LuckyNumbersScreen';
 import PowerBallScreen from './screens/PowerBallScreen';
+import CricketBettingScreen from './screens/CricketBettingScreen';
 
 export default function GameScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -69,6 +70,8 @@ export default function GameScreen() {
         return <CrashScreen />;
       case 'limbo':
         return <LimboScreen />;
+      case 'cricket-betting':
+        return <CricketBettingScreen />;
       default:
         return (
           <View style={styles.errorContainer}>
