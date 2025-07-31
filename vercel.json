@@ -9,17 +9,6 @@
       }
     }
   ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://ltxxtuugfunyybsowknv.supabase.co wss://ltxxtuugfunyybsowknv.supabase.co https://*.supabase.co wss://*.supabase.co https://api.the-odds-api.com; object-src 'none'; base-uri 'self'; frame-src 'none';"
-        }
-      ]
-    }
-  ],
   "routes": [
     {
       "src": "/static/(.*)",
