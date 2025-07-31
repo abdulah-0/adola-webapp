@@ -73,7 +73,8 @@ export const getLiveCricketMatches = async () => {
     for (const sport of cricketSports) {
       try {
         console.log(`🔍 Fetching ${sport} matches via proxy...`);
-        const proxyUrl = `/api/odds-proxy?endpoint=sports/${sport}/events&dateFormat=iso&oddsFormat=decimal`;
+        const targetUrl = `https://api.the-odds-api.com/v4/sports/${sport}/events?apiKey=${API_KEY}&dateFormat=iso&oddsFormat=decimal`;
+        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
 
         console.log(`📡 Making proxy API call to: ${proxyUrl}`);
 
@@ -190,10 +191,15 @@ export const getLiveOdds = async (matchId) => {
 
     for (const sport of cricketSports) {
       try {
-        const encodedUrl = encodeURIComponent(`https://api.the-odds-api.com/v4/sports/${sport}/events/${matchId}/odds?apiKey=${API_KEY}&markets=h2h,totals,spreads&oddsFormat=decimal&dateFormat=iso`);
-        const response = await oddsAPI.get(encodedUrl);
+        const targetUrl = `https://api.the-odds-api.com/v4/sports/${sport}/events/${matchId}/odds?apiKey=${API_KEY}&markets=h2h,totals,spreads&oddsFormat=decimal&dateFormat=iso`;
+        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+        const response = await fetch(proxyUrl);
 
-        const actualData = JSON.parse(response.data.contents);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const actualData = await response.json();
         if (actualData && actualData.bookmakers) {
           console.log(`✅ Found real odds for ${sport} match`);
 
@@ -370,13 +376,15 @@ export const manualAPITest = async () => {
   try {
     // Test 1: Get available sports
     console.log('📋 Test 1: Getting available sports...');
-    const sportsResponse = await fetch(`/api/odds-proxy?endpoint=sports`);
+    const sportsTargetUrl = `https://api.the-odds-api.com/v4/sports?apiKey=${API_KEY}`;
+    const sportsResponse = await fetch(`https://corsproxy.io/?${encodeURIComponent(sportsTargetUrl)}`);
     const sportsData = await sportsResponse.json();
     console.log('✅ Sports API Response:', sportsData);
 
     // Test 2: Get cricket events
     console.log('📋 Test 2: Getting cricket events...');
-    const cricketResponse = await fetch(`/api/odds-proxy?endpoint=sports/cricket_test_match/events&dateFormat=iso`);
+    const cricketTargetUrl = `https://api.the-odds-api.com/v4/sports/cricket_test_match/events?apiKey=${API_KEY}&dateFormat=iso`;
+    const cricketResponse = await fetch(`https://corsproxy.io/?${encodeURIComponent(cricketTargetUrl)}`);
     const cricketData = await cricketResponse.json();
     console.log('✅ Cricket API Response:', cricketData);
 
