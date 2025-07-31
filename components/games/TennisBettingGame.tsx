@@ -70,7 +70,8 @@ const TennisBettingGame: React.FC = () => {
       for (const sport of tennisSports) {
         try {
           console.log(`🔍 Fetching ${sport} matches...`);
-          const response = await fetch(`https://api.the-odds-api.com/v4/sports/${sport}/events?apiKey=${API_KEY}&dateFormat=iso&oddsFormat=decimal`);
+          const targetUrl = `https://api.the-odds-api.com/v4/sports/${sport}/events?apiKey=${API_KEY}&dateFormat=iso&oddsFormat=decimal`;
+          const response = await fetch(`https://corsproxy.io/?${encodeURIComponent(targetUrl)}`);
           
           if (response.ok) {
             const data = await response.json();
@@ -228,7 +229,8 @@ const TennisBettingGame: React.FC = () => {
 
       for (const sport of tennisSports) {
         try {
-          const response = await fetch(`https://api.the-odds-api.com/v4/sports/${sport}/events/${match.id}/odds?apiKey=${API_KEY}&markets=h2h,spreads,totals&oddsFormat=decimal&dateFormat=iso`);
+          const targetUrl = `https://api.the-odds-api.com/v4/sports/${sport}/events/${match.id}/odds?apiKey=${API_KEY}&markets=h2h,spreads,totals&oddsFormat=decimal&dateFormat=iso`;
+          const response = await fetch(`https://corsproxy.io/?${encodeURIComponent(targetUrl)}`);
 
           if (response.ok) {
             const data = await response.json();
