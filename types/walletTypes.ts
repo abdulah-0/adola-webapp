@@ -3,7 +3,7 @@
 export interface BankAccount {
   id: string;
   name: string;
-  accountTitle: string;
+  accountTitle?: string;
   accountNumber: string;
   iban: string;
   bank: string;

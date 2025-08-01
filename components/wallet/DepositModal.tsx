@@ -119,9 +119,9 @@ export default function DepositModal({ visible, onClose, onDeposit }: DepositMod
                     <Text style={styles.bankLabel}>Account Title:</Text>
                     <TouchableOpacity
                       style={styles.copyButton}
-                      onPress={() => handleCopyToClipboard(bank.accountTitle || '', 'Account Title')}
+                      onPress={() => handleCopyToClipboard(bank.accountTitle || bank.name || '', 'Account Title')}
                     >
-                      <Text style={styles.bankValue}>{bank.accountTitle || 'N/A'}</Text>
+                      <Text style={styles.bankValue}>{bank.accountTitle || bank.name || 'N/A'}</Text>
                       <Ionicons name="copy-outline" size={16} color="#007AFF" />
                     </TouchableOpacity>
                   </View>
