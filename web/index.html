@@ -6,22 +6,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
     <!-- CSP temporarily disabled for testing - will be re-enabled via vercel.json -->
     <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://ltxxtuugfunyybsowknv.supabase.co wss://ltxxtuugfunyybsowknv.supabase.co https://*.supabase.co wss://*.supabase.co https://api.the-odds-api.com; object-src 'none'; base-uri 'self'; frame-src 'none';" -->
-    <title>Adola Gaming Platform</title>
+    <title>🎮 Adola Gaming Platform - 19 Games, PKR 50 Welcome Bonus, 5% Deposit Bonus</title>
+    <meta name="description" content="Join Adola Gaming Platform - Premium mobile gaming with 19 exciting games, PKR 50 welcome bonus, 5% deposit bonus, secure UBL bank transfers, and instant withdrawals. Play Aviator, Crash, Dice, Mines and more!" />
+    <meta name="keywords" content="Adola Gaming, mobile gaming, online casino, PKR games, Aviator game, Crash game, deposit bonus, welcome bonus, UBL bank transfer, Pakistan gaming" />
+    <meta property="og:title" content="🎮 Adola Gaming Platform - Premium Mobile Gaming" />
+    <meta property="og:description" content="Experience the best mobile gaming with 19 games, PKR 50 welcome bonus, and 5% deposit bonus. Secure gaming with UBL bank transfers." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="🎮 Adola Gaming Platform" />
+    <meta name="twitter:description" content="Premium mobile gaming with 19 games and instant bonuses" />
     <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
     <style id="expo-reset">
-      /* These styles make the body full-height */
-      html,
-      body {
+      /* Force scrolling for Adola website */
+      html {
         height: 100%;
+        overflow: auto !important;
       }
-      /* These styles disable body scrolling if you are using <ScrollView> */
       body {
-        overflow: hidden;
+        height: auto !important;
+        min-height: 100vh;
+        margin: 0;
+        padding: 0;
+        overflow: auto !important;
+        overflow-y: scroll !important;
       }
-      /* These styles make the root element full-height */
+      /* Make root scrollable */
       #root {
-        display: flex;
-        height: 100%;
+        height: auto !important;
+        min-height: 100vh;
+        overflow: visible !important;
+      }
+      /* Force all React Native containers to be scrollable */
+      div[data-reactroot] {
+        height: auto !important;
+        overflow: visible !important;
       }
     </style>
   </head>

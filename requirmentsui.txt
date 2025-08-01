@@ -1,8 +1,8 @@
-Here's a React Native (Expo) UI requirements document tailored to your tech stack (Expo, React Native, Supabase) based on your design:
+Here's a React Native (Expo) UI requirements document tailored to your tech stack (Expo, React Native, Supabase) based on your Adola Gaming Platform:
 
 ### React Native UI Requirements Document
-**Tech Stack**: Expo, React Native, Supabase  
-**Objective**: Recreate UI from Container.jpg without modifying existing functionality  
+**Tech Stack**: Expo, React Native, Supabase
+**Objective**: Update website with actual Adola Gaming Platform data and branding
 
 ---
 
@@ -26,9 +26,9 @@ Here's a React Native (Expo) UI requirements document tailored to your tech stac
    - Horizontal rules: `<View style={{height: 1, backgroundColor: '#ccc', marginVertical: 8}}>`
 
 4. **Color Scheme**:
-   - Use existing app color variables
-   - Default text: `'#333'`
-   - Background: `'#fff'`
+   - Use existing Adola app color variables (neonCyan, hotPink, gold)
+   - Default text: `Colors.primary.text`
+   - Background: `Colors.primary.background`
 
 ---
 
@@ -38,12 +38,12 @@ Here's a React Native (Expo) UI requirements document tailored to your tech stac
 ```jsx
 const HeroSection = () => (
   <View>
-    <Text style={styles.h1}>Section</Text>
-    <Text style={styles.h2}>305 Side bonus</Text>
-    <Text style={styles.h3}>30% slots bonus up to €100</Text>
-    <Button 
-      title="Create in Account" 
-      onPress={() => {}} 
+    <Text style={styles.h1}>🎮 Adola Gaming Platform</Text>
+    <Text style={styles.h2}>5% Deposit Bonus</Text>
+    <Text style={styles.h3}>Get automatic 5% bonus on every deposit</Text>
+    <Button
+      title="Create Account"
+      onPress={() => router.push('/auth/signup')}
       style={styles.button} // Use existing button styles
     />
     <Divider />
@@ -55,8 +55,8 @@ const HeroSection = () => (
 ```jsx
 const GameCategories = () => (
   <View>
-    <Text style={styles.h3}>Sports</Text>
-    {['Slices', 'Slots', 'Roulette', 'Blackjack'].map((item, index) => (
+    <Text style={styles.h3}>Game Categories</Text>
+    {['Casino Games', 'Card Games', 'Crash Games', 'Lottery Games'].map((item, index) => (
       <Text key={index} style={styles.listItem}>
         <Text style={styles.bold}>{item}</Text>
       </Text>
@@ -70,8 +70,8 @@ const GameCategories = () => (
 ```jsx
 const FeaturedGames = () => (
   <View>
-    <Text style={styles.h3}>My Game</Text>
-    {['Top Games', 'SIGKE', 'DONANZA', 'CUPERO', 'SCUFFER', 'MOTOR', 'GOLDEN', 'POPLASSIONALITY'].map((game, index) => (
+    <Text style={styles.h3}>Featured Games (19 Total)</Text>
+    {['Aviator ✈️', 'Crash 🚀', 'Dice 🎲', 'Mines 💣', 'Tower 🏗️', 'Plinko 🎯', 'Blackjack 🃏', 'Poker ♠️'].map((game, index) => (
       <Text key={index} style={styles.listItem}>
         <Text style={styles.bold}>{game}</Text>
       </Text>
@@ -85,16 +85,17 @@ const FeaturedGames = () => (
 ```jsx
 const PromoBanner = () => (
   <View style={styles.promoContainer}>
-    <Text style={styles.h2}>CASHBACK</Text>
-    <Text style={[styles.bold, {fontSize: 18}]}>UP TO 50%</Text>
+    <Text style={styles.h2}>WELCOME BONUS</Text>
+    <Text style={[styles.bold, {fontSize: 18}]}>PKR 50 FREE</Text>
+    <Text style={styles.subtitle}>Plus 5% on every deposit</Text>
     <Divider />
   </View>
 );
 ```
 
-#### 5. Game Tables Component
+#### 5. Game Statistics Table Component
 ```jsx
-const GameTable = ({ title, headers, data }) => (
+const GameStatsTable = ({ title, headers, data }) => (
   <View>
     <Text style={styles.h3}>{title}</Text>
     <View style={styles.table}>
@@ -106,7 +107,7 @@ const GameTable = ({ title, headers, data }) => (
           </Text>
         ))}
       </View>
-      
+
       {/* Data Rows */}
       {data.map((row, rowIndex) => (
         <View key={rowIndex} style={styles.tableRow}>
@@ -123,10 +124,15 @@ const GameTable = ({ title, headers, data }) => (
 );
 
 // Usage example
-<GameTable 
-  title="49 games"
-  headers={["SIZE", "SKILL", "PROBLEMS", "TECHNOLOGY"]}
-  data={[["DONANZA", "SUFFER", "REALIZED", "BARRIET"]]}
+<GameStatsTable
+  title="Platform Statistics"
+  headers={["Metric", "Value", "Status"]}
+  data={[
+    ["Total Games", "19", "Active"],
+    ["Online Players", "12.4k", "Live"],
+    ["Total Payouts", "PKR 2.1M", "Processed"],
+    ["Win Rate", "20%", "Balanced"]
+  ]}
 />
 ```
 
@@ -134,22 +140,21 @@ const GameTable = ({ title, headers, data }) => (
 ```jsx
 const FooterSection = () => (
   <View>
-    <Text style={styles.h3}>Mediums</Text>
-    <Text style={styles.bold}>Maintenance:</Text>
+    <Text style={styles.h3}>Payment Methods</Text>
+    <Text style={styles.bold}>Bank Transfer (UBL):</Text>
     <View style={styles.listContainer}>
-      <Text style={styles.listItem}><Text style={styles.bold}>Aduse:</Text></Text>
-      <Text style={styles.listItem}><Text style={styles.bold}>Tasks:</Text></Text>
+      <Text style={styles.listItem}><Text style={styles.bold}>ZARBONICS SOLUTIONS:</Text> PK10UNIL0109000324585986</Text>
+      <Text style={styles.listItem}><Text style={styles.bold}>Zoraz Yousaf:</Text> PK38UNIL0109000320036376</Text>
     </View>
-    
-    <GameTable
-      headers={["Requests", "Points", "About us"]}
+
+    <GameStatsTable
+      headers={["Support", "Features", "About"]}
       data={[
-        ["FAQ", "Promotion", "TAC"],
-        ["Legend:", "Summaries", "Partridge"],
-        ["No. of", "Volume", "Securities"],
-        ["Albums:", "-", "-"],
-        ["€", "-", "-"],
-        ["€", "-", "-"]
+        ["24/7 Support", "Referral System", "Terms & Conditions"],
+        ["Instant Deposits", "5% Deposit Bonus", "Privacy Policy"],
+        ["Fast Withdrawals", "PKR 50 Welcome", "Contact Us"],
+        ["Secure Gaming", "19 Games", "FAQ"],
+        ["Admin Approval", "Real-time Stats", "Support"],
       ]}
     />
   </View>
@@ -221,17 +226,21 @@ const styles = StyleSheet.create({
 ```
 
 3. **Supabase Integration**:
-   - Fetch data using Supabase client:
+   - Fetch real-time data using existing Supabase client:
    ```typescript
-   const fetchGameData = async () => {
-     const { data, error } = await supabase
-       .from('games')
-       .select('*');
-     if (error) console.error(error);
-     return data;
+   const fetchAdolaStats = async () => {
+     const { data: users, error: usersError } = await supabase
+       .from('users')
+       .select('count');
+     const { data: games, error: gamesError } = await supabase
+       .from('game_configs')
+       .select('*')
+       .eq('enabled', true);
+     if (usersError || gamesError) console.error('Error fetching data');
+     return { users: users?.length || 0, games: games?.length || 19 };
    };
    ```
-   - Use React Query for data fetching/caching
+   - Use existing realTimeStatsService for live data
 
 4. **Responsiveness**:
    - Use `Dimensions.get('window')` for responsive values
@@ -254,16 +263,23 @@ const styles = StyleSheet.create({
 
 ### Delivery Requirements
 1. **Component Files**:
-   - `/components/HeroSection.tsx`
-   - `/components/GameTables.tsx`
-   - `/components/PromoBanner.tsx`
+   - `/components/web/AdolaHeroSection.tsx`
+   - `/components/web/AdolaGameStats.tsx`
+   - `/components/web/AdolaPromoBanner.tsx`
 
 2. **TypeScript Interfaces**:
 ```typescript
-interface GameTableProps {
+interface AdolaGameStatsProps {
   title: string;
   headers: string[];
   data: string[][];
+  realTimeData?: boolean;
+}
+
+interface AdolaPromoProps {
+  depositBonus: number;
+  welcomeBonus: number;
+  referralEnabled: boolean;
 }
 ```
 
@@ -292,8 +308,9 @@ export const useResponsive = () => {
 ```
 
 4. **Testing Requirements**:
-   - Jest unit tests for all components
-   - Detox end-to-end tests for UI flows
-   - Visual regression testing with Percy
+   - Jest unit tests for all Adola components
+   - Test real-time data integration with Supabase
+   - Verify responsive design across devices
+   - Test payment method display and bank details
 
-This implementation maintains your existing tech stack conventions and ensures no disruption to current functionality. All components are designed to work with Expo's styling system and can easily integrate with your Supabase backend.
+This implementation uses your existing Adola Gaming Platform data, maintains your tech stack conventions, and ensures no disruption to current functionality. All components integrate with your existing Supabase backend and use real platform statistics, game data, and promotional content.

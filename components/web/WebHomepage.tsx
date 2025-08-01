@@ -1,4 +1,4 @@
-// Web-specific Homepage Layout
+// Web-specific Homepage Layout - Updated with Adola Gaming Platform
 import React from 'react';
 import {
   View,
@@ -14,6 +14,8 @@ import { Colors } from '../../constants/Colors';
 import { useApp } from '../../contexts/AppContext';
 import { useWallet } from '../../contexts/WalletContext';
 import WebGameCard from './WebGameCard';
+import AdolaWebsite from './AdolaWebsite';
+import SimpleAdolaWebsite from './SimpleAdolaWebsite';
 
 const { width } = Dimensions.get('window');
 
@@ -26,6 +28,9 @@ export default function WebHomepage({ onSignOut }: WebHomepageProps) {
   const { balance } = useWallet();
   const router = useRouter();
 
+  // Check if user is logged in - show different content accordingly
+  const isLoggedIn = !!user;
+
   const handleSignOutClick = () => {
     console.log('🔄 WebHomepage logout button clicked');
     console.log('📋 onSignOut function:', typeof onSignOut);
@@ -35,6 +40,46 @@ export default function WebHomepage({ onSignOut }: WebHomepageProps) {
       console.error('❌ onSignOut function not provided');
     }
   };
+
+  const handleGamePress = (gameId: string) => {
+    if (isLoggedIn) {
+      router.push(`/game/${gameId}` as any);
+    } else {
+      // Redirect to signup for non-logged in users
+      router.push('/auth/signup');
+    }
+  };
+
+  const handleCreateAccount = () => {
+    router.push('/auth/signup');
+  };
+
+  const handleContactPress = () => {
+    router.push('/contact');
+  };
+
+  // TEMPORARY: Show new Adola website for all users to see the changes
+  // TODO: Revert this to only show for non-logged-in users after testing
+
+  // Use simple scrollable website for guaranteed scrolling
+  return (
+    <SimpleAdolaWebsite
+      onSignOut={onSignOut}
+      playerName={user?.email || user?.username || 'Player'}
+    />
+  );
+
+  // Original logic (commented out for testing):
+  // if (!isLoggedIn) {
+  //   return (
+  //     <AdolaWebsite
+  //       onSignOut={onSignOut}
+  //       onGamePress={handleGamePress}
+  //       onCreateAccount={handleCreateAccount}
+  //       onContactPress={handleContactPress}
+  //     />
+  //   );
+  // }
 
 
 
@@ -51,7 +96,7 @@ export default function WebHomepage({ onSignOut }: WebHomepageProps) {
     { label: 'Total Games', value: '19', icon: '🎮' },
     { label: 'Online Players', value: '12.4k', icon: '👥' },
     { label: 'Today\'s Winners', value: '847', icon: '🏆' },
-    { label: 'Total Payouts', value: 'Rs 2.1M', icon: '💰' },
+    { label: 'Total Payouts', value: 'PKR 2.1M', icon: '💰' },
   ];
 
   return (
@@ -421,5 +466,55 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 24,
+  },
+  // New styles for verification and fallback content
+  webContainer: {
+    flex: 1,
+    backgroundColor: Colors.primary.background,
+    minHeight: '100vh', // Minimum viewport height, allows expansion
+  },
+  verificationBanner: {
+    backgroundColor: Colors.primary.neonCyan,
+    paddingVertical: 12,
+    alignItems: 'center',
+    zIndex: 1000,
+    position: 'relative',
+  },
+  verificationText: {
+    color: Colors.primary.background,
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  scrollableContent: {
+    flexGrow: 1,
+    paddingBottom: 100,
+  },
+  fallbackContent: {
+    padding: 24,
+    backgroundColor: Colors.primary.surface,
+    margin: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: Colors.primary.neonCyan,
+  },
+  fallbackTitle: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: Colors.primary.text,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  fallbackSubtitle: {
+    fontSize: 20,
+    color: Colors.primary.neonCyan,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  fallbackDescription: {
+    fontSize: 16,
+    color: Colors.primary.textSecondary,
+    lineHeight: 24,
+    textAlign: 'left',
   },
 });
