@@ -1,9 +1,10 @@
 // Dynamic Game Screen for Adola App - Exact Original Implementation
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
-import DarkGradientBackground from '../../components/common/DarkGradientBackground';
 
 // Import original game screens (exact replicas)
 import AviatorScreen from './screens/AviatorScreen';
@@ -75,23 +76,43 @@ export default function GameScreen() {
         return <CricketBettingScreen />;
       default:
         return (
-          <DarkGradientBackground>
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorTitle}>Game Not Found</Text>
-              <Text style={styles.errorText}>
-                The game "{id}" is not available or doesn't exist.
-              </Text>
-            </View>
-          </DarkGradientBackground>
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorTitle}>Game Not Found</Text>
+            <Text style={styles.errorText}>
+              The game "{id}" is not available or doesn't exist.
+            </Text>
+          </View>
         );
     }
   };
 
   return (
     <View style={styles.container}>
-      <DarkGradientBackground>
+      {/* Orange Gradient Header */}
+      <LinearGradient
+        colors={['#ff8c00', '#ff6b35', '#ff4500', '#cc3700']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerGradient}
+      >
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#ffffff" />
+          </TouchableOpacity>
+          <Text style={styles.gameTitle}>
+            {id ? id.charAt(0).toUpperCase() + id.slice(1).replace(/[-_]/g, ' ') : 'Game'}
+          </Text>
+          <View style={styles.placeholder} />
+        </View>
+      </LinearGradient>
+
+      {/* Game Content */}
+      <View style={styles.gameContent}>
         {getGameScreen()}
-      </DarkGradientBackground>
+      </View>
     </View>
   );
 }
@@ -99,12 +120,57 @@ export default function GameScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: Colors.primary.background,
+  },
+  headerGradient: {
+    paddingTop: 50, // Account for status bar
+    paddingBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  gameTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    textAlign: 'center',
+    flex: 1,
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+  },
+  placeholder: {
+    width: 40,
+  },
+  gameContent: {
+    flex: 1,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    backgroundColor: Colors.primary.background,
   },
   errorTitle: {
     fontSize: 24,
