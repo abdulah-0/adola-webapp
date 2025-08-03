@@ -130,7 +130,7 @@ export default function WalletScreen() {
   return (
     <View style={styles.container}>
       <DarkGradientBackground>
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={true}>
           <WalletBalance
             balance={balance}
             pendingDeposits={pendingDeposits}

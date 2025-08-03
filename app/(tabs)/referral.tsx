@@ -112,7 +112,7 @@ export default function ReferralScreen() {
   return (
     <View style={styles.container}>
       <DarkGradientBackground>
-        <ScrollView style={styles.scrollView}>
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={true}>
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>Referral Program</Text>

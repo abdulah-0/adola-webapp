@@ -356,7 +356,7 @@ export default function GamesScreen() {
       {/* Games List - Vertical Scrolling */}
       <ScrollView
         style={styles.gamesContainer}
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator={true}
         contentContainerStyle={[
           styles.gamesScrollContent,
           isWeb && styles.webGamesGrid

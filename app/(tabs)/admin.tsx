@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useApp } from '../../contexts/AppContext';
@@ -116,7 +116,9 @@ export default function AdminScreen() {
     <View style={styles.container}>
       <DarkGradientBackground>
         {renderHeader()}
-        {renderContent()}
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={true}>
+          {renderContent()}
+        </ScrollView>
       </DarkGradientBackground>
     </View>
   );
@@ -124,6 +126,9 @@ export default function AdminScreen() {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  content: {
     flex: 1,
   },
   accessDeniedContainer: {
