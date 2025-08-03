@@ -234,7 +234,7 @@ export default function SimpleAdolaWebsite({ onSignOut, playerName = 'Player' }:
   }, [assetsLoaded, bannerUris.length]);
   
   const containerStyle = {
-    backgroundColor: Colors.primary.background,
+    background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 33%, #0f3460 66%, #0d1b2a 100%)',
     color: Colors.primary.text,
     fontFamily: 'Arial, sans-serif',
     lineHeight: '1.6',

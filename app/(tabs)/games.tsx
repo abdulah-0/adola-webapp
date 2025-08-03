@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { useApp } from '../../contexts/AppContext';
 import GameCard from '../../components/GameCard';
+import DarkGradientBackground from '../../components/common/DarkGradientBackground';
 import { rw, rh, rf, rs, wp, hp } from '../../utils/responsive';
 import { isWeb, webDimensions, webStyleModifiers, createWebResponsiveStyles, getDeviceType } from '../../utils/webStyles';
 import WebGamesTab from '../../components/web/WebGamesTab';
@@ -309,11 +310,12 @@ export default function GamesScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>🎮 Games</Text>
-        <Text style={styles.subtitle}>Choose your favorite game and start playing!</Text>
-      </View>
+      <DarkGradientBackground>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>🎮 Games</Text>
+          <Text style={styles.subtitle}>Choose your favorite game and start playing!</Text>
+        </View>
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
@@ -397,6 +399,7 @@ export default function GamesScreen() {
         {/* Bottom padding for better scrolling */}
         <View style={styles.bottomPadding} />
       </ScrollView>
+      </DarkGradientBackground>
     </View>
   );
 }
@@ -404,7 +407,6 @@ export default function GamesScreen() {
 const styles = createWebResponsiveStyles(StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.primary.background,
     ...webStyleModifiers.webContainer,
   },
   header: {

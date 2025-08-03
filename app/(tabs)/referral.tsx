@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
   Alert,
-  Share 
+  Share
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useApp } from '../../contexts/AppContext';
 import { ReferralService } from '../../services/referralService';
 import { ReferralStats, DAILY_MILESTONES } from '../../types/referralTypes';
+import DarkGradientBackground from '../../components/common/DarkGradientBackground';
 
 export default function ReferralScreen() {
   const { user } = useApp();
@@ -101,13 +102,17 @@ export default function ReferralScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading...</Text>
+        <DarkGradientBackground>
+          <Text style={styles.loadingText}>Loading...</Text>
+        </DarkGradientBackground>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}>
+      <DarkGradientBackground>
+        <ScrollView style={styles.scrollView}>
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>Referral Program</Text>
@@ -236,14 +241,18 @@ export default function ReferralScreen() {
           <Text style={styles.bonusItem}>• And more...</Text>
         </View>
       </View>
-    </ScrollView>
+        </ScrollView>
+      </DarkGradientBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+  },
+  scrollView: {
+    flex: 1,
   },
   loadingContainer: {
     flex: 1,

@@ -17,6 +17,7 @@ import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/Colors';
 import { useApp } from '../../contexts/AppContext';
 import AuthService from '../../services/authService';
+import DarkGradientBackground from '../../components/common/DarkGradientBackground';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -134,11 +135,12 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <DarkGradientBackground>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}
+        >
+          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           
           {/* Header */}
           <View style={styles.header}>
@@ -238,8 +240,9 @@ export default function LoginScreen() {
             </View>
           </View>
 
-        </ScrollView>
-      </KeyboardAvoidingView>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </DarkGradientBackground>
     </SafeAreaView>
   );
 }
@@ -247,7 +250,6 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.primary.background,
   },
   keyboardView: {
     flex: 1,

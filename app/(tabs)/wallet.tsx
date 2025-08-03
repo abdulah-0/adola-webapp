@@ -7,6 +7,7 @@ import WalletBalance from '../../components/wallet/WalletBalance';
 import DepositModal from '../../components/wallet/DepositModal';
 import WithdrawalModal from '../../components/wallet/WithdrawalModal';
 import TransactionHistory from '../../components/wallet/TransactionHistory';
+import DarkGradientBackground from '../../components/common/DarkGradientBackground';
 
 export default function WalletScreen() {
   const { user } = useApp();
@@ -128,30 +129,32 @@ export default function WalletScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <WalletBalance
-          balance={balance}
-          pendingDeposits={pendingDeposits}
-          pendingWithdrawals={pendingWithdrawals}
-          onDeposit={() => setShowDepositModal(true)}
-          onWithdraw={() => setShowWithdrawalModal(true)}
+      <DarkGradientBackground>
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <WalletBalance
+            balance={balance}
+            pendingDeposits={pendingDeposits}
+            pendingWithdrawals={pendingWithdrawals}
+            onDeposit={() => setShowDepositModal(true)}
+            onWithdraw={() => setShowWithdrawalModal(true)}
+          />
+
+          <TransactionHistory transactions={transactions} />
+        </ScrollView>
+
+        <DepositModal
+          visible={showDepositModal}
+          onClose={() => setShowDepositModal(false)}
+          onDeposit={handleDeposit}
         />
 
-        <TransactionHistory transactions={transactions} />
-      </ScrollView>
-
-      <DepositModal
-        visible={showDepositModal}
-        onClose={() => setShowDepositModal(false)}
-        onDeposit={handleDeposit}
-      />
-
-      <WithdrawalModal
-        visible={showWithdrawalModal}
-        onClose={() => setShowWithdrawalModal(false)}
-        onWithdraw={handleWithdraw}
-        balance={balance || 0}
-      />
+        <WithdrawalModal
+          visible={showWithdrawalModal}
+          onClose={() => setShowWithdrawalModal(false)}
+          onWithdraw={handleWithdraw}
+          balance={balance || 0}
+        />
+      </DarkGradientBackground>
     </View>
   );
 }
@@ -159,7 +162,6 @@ export default function WalletScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
   },
   content: {
     flex: 1,

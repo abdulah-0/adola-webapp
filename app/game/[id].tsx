@@ -3,6 +3,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Colors } from '../../constants/Colors';
+import DarkGradientBackground from '../../components/common/DarkGradientBackground';
 
 // Import original game screens (exact replicas)
 import AviatorScreen from './screens/AviatorScreen';
@@ -74,19 +75,23 @@ export default function GameScreen() {
         return <CricketBettingScreen />;
       default:
         return (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorTitle}>Game Not Found</Text>
-            <Text style={styles.errorText}>
-              The game "{id}" is not available or doesn't exist.
-            </Text>
-          </View>
+          <DarkGradientBackground>
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorTitle}>Game Not Found</Text>
+              <Text style={styles.errorText}>
+                The game "{id}" is not available or doesn't exist.
+              </Text>
+            </View>
+          </DarkGradientBackground>
         );
     }
   };
 
   return (
     <View style={styles.container}>
-      {getGameScreen()}
+      <DarkGradientBackground>
+        {getGameScreen()}
+      </DarkGradientBackground>
     </View>
   );
 }
@@ -94,7 +99,6 @@ export default function GameScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.primary.background,
   },
   errorContainer: {
     flex: 1,

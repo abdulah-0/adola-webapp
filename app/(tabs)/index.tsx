@@ -15,6 +15,7 @@ import { useApp } from '../../contexts/AppContext';
 import { useWallet } from '../../contexts/WalletContext';
 import WalletCard from '../../components/WalletCard';
 import GameCard from '../../components/GameCard';
+import DarkGradientBackground from '../../components/common/DarkGradientBackground';
 import { rh, rf, rs } from '../../utils/responsive';
 import { isWeb, webDimensions, webStyleModifiers, createWebResponsiveStyles } from '../../utils/webStyles';
 import WebHomepage from '../../components/web/WebHomepage';
@@ -100,24 +101,26 @@ export default function HomeScreen() {
 
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <Text style={styles.welcomeText}>Welcome back,</Text>
-          <Text style={styles.usernameText}>{user?.displayName || 'Player'}!</Text>
-        </View>
-        <View style={styles.headerRight}>
-          <View style={styles.avatarContainer}>
-            <Text style={styles.avatarText}>
-              {(user?.displayName || 'P').charAt(0).toUpperCase()}
-            </Text>
+    <View style={styles.container}>
+      <DarkGradientBackground>
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.headerContent}>
+              <Text style={styles.welcomeText}>Welcome back,</Text>
+              <Text style={styles.usernameText}>{user?.displayName || 'Player'}!</Text>
+            </View>
+            <View style={styles.headerRight}>
+              <View style={styles.avatarContainer}>
+                <Text style={styles.avatarText}>
+                  {(user?.displayName || 'P').charAt(0).toUpperCase()}
+                </Text>
+              </View>
+              <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+                <Ionicons name="log-out-outline" size={24} color={Colors.primary.text} />
+              </TouchableOpacity>
+            </View>
           </View>
-          <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-            <Ionicons name="log-out-outline" size={24} color={Colors.primary.text} />
-          </TouchableOpacity>
-        </View>
-      </View>
 
       {/* Wallet Card */}
       <WalletCard
@@ -184,17 +187,19 @@ export default function HomeScreen() {
         </ScrollView>
       </View>
 
-
-
-    </ScrollView>
+        </ScrollView>
+      </DarkGradientBackground>
+    </View>
   );
 }
 
 const styles = createWebResponsiveStyles(StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.primary.background,
     ...webStyleModifiers.webContainer,
+  },
+  scrollView: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',

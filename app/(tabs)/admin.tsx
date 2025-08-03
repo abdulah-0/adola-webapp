@@ -10,6 +10,7 @@ import PendingWithdrawals from '../../components/admin/PendingWithdrawals';
 import NotificationManager from '../../components/admin/NotificationManager';
 import GameStatistics from '../../components/admin/GameStatistics';
 import GameManagement from '../../components/admin/GameManagement';
+import DarkGradientBackground from '../../components/common/DarkGradientBackground';
 
 type AdminScreen = 'dashboard' | 'deposits' | 'withdrawals' | 'users' | 'games' | 'statistics' | 'notifications';
 
@@ -49,14 +50,16 @@ export default function AdminScreen() {
   if (!isAdmin) {
     return (
       <View style={styles.accessDeniedContainer}>
-        <Ionicons name="shield-outline" size={80} color="#ff6666" />
-        <Text style={styles.accessDeniedTitle}>Access Denied</Text>
-        <Text style={styles.accessDeniedText}>
-          You don't have permission to access the admin panel.
-        </Text>
-        <Text style={styles.accessDeniedSubtext}>
-          Only authorized administrators can view this section.
-        </Text>
+        <DarkGradientBackground>
+          <Ionicons name="shield-outline" size={80} color="#ff6666" />
+          <Text style={styles.accessDeniedTitle}>Access Denied</Text>
+          <Text style={styles.accessDeniedText}>
+            You don't have permission to access the admin panel.
+          </Text>
+          <Text style={styles.accessDeniedSubtext}>
+            Only authorized administrators can view this section.
+          </Text>
+        </DarkGradientBackground>
       </View>
     );
   }
@@ -111,8 +114,10 @@ export default function AdminScreen() {
 
   return (
     <View style={styles.container}>
-      {renderHeader()}
-      {renderContent()}
+      <DarkGradientBackground>
+        {renderHeader()}
+        {renderContent()}
+      </DarkGradientBackground>
     </View>
   );
 }
@@ -120,13 +125,11 @@ export default function AdminScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
   },
   accessDeniedContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#121212',
     padding: 40,
   },
   accessDeniedTitle: {

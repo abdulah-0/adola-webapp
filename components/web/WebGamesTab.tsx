@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import WebGameCard from './WebGameCard';
+import DarkGradientBackground from '../common/DarkGradientBackground';
 
 const { width } = Dimensions.get('window');
 
@@ -51,8 +52,9 @@ export default function WebGamesTab({ games, onGamePress }: WebGamesTabProps) {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
+      <DarkGradientBackground>
+        {/* Header */}
+        <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Text style={styles.title}>🎮 Game Library</Text>
           <Text style={styles.subtitle}>{filteredGames.length} games available</Text>
@@ -133,9 +135,10 @@ export default function WebGamesTab({ games, onGamePress }: WebGamesTabProps) {
             </Text>
           </View>
         )}
-        
+
         <View style={styles.bottomPadding} />
       </ScrollView>
+      </DarkGradientBackground>
     </View>
   );
 }
@@ -143,7 +146,6 @@ export default function WebGamesTab({ games, onGamePress }: WebGamesTabProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.primary.background,
   },
   header: {
     flexDirection: 'row',
