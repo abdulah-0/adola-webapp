@@ -316,15 +316,15 @@ export class WalletService {
   // Validate withdrawal amount
   static async canWithdraw(userId: string, amount: number): Promise<{ canWithdraw: boolean; reason?: string }> {
     const wallet = await this.getWalletState(userId);
-    
+
     if (amount <= 0) {
       return { canWithdraw: false, reason: 'Amount must be greater than 0' };
     }
-    
+
     if (amount > wallet.balance) {
       return { canWithdraw: false, reason: 'Insufficient balance' };
     }
-    
+
     if (amount < WALLET_LIMITS.MIN_WITHDRAWAL) {
       return { canWithdraw: false, reason: `Minimum withdrawal amount is Rs ${WALLET_LIMITS.MIN_WITHDRAWAL}` };
     }
@@ -332,7 +332,16 @@ export class WalletService {
     if (amount > WALLET_LIMITS.MAX_WITHDRAWAL) {
       return { canWithdraw: false, reason: `Maximum withdrawal amount is Rs ${WALLET_LIMITS.MAX_WITHDRAWAL.toLocaleString()}` };
     }
-    
+
+    // Check if user has made at least one approved deposit
+    const approvedDeposits = wallet.transactions.filter(t =>
+      t.type === 'deposit' && t.status === 'approved'
+    );
+
+    if (approvedDeposits.length === 0) {
+      return { canWithdraw: false, reason: 'You must make at least one deposit before you can withdraw money' };
+    }
+
     return { canWithdraw: true };
   }
 }

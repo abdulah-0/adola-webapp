@@ -100,9 +100,9 @@ export default function WalletScreen() {
         setShowWithdrawalModal(false);
       } else {
         if (typeof window !== 'undefined') {
-          window.alert('Error: Failed to submit withdrawal request. Please try again.');
+          window.alert('Error: Failed to submit withdrawal request. You must make at least one deposit before you can withdraw money.');
         } else {
-          Alert.alert('Error', 'Failed to submit withdrawal request. Please try again.');
+          Alert.alert('Withdrawal Not Allowed', 'You must make at least one deposit before you can withdraw money. Please deposit funds first and wait for approval.');
         }
       }
     } catch (error) {

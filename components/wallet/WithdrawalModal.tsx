@@ -1,15 +1,17 @@
-import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  Modal, 
-  TouchableOpacity, 
-  TextInput, 
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Modal,
+  TouchableOpacity,
+  TextInput,
   ScrollView,
-  Alert 
+  Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useApp } from '../../contexts/AppContext';
+import { supabase } from '../../services/supabaseClient';
 
 interface WithdrawalModalProps {
   visible: boolean;
@@ -19,12 +21,43 @@ interface WithdrawalModalProps {
 }
 
 export default function WithdrawalModal({ visible, onClose, onWithdraw, balance }: WithdrawalModalProps) {
+  const { user } = useApp();
   const [amount, setAmount] = useState('');
   const [accountTitle, setAccountTitle] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [iban, setIban] = useState('');
   const [bank, setBank] = useState('');
   const [notes, setNotes] = useState('');
+  const [hasApprovedDeposits, setHasApprovedDeposits] = useState(false);
+
+  // Check if user has approved deposits when modal opens
+  useEffect(() => {
+    if (visible && user?.id) {
+      checkUserDeposits();
+    }
+  }, [visible, user?.id]);
+
+  const checkUserDeposits = async () => {
+    if (!user?.id) return;
+
+    try {
+      const { data: approvedDeposits, error } = await supabase
+        .from('deposit_requests')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'approved')
+        .limit(1);
+
+      if (!error && approvedDeposits && approvedDeposits.length > 0) {
+        setHasApprovedDeposits(true);
+      } else {
+        setHasApprovedDeposits(false);
+      }
+    } catch (error) {
+      console.error('Error checking user deposits:', error);
+      setHasApprovedDeposits(false);
+    }
+  };
 
   const calculateDeduction = (amount: number) => {
     return Math.round(amount * 0.01 * 100) / 100;
@@ -54,6 +87,11 @@ export default function WithdrawalModal({ visible, onClose, onWithdraw, balance 
 
     if (withdrawAmount > balance) {
       Alert.alert('Error', 'Insufficient balance');
+      return;
+    }
+
+    if (!hasApprovedDeposits) {
+      Alert.alert('Withdrawal Not Allowed', 'You must make at least one deposit before you can withdraw money. Please deposit funds first and wait for approval.');
       return;
     }
 
@@ -126,6 +164,15 @@ export default function WithdrawalModal({ visible, onClose, onWithdraw, balance 
             <Text style={styles.balanceLabel}>Available Balance</Text>
             <Text style={styles.balanceAmount}>PKR {balance.toFixed(2)}</Text>
           </View>
+
+          {!hasApprovedDeposits && (
+            <View style={styles.warningSection}>
+              <Ionicons name="warning" size={20} color="#ff6b6b" />
+              <Text style={styles.warningText}>
+                You must make at least one deposit before you can withdraw money. Please deposit funds first and wait for approval.
+              </Text>
+            </View>
+          )}
 
           <View style={styles.amountSection}>
             <Text style={styles.sectionTitle}>Withdrawal Amount</Text>
@@ -251,12 +298,14 @@ export default function WithdrawalModal({ visible, onClose, onWithdraw, balance 
           <TouchableOpacity
             style={[
               styles.withdrawButton,
-              (!amount || !accountTitle || !accountNumber || !iban || !bank || withdrawAmount > balance) && styles.disabledButton
+              (!amount || !accountTitle || !accountNumber || !iban || !bank || withdrawAmount > balance || !hasApprovedDeposits) && styles.disabledButton
             ]}
             onPress={handleWithdraw}
-            disabled={!amount || !accountTitle || !accountNumber || !iban || !bank || withdrawAmount > balance}
+            disabled={!amount || !accountTitle || !accountNumber || !iban || !bank || withdrawAmount > balance || !hasApprovedDeposits}
           >
-            <Text style={styles.withdrawText}>Submit Withdrawal</Text>
+            <Text style={styles.withdrawText}>
+              {!hasApprovedDeposits ? 'Deposit Required First' : 'Submit Withdrawal'}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -461,5 +510,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#ffffff',
+  },
+  warningSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2a1a1a',
+    padding: 15,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#ff6b6b',
+  },
+  warningText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#ff6b6b',
+    marginLeft: 10,
+    lineHeight: 20,
   },
 });

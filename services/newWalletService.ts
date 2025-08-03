@@ -561,6 +561,19 @@ export class NewWalletService {
 
       const balanceAmount = currentBalance?.balance || 0;
 
+      // Check if user has made at least one approved deposit
+      const { data: approvedDeposits, error: depositError } = await supabase
+        .from('deposit_requests')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('status', 'approved')
+        .limit(1);
+
+      if (depositError || !approvedDeposits || approvedDeposits.length === 0) {
+        console.log('❌ User has not made any approved deposits');
+        return null;
+      }
+
       // Check if user has sufficient balance
       if (balanceAmount < amount) {
         return null;
