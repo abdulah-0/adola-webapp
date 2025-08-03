@@ -54,7 +54,7 @@ export default function AdolaWebsite({
   if (isWeb) {
     return (
       <div style={{
-        background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 33%, #0f3460 66%, #0d1b2a 100%)',
+        background: 'linear-gradient(135deg, #2e1a1a 0%, #3e1616 33%, #600f0f 66%, #2a0d0d 100%)',
         minHeight: '100vh',
         overflow: 'auto',
         width: '100%'
@@ -174,7 +174,7 @@ export default function AdolaWebsite({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 33%, #0f3460 66%, #0d1b2a 100%)',
+    background: 'linear-gradient(135deg, #2e1a1a 0%, #3e1616 33%, #600f0f 66%, #2a0d0d 100%)',
     minHeight: '100vh', // Minimum viewport height, allows expansion
   },
   verificationBanner: {

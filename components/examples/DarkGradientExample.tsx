@@ -63,7 +63,7 @@ const DarkGradientExample: React.FC = () => {
           {/* Gradient Info */}
           <View style={styles.infoContainer}>
             <Text style={styles.infoTitle}>Gradient Details</Text>
-            <Text style={styles.infoText}>Colors: #1a1a2e → #16213e → #0f3460 → #0d1b2a</Text>
+            <Text style={styles.infoText}>Colors: #2e1a1a → #3e1616 → #600f0f → #2a0d0d</Text>
             <Text style={styles.infoText}>Direction: Top-left to bottom-right</Text>
             <Text style={styles.infoText}>Positioning: Absolute with flex: 1</Text>
           </View>

@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
 
 ## Gradient Configuration
 
-- **Colors**: `['#1a1a2e', '#16213e', '#0f3460', '#0d1b2a']`
+- **Colors**: `['#2e1a1a', '#3e1616', '#600f0f', '#2a0d0d']`
 - **Direction**: Top-left (0,0) to bottom-right (1,1)
 - **Positioning**: Absolute with full screen coverage
 - **Color Stops**: 4 smooth transitions for depth
@@ -102,10 +102,10 @@ const styles = StyleSheet.create({
 
 | Color | Hex Code | Description |
 |-------|----------|-------------|
-| Deep Navy | `#1a1a2e` | Primary dark base |
-| Dark Blue | `#16213e` | Secondary transition |
-| Ocean Blue | `#0f3460` | Tertiary depth |
-| Midnight | `#0d1b2a` | Final dark tone |
+| Deep Crimson | `#2e1a1a` | Primary dark red base |
+| Dark Red | `#3e1616` | Secondary transition |
+| Blood Red | `#600f0f` | Tertiary depth |
+| Dark Maroon | `#2a0d0d` | Final dark tone |
 
 ## Best Practices
 

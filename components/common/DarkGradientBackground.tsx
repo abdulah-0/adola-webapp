@@ -26,7 +26,7 @@ const DarkGradientBackground: React.FC<DarkGradientBackgroundProps> = ({
 }) => {
   return (
     <LinearGradient
-      colors={['#1a1a2e', '#16213e', '#0f3460', '#0d1b2a']}
+      colors={['#2e1a1a', '#3e1616', '#600f0f', '#2a0d0d']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={[styles.gradient, style]}
