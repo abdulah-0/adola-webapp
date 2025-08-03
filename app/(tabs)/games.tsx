@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../../constants/Colors';
 import { useApp } from '../../contexts/AppContext';
 import GameCard from '../../components/GameCard';
@@ -312,46 +313,54 @@ export default function GamesScreen() {
     <View style={styles.container}>
       <DarkGradientBackground>
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>🎮 Games</Text>
-          <Text style={styles.subtitle}>Choose your favorite game and start playing!</Text>
-        </View>
+        {/* Top Section with Orange Gradient */}
+        <LinearGradient
+          colors={['#ff8c00', '#ff6b35', '#ff4500', '#cc3700']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.topSectionGradient}
+        >
+          <View style={styles.header}>
+            <Text style={styles.title}>🎮 Games</Text>
+            <Text style={styles.subtitle}>Choose your favorite game and start playing!</Text>
+          </View>
 
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={20} color={Colors.primary.textMuted} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search games..."
-            placeholderTextColor={Colors.primary.textMuted}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </View>
-      </View>
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <View style={styles.searchBar}>
+              <Ionicons name="search" size={20} color="#666666" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search games..."
+                placeholderTextColor="#666666"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+            </View>
+          </View>
 
-      {/* Category Filter */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesContainer}>
-        {categories.map((category) => (
-          <TouchableOpacity
-            key={category.id}
-            style={[
-              styles.categoryButton,
-              selectedCategory === category.id && styles.categoryButtonActive
-            ]}
-            onPress={() => setSelectedCategory(category.id)}
-          >
-            <Text style={styles.categoryIcon}>{category.icon}</Text>
-            <Text style={[
-              styles.categoryText,
-              selectedCategory === category.id && styles.categoryTextActive
-            ]}>
-              {category.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+          {/* Category Filter */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesContainer}>
+            {categories.map((category) => (
+              <TouchableOpacity
+                key={category.id}
+                style={[
+                  styles.categoryButton,
+                  selectedCategory === category.id && styles.categoryButtonActive
+                ]}
+                onPress={() => setSelectedCategory(category.id)}
+              >
+                <Text style={styles.categoryIcon}>{category.icon}</Text>
+                <Text style={[
+                  styles.categoryText,
+                  selectedCategory === category.id && styles.categoryTextActive
+                ]}>
+                  {category.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </LinearGradient>
 
       {/* Games List - Vertical Scrolling */}
       <ScrollView
@@ -409,6 +418,19 @@ const styles = createWebResponsiveStyles(StyleSheet.create({
     flex: 1,
     ...webStyleModifiers.webContainer,
   },
+  topSectionGradient: {
+    borderBottomLeftRadius: isWeb ? webDimensions.spacing.md : rs(20),
+    borderBottomRightRadius: isWeb ? webDimensions.spacing.md : rs(20),
+    marginBottom: isWeb ? webDimensions.spacing.md : rs(20),
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
   header: {
     padding: isWeb ? webDimensions.spacing.md : rs(20),
     paddingTop: isWeb ? webDimensions.spacing.lg : rh(7),
@@ -418,13 +440,20 @@ const styles = createWebResponsiveStyles(StyleSheet.create({
   title: {
     fontSize: isWeb ? webDimensions.fontSize.title + 4 : rf(28),
     fontWeight: 'bold',
-    color: Colors.primary.neonCyan,
+    color: '#ffffff',
     marginBottom: isWeb ? webDimensions.spacing.xs : rs(8),
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   subtitle: {
     fontSize: isWeb ? webDimensions.fontSize.medium : rf(16),
-    color: Colors.primary.textSecondary,
+    color: '#ffffff',
     textAlign: 'center',
+    opacity: 0.9,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   searchContainer: {
     paddingHorizontal: isWeb ? webDimensions.spacing.md : rs(20),
@@ -433,17 +462,25 @@ const styles = createWebResponsiveStyles(StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.primary.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: isWeb ? webDimensions.spacing.sm : rs(12),
     paddingHorizontal: isWeb ? webDimensions.spacing.sm : rs(16),
     paddingVertical: isWeb ? webDimensions.spacing.sm : rs(12),
     borderWidth: 1,
-    borderColor: Colors.primary.border,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
   },
   searchInput: {
     flex: 1,
     fontSize: isWeb ? webDimensions.fontSize.medium : rf(16),
-    color: Colors.primary.text,
+    color: '#333333',
     marginLeft: isWeb ? webDimensions.spacing.sm : rs(12),
   },
   categoriesContainer: {
@@ -454,17 +491,29 @@ const styles = createWebResponsiveStyles(StyleSheet.create({
   categoryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.primary.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: rs(12),
     paddingHorizontal: rs(12),
     paddingVertical: rs(6),
     marginRight: rs(8),
     borderWidth: 1,
-    borderColor: Colors.primary.border,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 2,
   },
   categoryButtonActive: {
-    backgroundColor: Colors.primary.neonCyan,
+    backgroundColor: '#ffffff',
     borderColor: Colors.primary.neonCyan,
+    borderWidth: 2,
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
   },
   categoryIcon: {
     fontSize: rf(12),
@@ -472,11 +521,12 @@ const styles = createWebResponsiveStyles(StyleSheet.create({
   },
   categoryText: {
     fontSize: rf(12),
-    color: Colors.primary.textSecondary,
+    color: '#333333',
     fontWeight: '600',
   },
   categoryTextActive: {
-    color: Colors.primary.background,
+    color: Colors.primary.neonCyan,
+    fontWeight: 'bold',
   },
   gamesContainer: {
     flex: 1,
