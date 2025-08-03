@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../../constants/Colors';
 import { useApp } from '../../contexts/AppContext';
 import { useWallet } from '../../contexts/WalletContext';
@@ -105,22 +106,29 @@ export default function HomeScreen() {
       <DarkGradientBackground>
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerContent}>
-              <Text style={styles.welcomeText}>Welcome back,</Text>
-              <Text style={styles.usernameText}>{user?.displayName || 'Player'}!</Text>
-            </View>
-            <View style={styles.headerRight}>
-              <View style={styles.avatarContainer}>
-                <Text style={styles.avatarText}>
-                  {(user?.displayName || 'P').charAt(0).toUpperCase()}
-                </Text>
+          <LinearGradient
+            colors={['#ff8c00', '#ff6b35', '#ff4500', '#cc3700']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.headerGradient}
+          >
+            <View style={styles.header}>
+              <View style={styles.headerContent}>
+                <Text style={styles.welcomeText}>Welcome back,</Text>
+                <Text style={styles.usernameText}>{user?.displayName || 'Player'}!</Text>
               </View>
-              <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-                <Ionicons name="log-out-outline" size={24} color={Colors.primary.text} />
-              </TouchableOpacity>
+              <View style={styles.headerRight}>
+                <View style={styles.avatarContainer}>
+                  <Text style={styles.avatarText}>
+                    {(user?.displayName || 'P').charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+                <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+                  <Ionicons name="log-out-outline" size={24} color={Colors.primary.text} />
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
+          </LinearGradient>
 
       {/* Wallet Card */}
       <WalletCard
@@ -200,6 +208,9 @@ const styles = createWebResponsiveStyles(StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  headerGradient: {
+    borderRadius: 0,
   },
   header: {
     flexDirection: 'row',

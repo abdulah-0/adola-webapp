@@ -255,7 +255,7 @@ export default function SimpleAdolaWebsite({ onSignOut, playerName = 'Player' }:
   };
 
   const navbarStyle = {
-    backgroundColor: Colors.primary.surface,
+    background: 'linear-gradient(135deg, #ff8c00 0%, #ff6b35 33%, #ff4500 66%, #cc3700 100%)',
     borderBottom: `2px solid ${Colors.primary.border}`,
     padding: '15px 20px',
     display: 'flex',
