@@ -454,9 +454,13 @@ export class NewWalletService {
     description?: string
   ): Promise<string | null> {
     try {
-      // Validate minimum deposit amount
-      if (amount < 300) {
-        console.error('❌ Minimum deposit amount is PKR 300');
+      // Validate minimum deposit amount based on payment method
+      const paymentMethod = metadata.method || 'bank_transfer';
+      if (paymentMethod === 'bank_transfer' && amount < 300) {
+        console.error('❌ Minimum bank deposit amount is PKR 300');
+        return null;
+      } else if (paymentMethod === 'usdt_trc20' && amount < 1350) { // 5 USDT * 270 PKR
+        console.error('❌ Minimum USDT deposit amount is 5 USDT (1,350 PKR)');
         return null;
       }
 
@@ -464,18 +468,29 @@ export class NewWalletService {
       const currentBalance = await this.getBalance(userId);
       const balanceAmount = currentBalance?.balance || 0;
 
+      // Prepare deposit request data based on payment method
+      const depositRequestData = {
+        user_id: userId,
+        amount: amount,
+        status: 'pending',
+        metadata: metadata
+      };
+
+      // Add method-specific fields
+      if (paymentMethod === 'usdt_trc20') {
+        depositRequestData.bank_account_id = metadata.usdt_account_id || '';
+        depositRequestData.transaction_id = metadata.transaction_hash || '';
+      } else {
+        depositRequestData.bank_account_id = metadata.bank_account_id || 'UBL Bank';
+        depositRequestData.transaction_id = metadata.transaction_id || '';
+      }
+
+      depositRequestData.receipt_image = metadata.receipt_image || '';
+
       // Create deposit request
       const { data: depositData, error: depositError } = await supabase
         .from('deposit_requests')
-        .insert({
-          user_id: userId,
-          amount: amount,
-          bank_account_id: metadata.bank_account_id || 'UBL Bank',
-          transaction_id: metadata.transaction_id || '',
-          receipt_image: metadata.receipt_image || '',
-          status: 'pending',
-          metadata: metadata
-        })
+        .insert(depositRequestData)
         .select();
 
       if (depositError) {

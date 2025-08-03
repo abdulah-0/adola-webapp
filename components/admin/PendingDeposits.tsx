@@ -192,13 +192,42 @@ export default function PendingDeposits() {
 
       <View style={styles.depositDetails}>
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Bank Account:</Text>
-          <Text style={styles.detailValue}>{item.bankAccountName || 'Unknown'}</Text>
+          <Text style={styles.detailLabel}>Payment Method:</Text>
+          <View style={[styles.paymentMethodBadge, item.paymentMethod === 'usdt_trc20' ? styles.usdtBadge : styles.bankBadge]}>
+            <Text style={styles.paymentMethodText}>
+              {item.paymentMethod === 'usdt_trc20' ? 'USDT TRC20' : 'Bank Transfer'}
+            </Text>
+          </View>
         </View>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Transaction ID:</Text>
-          <Text style={styles.detailValue}>{item.transactionId || 'Not provided'}</Text>
-        </View>
+
+        {item.paymentMethod === 'usdt_trc20' ? (
+          <>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>USDT Account:</Text>
+              <Text style={styles.detailValue}>{item.usdtAccountName || 'Unknown'}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>USDT Address:</Text>
+              <Text style={[styles.detailValue, styles.addressText]}>{item.usdtAddress || 'Unknown'}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Transaction Hash:</Text>
+              <Text style={[styles.detailValue, styles.hashText]}>{item.transactionHash || 'Not provided'}</Text>
+            </View>
+          </>
+        ) : (
+          <>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Bank Account:</Text>
+              <Text style={styles.detailValue}>{item.bankAccountName || 'Unknown'}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Transaction ID:</Text>
+              <Text style={styles.detailValue}>{item.transactionId || 'Not provided'}</Text>
+            </View>
+          </>
+        )}
+
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Request Time:</Text>
           <Text style={styles.detailValue}>{formatDate(item.createdAt)}</Text>
@@ -550,5 +579,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#ffffff',
+  },
+  paymentMethodBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  bankBadge: {
+    backgroundColor: '#007AFF',
+  },
+  usdtBadge: {
+    backgroundColor: '#f7931a',
+  },
+  paymentMethodText: {
+    fontSize: 12,
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
+  addressText: {
+    fontFamily: 'monospace',
+    fontSize: 12,
+    color: '#64ffda',
+  },
+  hashText: {
+    fontFamily: 'monospace',
+    fontSize: 12,
+    color: '#ff6b6b',
   },
 });

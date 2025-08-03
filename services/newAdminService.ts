@@ -589,6 +589,12 @@ export class NewAdminService {
         'UBL Bank': 'UBL Bank' // Fallback for old entries
       };
 
+      // USDT account mapping
+      const usdtAccountMap = {
+        'usdt_account_1': 'USDT Account 1',
+        'usdt_account_2': 'USDT Account 2'
+      };
+
       // Get user details separately and format data
       const depositsWithUsers = [];
       for (const deposit of depositRequests || []) {
@@ -598,8 +604,31 @@ export class NewAdminService {
           .eq('auth_user_id', deposit.user_id)
           .maybeSingle();
 
-        // Get bank account name from mapping
-        const bankAccountName = bankAccountMap[deposit.bank_account_id] || deposit.bank_account_id || 'Unknown Bank';
+        // Determine payment method from metadata
+        const metadata = deposit.metadata || {};
+        const paymentMethod = metadata.method || 'bank_transfer';
+
+        // Get account details based on payment method
+        let accountName = '';
+        let accountId = '';
+        let transactionRef = '';
+        let usdtAddress = '';
+
+        if (paymentMethod === 'usdt_trc20') {
+          accountId = metadata.usdt_account_id || '';
+          accountName = usdtAccountMap[accountId] || accountId || 'Unknown USDT Account';
+          transactionRef = metadata.transaction_hash || '';
+          // Get USDT address from USDT_ACCOUNTS
+          if (accountId === 'usdt_account_1') {
+            usdtAddress = 'TCqKH497p5J6Tjc4tafA5m5qmqw54JsYLj';
+          } else if (accountId === 'usdt_account_2') {
+            usdtAddress = 'TMcSyNNPx8zC523MsqqEGAUEwYFHgWN2ap';
+          }
+        } else {
+          accountId = deposit.bank_account_id || metadata.bank_account_id || '';
+          accountName = bankAccountMap[accountId] || accountId || 'Unknown Bank';
+          transactionRef = deposit.transaction_id || metadata.transaction_id || '';
+        }
 
         depositsWithUsers.push({
           id: deposit.id,
@@ -607,14 +636,19 @@ export class NewAdminService {
           userEmail: user?.email || 'Unknown',
           userName: user?.username || user?.display_name || 'Unknown User',
           amount: Number(deposit.amount),
-          bankAccountId: deposit.bank_account_id,
-          bankAccountName: bankAccountName,
-          transactionId: deposit.transaction_id || '',
+          paymentMethod: paymentMethod,
+          bankAccountId: paymentMethod === 'bank_transfer' ? accountId : undefined,
+          bankAccountName: paymentMethod === 'bank_transfer' ? accountName : undefined,
+          usdtAccountId: paymentMethod === 'usdt_trc20' ? accountId : undefined,
+          usdtAccountName: paymentMethod === 'usdt_trc20' ? accountName : undefined,
+          usdtAddress: paymentMethod === 'usdt_trc20' ? usdtAddress : undefined,
+          transactionId: paymentMethod === 'bank_transfer' ? transactionRef : undefined,
+          transactionHash: paymentMethod === 'usdt_trc20' ? transactionRef : undefined,
           receiptImage: deposit.receipt_image || '',
           status: deposit.status,
           createdAt: new Date(deposit.created_at),
           adminNotes: deposit.admin_notes || '',
-          metadata: deposit.metadata || {}
+          metadata: metadata
         });
       }
 

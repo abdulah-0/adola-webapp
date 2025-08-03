@@ -46,9 +46,14 @@ export interface PendingDepositRequest {
   userEmail: string;
   userName?: string;
   amount: number;
-  bankAccountId: string;
-  bankAccountName: string;
+  paymentMethod: 'bank_transfer' | 'usdt_trc20';
+  bankAccountId?: string;
+  bankAccountName?: string;
+  usdtAccountId?: string;
+  usdtAccountName?: string;
+  usdtAddress?: string;
   transactionId?: string;
+  transactionHash?: string;
   receiptImage?: string;
   status: 'pending' | 'approved' | 'rejected';
   createdAt: Date;
