@@ -412,7 +412,7 @@ export default function GamesScreen() {
 const styles = createWebResponsiveStyles(StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: '#4a4a4a',
     ...webStyleModifiers.webContainer,
   },
   topSectionGradient: {
@@ -528,9 +528,11 @@ const styles = createWebResponsiveStyles(StyleSheet.create({
   gamesContainer: {
     flex: 1,
     paddingHorizontal: rs(15),
+    backgroundColor: '#4a4a4a',
   },
   gamesScrollContent: {
     paddingBottom: rs(20),
+    backgroundColor: '#4a4a4a',
   },
   gameCardContainer: {
     marginBottom: rs(12),
