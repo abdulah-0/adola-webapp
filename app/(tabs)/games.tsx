@@ -15,7 +15,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../../constants/Colors';
 import { useApp } from '../../contexts/AppContext';
 import GameCard from '../../components/GameCard';
-import DarkGradientBackground from '../../components/common/DarkGradientBackground';
 import { rw, rh, rf, rs, wp, hp } from '../../utils/responsive';
 import { isWeb, webDimensions, webStyleModifiers, createWebResponsiveStyles, getDeviceType } from '../../utils/webStyles';
 import WebGamesTab from '../../components/web/WebGamesTab';
@@ -311,8 +310,6 @@ export default function GamesScreen() {
 
   return (
     <View style={styles.container}>
-      <DarkGradientBackground>
-        {/* Header */}
         {/* Top Section with Orange Gradient */}
         <LinearGradient
           colors={['#ff8c00', '#ff6b35', '#ff4500', '#cc3700']}
@@ -408,7 +405,6 @@ export default function GamesScreen() {
         {/* Bottom padding for better scrolling */}
         <View style={styles.bottomPadding} />
       </ScrollView>
-      </DarkGradientBackground>
     </View>
   );
 }
@@ -416,6 +412,7 @@ export default function GamesScreen() {
 const styles = createWebResponsiveStyles(StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: Colors.primary.background,
     ...webStyleModifiers.webContainer,
   },
   topSectionGradient: {
