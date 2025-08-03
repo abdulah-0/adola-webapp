@@ -3,6 +3,7 @@ import { View, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useApp } from '../../contexts/AppContext';
 import { useWallet } from '../../contexts/WalletContext';
+import { PaymentMethod } from '../../types/walletTypes';
 import WalletBalance from '../../components/wallet/WalletBalance';
 import DepositModal from '../../components/wallet/DepositModal';
 import WithdrawalModal from '../../components/wallet/WithdrawalModal';
@@ -36,23 +37,38 @@ export default function WalletScreen() {
 
   // No longer needed - using WalletContext
 
-  const handleDeposit = async (amount: number, bankAccountId: string, transactionId?: string, notes?: string) => {
+  const handleDeposit = async (amount: number, accountId: string, transactionId?: string, notes?: string, paymentMethod: PaymentMethod = 'bank_transfer') => {
     try {
+      const metadata = paymentMethod === 'usdt_trc20'
+        ? {
+            method: 'usdt_trc20',
+            usdt_account_id: accountId,
+            transaction_hash: transactionId || '',
+            notes: notes || ''
+          }
+        : {
+            method: 'bank_transfer',
+            bank_account_id: accountId,
+            transaction_id: transactionId || '',
+            notes: notes || ''
+          };
+
       const newTransactionId = await createDepositRequest(
         amount,
-        {
-          method: 'bank_transfer',
-          bank_account_id: bankAccountId,
-          transaction_id: transactionId || '',
-          notes: notes || ''
-        },
-        `Deposit request for PKR ${amount.toLocaleString()}`
+        metadata,
+        paymentMethod === 'usdt_trc20'
+          ? `USDT deposit request for PKR ${amount.toLocaleString()}`
+          : `Deposit request for PKR ${amount.toLocaleString()}`
       );
 
       if (newTransactionId) {
+        const message = paymentMethod === 'usdt_trc20'
+          ? `Your USDT deposit request for PKR ${amount.toLocaleString()} has been submitted. Please send the exact USDT amount to the selected TRC20 address. Your deposit will be processed within 24 hours.`
+          : `Your deposit request for PKR ${amount.toLocaleString()} has been submitted. Please transfer the exact amount to the selected bank account. Your deposit will be processed within 24 hours.`;
+
         Alert.alert(
           'Deposit Request Submitted',
-          `Your deposit request for PKR ${amount.toLocaleString()} has been submitted. Please transfer the exact amount to the selected bank account. Your deposit will be processed within 24 hours.`,
+          message,
           [{ text: 'OK' }]
         );
         setShowDepositModal(false);

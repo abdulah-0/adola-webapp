@@ -11,18 +11,20 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
-import { BankAccount } from '../../types/walletTypes';
-import { BANK_ACCOUNTS } from '../../services/walletService';
+import { BankAccount, USDTAccount, PaymentMethod } from '../../types/walletTypes';
+import { BANK_ACCOUNTS, USDT_ACCOUNTS } from '../../services/walletService';
 
 interface DepositModalProps {
   visible: boolean;
   onClose: () => void;
-  onDeposit: (amount: number, bankAccountId: string, transactionId?: string, notes?: string) => void;
+  onDeposit: (amount: number, accountId: string, transactionId?: string, notes?: string, paymentMethod?: PaymentMethod) => void;
 }
 
 export default function DepositModal({ visible, onClose, onDeposit }: DepositModalProps) {
   const [amount, setAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('bank_transfer');
   const [selectedBank, setSelectedBank] = useState<BankAccount | null>(null);
+  const [selectedUSDT, setSelectedUSDT] = useState<USDTAccount | null>(null);
   const [transactionId, setTransactionId] = useState('');
   const [notes, setNotes] = useState('');
 
@@ -41,25 +43,44 @@ export default function DepositModal({ visible, onClose, onDeposit }: DepositMod
 
   const handleDeposit = () => {
     const depositAmount = parseFloat(amount);
-    
+
     if (!depositAmount || depositAmount <= 0) {
       Alert.alert('Error', 'Please enter a valid amount');
       return;
     }
-    
-    if (depositAmount < 300) {
-      Alert.alert('Error', 'Minimum deposit amount is PKR 300');
-      return;
-    }
-    
-    if (!selectedBank) {
-      Alert.alert('Error', 'Please select a bank account');
-      return;
+
+    if (paymentMethod === 'bank_transfer') {
+      if (depositAmount < 300) {
+        Alert.alert('Error', 'Minimum deposit amount is PKR 300');
+        return;
+      }
+
+      if (!selectedBank) {
+        Alert.alert('Error', 'Please select a bank account');
+        return;
+      }
+
+      onDeposit(depositAmount, selectedBank.id, transactionId, notes, paymentMethod);
+    } else if (paymentMethod === 'usdt_trc20') {
+      if (depositAmount < 5) {
+        Alert.alert('Error', 'Minimum deposit amount is 5 USDT');
+        return;
+      }
+
+      if (!selectedUSDT) {
+        Alert.alert('Error', 'Please select a USDT account');
+        return;
+      }
+
+      // Convert USDT to PKR for internal processing
+      const pkrAmount = depositAmount * selectedUSDT.conversionRate;
+      onDeposit(pkrAmount, selectedUSDT.id, transactionId, notes, paymentMethod);
     }
 
-    onDeposit(depositAmount, selectedBank.id, transactionId, notes);
+    // Reset form
     setAmount('');
     setSelectedBank(null);
+    setSelectedUSDT(null);
     setTransactionId('');
     setNotes('');
     onClose();
@@ -76,10 +97,52 @@ export default function DepositModal({ visible, onClose, onDeposit }: DepositMod
         </View>
 
         <ScrollView style={styles.content}>
+          {/* Payment Method Selection */}
+          <View style={styles.paymentMethodSection}>
+            <Text style={styles.sectionTitle}>Payment Method</Text>
+            <View style={styles.paymentMethodButtons}>
+              <TouchableOpacity
+                style={[
+                  styles.paymentMethodButton,
+                  paymentMethod === 'bank_transfer' && styles.selectedPaymentMethod
+                ]}
+                onPress={() => {
+                  setPaymentMethod('bank_transfer');
+                  setSelectedUSDT(null);
+                }}
+              >
+                <Ionicons name="card" size={20} color={paymentMethod === 'bank_transfer' ? '#007AFF' : '#666'} />
+                <Text style={[
+                  styles.paymentMethodText,
+                  paymentMethod === 'bank_transfer' && styles.selectedPaymentMethodText
+                ]}>Bank Transfer</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.paymentMethodButton,
+                  paymentMethod === 'usdt_trc20' && styles.selectedPaymentMethod
+                ]}
+                onPress={() => {
+                  setPaymentMethod('usdt_trc20');
+                  setSelectedBank(null);
+                }}
+              >
+                <Ionicons name="logo-bitcoin" size={20} color={paymentMethod === 'usdt_trc20' ? '#007AFF' : '#666'} />
+                <Text style={[
+                  styles.paymentMethodText,
+                  paymentMethod === 'usdt_trc20' && styles.selectedPaymentMethodText
+                ]}>USDT TRC20</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           <View style={styles.amountSection}>
             <Text style={styles.sectionTitle}>Deposit Amount</Text>
             <View style={styles.amountInput}>
-              <Text style={styles.currencySign}>PKR</Text>
+              <Text style={styles.currencySign}>
+                {paymentMethod === 'usdt_trc20' ? 'USDT' : 'PKR'}
+              </Text>
               <TextInput
                 style={styles.input}
                 value={amount}
@@ -89,15 +152,27 @@ export default function DepositModal({ visible, onClose, onDeposit }: DepositMod
                 keyboardType="numeric"
               />
             </View>
-            <Text style={styles.minAmount}>Minimum deposit: PKR 300</Text>
+            <Text style={styles.minAmount}>
+              {paymentMethod === 'usdt_trc20'
+                ? 'Minimum deposit: 5 USDT (≈ 1,350 PKR)'
+                : 'Minimum deposit: PKR 300'
+              }
+            </Text>
+            {paymentMethod === 'usdt_trc20' && (
+              <Text style={styles.conversionRate}>
+                1 USDT = 270 PKR
+              </Text>
+            )}
           </View>
 
-          <View style={styles.bankSection}>
-            <Text style={styles.sectionTitle}>Select Bank Account</Text>
-            {(!BANK_ACCOUNTS || BANK_ACCOUNTS.length === 0) ? (
-              <Text style={styles.errorText}>No bank accounts available</Text>
-            ) : (
-              BANK_ACCOUNTS.filter(bank => bank && bank.id).map((bank) => (
+          {/* Account Selection */}
+          {paymentMethod === 'bank_transfer' ? (
+            <View style={styles.bankSection}>
+              <Text style={styles.sectionTitle}>Select Bank Account</Text>
+              {(!BANK_ACCOUNTS || BANK_ACCOUNTS.length === 0) ? (
+                <Text style={styles.errorText}>No bank accounts available</Text>
+              ) : (
+                BANK_ACCOUNTS.filter(bank => bank && bank.id).map((bank) => (
               <TouchableOpacity
                 key={bank.id}
                 style={[
@@ -153,7 +228,62 @@ export default function DepositModal({ visible, onClose, onDeposit }: DepositMod
               </TouchableOpacity>
               ))
             )}
-          </View>
+            </View>
+          ) : (
+            <View style={styles.bankSection}>
+              <Text style={styles.sectionTitle}>Select USDT TRC20 Account</Text>
+              {(!USDT_ACCOUNTS || USDT_ACCOUNTS.length === 0) ? (
+                <Text style={styles.errorText}>No USDT accounts available</Text>
+              ) : (
+                USDT_ACCOUNTS.filter(account => account && account.id).map((account) => (
+                  <TouchableOpacity
+                    key={account.id}
+                    style={[
+                      styles.bankCard,
+                      selectedUSDT?.id === account.id && styles.selectedBank
+                    ]}
+                    onPress={() => setSelectedUSDT(account)}
+                  >
+                    <View style={styles.bankHeader}>
+                      <Text style={styles.bankName}>{account.name}</Text>
+                      <View style={[
+                        styles.radioButton,
+                        selectedUSDT?.id === account.id && styles.radioSelected
+                      ]} />
+                    </View>
+
+                    <View style={styles.bankDetails}>
+                      <View style={styles.bankRow}>
+                        <Text style={styles.bankLabel}>Network:</Text>
+                        <Text style={styles.bankValue}>{account.network}</Text>
+                      </View>
+
+                      <View style={styles.bankRow}>
+                        <Text style={styles.bankLabel}>Address:</Text>
+                        <TouchableOpacity
+                          style={styles.copyButton}
+                          onPress={() => handleCopyToClipboard(account.address, 'USDT Address')}
+                        >
+                          <Text style={styles.bankValue}>{account.address}</Text>
+                          <Ionicons name="copy-outline" size={16} color="#007AFF" />
+                        </TouchableOpacity>
+                      </View>
+
+                      <View style={styles.bankRow}>
+                        <Text style={styles.bankLabel}>Rate:</Text>
+                        <Text style={styles.bankValue}>1 USDT = {account.conversionRate} PKR</Text>
+                      </View>
+
+                      <View style={styles.bankRow}>
+                        <Text style={styles.bankLabel}>Min Deposit:</Text>
+                        <Text style={styles.bankValue}>{account.minDeposit} USDT</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              )}
+            </View>
+          )}
 
           <View style={styles.transactionSection}>
             <Text style={styles.sectionTitle}>Transaction Details</Text>
@@ -163,7 +293,7 @@ export default function DepositModal({ visible, onClose, onDeposit }: DepositMod
                 style={styles.textInput}
                 value={transactionId}
                 onChangeText={setTransactionId}
-                placeholder="Enter your bank transaction ID"
+                placeholder={paymentMethod === 'usdt_trc20' ? 'Enter USDT transaction hash' : 'Enter your bank transaction ID'}
                 placeholderTextColor="#666"
               />
             </View>
@@ -185,18 +315,40 @@ export default function DepositModal({ visible, onClose, onDeposit }: DepositMod
 
           <View style={styles.instructionsSection}>
             <Text style={styles.sectionTitle}>Instructions</Text>
-            <Text style={styles.instruction}>
-              1. Transfer the exact amount to the selected bank account
-            </Text>
-            <Text style={styles.instruction}>
-              2. Keep the transaction receipt/screenshot
-            </Text>
-            <Text style={styles.instruction}>
-              3. Click "Submit Deposit Request" below
-            </Text>
-            <Text style={styles.instruction}>
-              4. Your deposit will be processed within 24 hours
-            </Text>
+            {paymentMethod === 'bank_transfer' ? (
+              <>
+                <Text style={styles.instruction}>
+                  1. Transfer the exact amount to the selected bank account
+                </Text>
+                <Text style={styles.instruction}>
+                  2. Keep the transaction receipt/screenshot
+                </Text>
+                <Text style={styles.instruction}>
+                  3. Enter transaction ID and click "Submit Deposit Request"
+                </Text>
+                <Text style={styles.instruction}>
+                  4. Your deposit will be processed within 24 hours
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.instruction}>
+                  1. Send the exact USDT amount to the selected TRC20 address
+                </Text>
+                <Text style={styles.instruction}>
+                  2. Copy the transaction hash from your wallet
+                </Text>
+                <Text style={styles.instruction}>
+                  3. Enter transaction hash and click "Submit Deposit Request"
+                </Text>
+                <Text style={styles.instruction}>
+                  4. You will receive {selectedUSDT?.conversionRate || 270} PKR per USDT
+                </Text>
+                <Text style={styles.instruction}>
+                  5. Your deposit will be processed within 24 hours
+                </Text>
+              </>
+            )}
           </View>
         </ScrollView>
 
@@ -205,13 +357,13 @@ export default function DepositModal({ visible, onClose, onDeposit }: DepositMod
             <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[
               styles.depositButton,
-              (!amount || !selectedBank) && styles.disabledButton
+              (!amount || (paymentMethod === 'bank_transfer' && !selectedBank) || (paymentMethod === 'usdt_trc20' && !selectedUSDT)) && styles.disabledButton
             ]}
             onPress={handleDeposit}
-            disabled={!amount || !selectedBank}
+            disabled={!amount || (paymentMethod === 'bank_transfer' && !selectedBank) || (paymentMethod === 'usdt_trc20' && !selectedUSDT)}
           >
             <Text style={styles.depositText}>Submit Deposit Request</Text>
           </TouchableOpacity>
@@ -410,5 +562,43 @@ const styles = StyleSheet.create({
     color: '#ff4444',
     textAlign: 'center',
     padding: 20,
+  },
+  paymentMethodSection: {
+    marginBottom: 20,
+    paddingHorizontal: 20,
+  },
+  paymentMethodButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  paymentMethodButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 8,
+    backgroundColor: '#2a2a2a',
+    borderWidth: 2,
+    borderColor: '#333',
+  },
+  selectedPaymentMethod: {
+    borderColor: '#007AFF',
+    backgroundColor: '#1a2a3a',
+  },
+  paymentMethodText: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 8,
+    fontWeight: '500',
+  },
+  selectedPaymentMethodText: {
+    color: '#007AFF',
+  },
+  conversionRate: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 4,
+    fontStyle: 'italic',
   },
 });

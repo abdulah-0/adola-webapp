@@ -10,6 +10,26 @@ export interface BankAccount {
   isActive: boolean;
 }
 
+export interface USDTAccount {
+  id: string;
+  name: string;
+  address: string;
+  network: 'TRC20';
+  isActive: boolean;
+  conversionRate: number; // PKR per USDT
+  minDeposit: number; // Minimum USDT amount
+}
+
+export type PaymentMethod = 'bank_transfer' | 'usdt_trc20';
+
+export interface PaymentAccount {
+  id: string;
+  name: string;
+  type: PaymentMethod;
+  details: BankAccount | USDTAccount;
+  isActive: boolean;
+}
+
 export interface Transaction {
   id: string;
   userId: string;
