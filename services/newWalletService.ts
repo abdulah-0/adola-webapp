@@ -644,8 +644,12 @@ export class NewWalletService {
       // Add method-specific fields
       if (withdrawalMethod === 'bank_transfer') {
         withdrawalRequestData.bank_details = metadata.bank_details || {};
+      } else {
+        // For USDT withdrawals, bank_details should be null
+        withdrawalRequestData.bank_details = null;
       }
-      // For USDT, details are stored in metadata
+
+      console.log('🔍 Withdrawal request data being inserted:', withdrawalRequestData);
 
       // Create withdrawal request
       const { data: withdrawalData, error: withdrawalError } = await supabase
