@@ -186,17 +186,29 @@ export default function PendingDeposits() {
           <Text style={styles.timeAgo}>{getTimeAgo(item.createdAt)}</Text>
         </View>
         <View style={styles.amountContainer}>
-          <Text style={styles.amount}>Rs {item.amount.toLocaleString()}</Text>
+          <Text style={styles.amount}>
+            {item.currency === 'INR' ? '₹' : 'PKR'} {(item.displayAmount || item.amount).toLocaleString()}
+          </Text>
+          {item.currency === 'INR' && (
+            <Text style={styles.pkrEquivalent}>
+              PKR {item.amount.toLocaleString()}
+            </Text>
+          )}
         </View>
       </View>
 
       <View style={styles.depositDetails}>
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Payment Method:</Text>
-          <View style={[styles.paymentMethodBadge, item.paymentMethod === 'usdt_trc20' ? styles.usdtBadge : styles.bankBadge]}>
-            <Text style={styles.paymentMethodText}>
-              {item.paymentMethod === 'usdt_trc20' ? 'USDT TRC20' : 'Bank Transfer'}
-            </Text>
+          <View style={styles.badgeContainer}>
+            <View style={[styles.paymentMethodBadge, item.paymentMethod === 'usdt_trc20' ? styles.usdtBadge : styles.bankBadge]}>
+              <Text style={styles.paymentMethodText}>
+                {item.paymentMethod === 'usdt_trc20' ? 'USDT TRC20' : 'Bank Transfer'}
+              </Text>
+            </View>
+            <View style={[styles.currencyBadge, item.currency === 'INR' ? styles.inrBadge : styles.pkrBadge]}>
+              <Text style={styles.currencyText}>{item.currency || 'PKR'}</Text>
+            </View>
           </View>
         </View>
 
@@ -307,14 +319,38 @@ export default function PendingDeposits() {
                   User: {selectedDeposit.userEmail}
                 </Text>
                 <Text style={styles.modalInfoText}>
-                  Amount: Rs {selectedDeposit.amount.toLocaleString()}
+                  Currency: {selectedDeposit.currency || 'PKR'}
                 </Text>
                 <Text style={styles.modalInfoText}>
-                  Bank Account: {selectedDeposit.bankAccountName || 'Unknown'}
+                  Amount: {selectedDeposit.currency === 'INR' ? '₹' : 'PKR'} {(selectedDeposit.displayAmount || selectedDeposit.amount).toLocaleString()}
                 </Text>
+                {selectedDeposit.currency === 'INR' && (
+                  <Text style={styles.modalInfoText}>
+                    PKR Equivalent: PKR {selectedDeposit.amount.toLocaleString()}
+                  </Text>
+                )}
                 <Text style={styles.modalInfoText}>
-                  Transaction ID: {selectedDeposit.transactionId || 'Not provided'}
+                  Method: {selectedDeposit.paymentMethod === 'usdt_trc20' ? 'USDT TRC20' : 'Bank Transfer'}
                 </Text>
+                {selectedDeposit.paymentMethod === 'usdt_trc20' ? (
+                  <>
+                    <Text style={styles.modalInfoText}>
+                      USDT Account: {selectedDeposit.usdtAccountName || 'Unknown'}
+                    </Text>
+                    <Text style={styles.modalInfoText}>
+                      Transaction Hash: {selectedDeposit.transactionHash || 'Not provided'}
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.modalInfoText}>
+                      Bank Account: {selectedDeposit.bankAccountName || 'Unknown'}
+                    </Text>
+                    <Text style={styles.modalInfoText}>
+                      Transaction ID: {selectedDeposit.transactionId || 'Not provided'}
+                    </Text>
+                  </>
+                )}
                 <Text style={styles.modalInfoText}>
                   Request Time: {formatDate(selectedDeposit.createdAt)}
                 </Text>
@@ -606,5 +642,31 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
     fontSize: 12,
     color: '#ff6b6b',
+  },
+  pkrEquivalent: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 2,
+  },
+  badgeContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  currencyBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
+  },
+  pkrBadge: {
+    backgroundColor: '#00ff00',
+  },
+  inrBadge: {
+    backgroundColor: '#ff9500',
+  },
+  currencyText: {
+    fontSize: 10,
+    color: '#000000',
+    fontWeight: 'bold',
   },
 });

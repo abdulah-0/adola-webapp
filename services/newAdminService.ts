@@ -630,12 +630,17 @@ export class NewAdminService {
           transactionRef = deposit.transaction_id || metadata.transaction_id || '';
         }
 
+        // Determine currency and amounts
+        const currency = metadata.currency || 'PKR';
+        const originalAmount = metadata.original_inr_amount || Number(deposit.amount);
+        const displayAmount = currency === 'INR' ? originalAmount : Number(deposit.amount);
+
         depositsWithUsers.push({
           id: deposit.id,
           userId: deposit.user_id,
           userEmail: user?.email || 'Unknown',
           userName: user?.username || user?.display_name || 'Unknown User',
-          amount: Number(deposit.amount),
+          amount: Number(deposit.amount), // Always PKR amount for backend processing
           paymentMethod: paymentMethod,
           bankAccountId: paymentMethod === 'bank_transfer' ? accountId : undefined,
           bankAccountName: paymentMethod === 'bank_transfer' ? accountName : undefined,
@@ -648,7 +653,10 @@ export class NewAdminService {
           status: deposit.status,
           createdAt: new Date(deposit.created_at),
           adminNotes: deposit.admin_notes || '',
-          metadata: metadata
+          metadata: metadata,
+          currency: currency,
+          originalAmount: originalAmount,
+          displayAmount: displayAmount
         });
       }
 
@@ -713,12 +721,17 @@ export class NewAdminService {
           };
         }
 
+        // Determine currency and amounts
+        const currency = metadata.currency || 'PKR';
+        const originalAmount = metadata.original_inr_amount || Number(withdrawal.amount);
+        const displayAmount = currency === 'INR' ? originalAmount : Number(withdrawal.amount);
+
         withdrawalsWithUsers.push({
           id: withdrawal.id,
           userId: withdrawal.user_id,
           userEmail: user?.email || 'Unknown',
           userName: user?.username || user?.display_name || 'Unknown',
-          amount: Number(withdrawal.amount),
+          amount: Number(withdrawal.amount), // Always PKR amount for backend processing
           deductionAmount: Number(withdrawal.deduction_amount || 0),
           finalAmount: Number(withdrawal.final_amount || withdrawal.amount),
           withdrawalMethod: withdrawalMethod,
@@ -727,7 +740,10 @@ export class NewAdminService {
           status: 'pending' as const,
           createdAt: new Date(withdrawal.created_at),
           adminNotes: withdrawal.admin_notes || '',
-          metadata: metadata
+          metadata: metadata,
+          currency: currency,
+          originalAmount: originalAmount,
+          displayAmount: displayAmount
         });
       }
 

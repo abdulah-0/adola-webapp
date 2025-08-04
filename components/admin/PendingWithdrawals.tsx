@@ -188,14 +188,29 @@ export default function PendingWithdrawals() {
           <Text style={styles.timeAgo}>{getTimeAgo(item.createdAt)}</Text>
         </View>
         <View style={styles.amountContainer}>
-          <Text style={styles.amount}>Rs {item.amount.toLocaleString()}</Text>
+          <Text style={styles.amount}>
+            {item.currency === 'INR' ? '₹' : 'PKR'} {(item.displayAmount || item.amount).toLocaleString()}
+          </Text>
+          {item.currency === 'INR' && (
+            <Text style={styles.pkrEquivalent}>
+              PKR {item.amount.toLocaleString()}
+            </Text>
+          )}
           {item.withdrawalMethod === 'bank_transfer' && (
-            <Text style={styles.deduction}>-Rs {item.deductionAmount.toLocaleString()} (1%)</Text>
+            <Text style={styles.deduction}>
+              -{item.currency === 'INR' ? '₹' : 'PKR'} {item.currency === 'INR'
+                ? (item.deductionAmount * 0.3).toFixed(2)
+                : item.deductionAmount.toLocaleString()
+              } (1%)
+            </Text>
           )}
           <Text style={styles.finalAmount}>
             {item.withdrawalMethod === 'usdt_trc20'
               ? `${item.usdtDetails?.usdtAmount || 0} USDT`
-              : `Rs ${item.finalAmount.toLocaleString()}`
+              : `${item.currency === 'INR' ? '₹' : 'PKR'} ${item.currency === 'INR'
+                  ? ((item.finalAmount || item.amount) * 0.3).toFixed(2)
+                  : (item.finalAmount || item.amount).toLocaleString()
+                }`
             }
           </Text>
         </View>
@@ -204,13 +219,18 @@ export default function PendingWithdrawals() {
       {/* Withdrawal Method Badge */}
       <View style={styles.methodSection}>
         <Text style={styles.methodLabel}>Withdrawal Method:</Text>
-        <View style={[
-          styles.methodBadge,
-          item.withdrawalMethod === 'usdt_trc20' ? styles.usdtBadge : styles.bankBadge
-        ]}>
-          <Text style={styles.methodText}>
-            {item.withdrawalMethod === 'usdt_trc20' ? 'USDT TRC20' : 'Bank Transfer'}
-          </Text>
+        <View style={styles.badgeContainer}>
+          <View style={[
+            styles.methodBadge,
+            item.withdrawalMethod === 'usdt_trc20' ? styles.usdtBadge : styles.bankBadge
+          ]}>
+            <Text style={styles.methodText}>
+              {item.withdrawalMethod === 'usdt_trc20' ? 'USDT TRC20' : 'Bank Transfer'}
+            </Text>
+          </View>
+          <View style={[styles.currencyBadge, item.currency === 'INR' ? styles.inrBadge : styles.pkrBadge]}>
+            <Text style={styles.currencyText}>{item.currency || 'PKR'}</Text>
+          </View>
         </View>
       </View>
 
@@ -369,11 +389,19 @@ export default function PendingWithdrawals() {
                   User: {selectedWithdrawal.userEmail}
                 </Text>
                 <Text style={styles.modalInfoText}>
+                  Currency: {selectedWithdrawal.currency || 'PKR'}
+                </Text>
+                <Text style={styles.modalInfoText}>
                   Method: {selectedWithdrawal.withdrawalMethod === 'usdt_trc20' ? 'USDT TRC20' : 'Bank Transfer'}
                 </Text>
                 <Text style={styles.modalInfoText}>
-                  Amount: Rs {selectedWithdrawal.amount.toLocaleString()}
+                  Amount: {selectedWithdrawal.currency === 'INR' ? '₹' : 'PKR'} {(selectedWithdrawal.displayAmount || selectedWithdrawal.amount).toLocaleString()}
                 </Text>
+                {selectedWithdrawal.currency === 'INR' && (
+                  <Text style={styles.modalInfoText}>
+                    PKR Equivalent: PKR {selectedWithdrawal.amount.toLocaleString()}
+                  </Text>
+                )}
                 {selectedWithdrawal.withdrawalMethod === 'usdt_trc20' ? (
                   <>
                     <Text style={styles.modalInfoText}>
@@ -386,7 +414,10 @@ export default function PendingWithdrawals() {
                 ) : (
                   <>
                     <Text style={styles.modalInfoText}>
-                      Final Amount: Rs {selectedWithdrawal.finalAmount.toLocaleString()}
+                      Final Amount: {selectedWithdrawal.currency === 'INR' ? '₹' : 'PKR'} {selectedWithdrawal.currency === 'INR'
+                        ? ((selectedWithdrawal.finalAmount || selectedWithdrawal.amount) * 0.3).toFixed(2)
+                        : (selectedWithdrawal.finalAmount || selectedWithdrawal.amount).toLocaleString()
+                      }
                     </Text>
                     <Text style={styles.modalInfoText}>
                       Account: {selectedWithdrawal.bankDetails?.accountTitle || 'N/A'}
@@ -751,6 +782,32 @@ const styles = StyleSheet.create({
   networkText: {
     fontSize: 14,
     color: '#00ff00',
+    fontWeight: 'bold',
+  },
+  pkrEquivalent: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 2,
+  },
+  badgeContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  currencyBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
+  },
+  pkrBadge: {
+    backgroundColor: '#00ff00',
+  },
+  inrBadge: {
+    backgroundColor: '#ff9500',
+  },
+  currencyText: {
+    fontSize: 10,
+    color: '#000000',
     fontWeight: 'bold',
   },
 });

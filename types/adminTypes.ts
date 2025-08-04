@@ -61,6 +61,9 @@ export interface PendingDepositRequest {
   processedBy?: string;
   processedAt?: Date;
   metadata?: any;
+  currency?: 'PKR' | 'INR';
+  originalAmount?: number;
+  displayAmount?: number;
 }
 
 export interface PendingWithdrawalRequest {
@@ -88,6 +91,9 @@ export interface PendingWithdrawalRequest {
   processedBy?: string;
   processedAt?: Date;
   metadata?: any;
+  currency?: 'PKR' | 'INR';
+  originalAmount?: number;
+  displayAmount?: number;
 }
 
 export interface UserManagement {
