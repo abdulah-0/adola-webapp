@@ -682,11 +682,36 @@ export class NewAdminService {
           .eq('auth_user_id', withdrawal.user_id)
           .maybeSingle();
 
-        // Debug: Log bank_details structure
-        console.log('🔍 Debug - withdrawal.bank_details:', withdrawal.bank_details);
+        // Determine withdrawal method from metadata or bank_details presence
+        const metadata = withdrawal.metadata || {};
+        const withdrawalMethod = metadata.method || (withdrawal.bank_details ? 'bank_transfer' : 'usdt_trc20');
 
-        // Ensure bank_details is properly structured
-        const bankDetails = withdrawal.bank_details || {};
+        // Debug: Log withdrawal details structure
+        console.log('🔍 Debug - withdrawal method:', withdrawalMethod);
+        console.log('🔍 Debug - withdrawal.bank_details:', withdrawal.bank_details);
+        console.log('🔍 Debug - withdrawal.metadata:', metadata);
+
+        let bankDetails = undefined;
+        let usdtDetails = undefined;
+
+        if (withdrawalMethod === 'bank_transfer') {
+          // Handle bank transfer withdrawal
+          const bankData = withdrawal.bank_details || metadata.bank_details || {};
+          bankDetails = {
+            accountTitle: bankData.accountTitle || '',
+            accountNumber: bankData.accountNumber || '',
+            iban: bankData.iban || '',
+            bank: bankData.bank || '',
+          };
+        } else {
+          // Handle USDT withdrawal
+          const usdtData = metadata.usdt_details || {};
+          usdtDetails = {
+            usdtAddress: usdtData.usdtAddress || '',
+            usdtAmount: usdtData.usdtAmount || 0,
+            pkrEquivalent: usdtData.pkrEquivalent || Number(withdrawal.amount),
+          };
+        }
 
         withdrawalsWithUsers.push({
           id: withdrawal.id,
@@ -694,17 +719,15 @@ export class NewAdminService {
           userEmail: user?.email || 'Unknown',
           userName: user?.username || user?.display_name || 'Unknown',
           amount: Number(withdrawal.amount),
-          deductionAmount: Number(withdrawal.deduction_amount),
-          finalAmount: Number(withdrawal.final_amount),
-          bankDetails: {
-            accountTitle: bankDetails.accountTitle || '',
-            accountNumber: bankDetails.accountNumber || '',
-            iban: bankDetails.iban || '',
-            bank: bankDetails.bank || '',
-          },
+          deductionAmount: Number(withdrawal.deduction_amount || 0),
+          finalAmount: Number(withdrawal.final_amount || withdrawal.amount),
+          withdrawalMethod: withdrawalMethod,
+          bankDetails: bankDetails,
+          usdtDetails: usdtDetails,
           status: 'pending' as const,
           createdAt: new Date(withdrawal.created_at),
           adminNotes: withdrawal.admin_notes || '',
+          metadata: metadata
         });
       }
 

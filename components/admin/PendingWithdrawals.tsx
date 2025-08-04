@@ -79,11 +79,15 @@ export default function PendingWithdrawals() {
 
         if (success) {
           console.log(`✅ Withdrawal approved: ${selectedWithdrawal.id}`);
-          Alert.alert(
-            'Success',
-            `Withdrawal approved successfully!\n\nAmount: PKR ${selectedWithdrawal.amount.toLocaleString()}\nUser will receive: PKR ${selectedWithdrawal.finalAmount.toLocaleString()} (after 1% deduction)`,
-            [{ text: 'OK' }]
-          );
+
+          let message = '';
+          if (selectedWithdrawal.withdrawalMethod === 'usdt_trc20') {
+            message = `USDT Withdrawal approved successfully!\n\nAmount: PKR ${selectedWithdrawal.amount.toLocaleString()}\nUSDT Amount: ${selectedWithdrawal.usdtDetails?.usdtAmount || 0} USDT\nAddress: ${selectedWithdrawal.usdtDetails?.usdtAddress || 'N/A'}`;
+          } else {
+            message = `Bank Withdrawal approved successfully!\n\nAmount: PKR ${selectedWithdrawal.amount.toLocaleString()}\nUser will receive: PKR ${selectedWithdrawal.finalAmount.toLocaleString()} (after 1% deduction)`;
+          }
+
+          Alert.alert('Success', message, [{ text: 'OK' }]);
         }
       } else {
         if (!notes.trim()) {
@@ -185,13 +189,35 @@ export default function PendingWithdrawals() {
         </View>
         <View style={styles.amountContainer}>
           <Text style={styles.amount}>Rs {item.amount.toLocaleString()}</Text>
-          <Text style={styles.deduction}>-Rs {item.deductionAmount.toLocaleString()} (1%)</Text>
-          <Text style={styles.finalAmount}>Rs {item.finalAmount.toLocaleString()}</Text>
+          {item.withdrawalMethod === 'bank_transfer' && (
+            <Text style={styles.deduction}>-Rs {item.deductionAmount.toLocaleString()} (1%)</Text>
+          )}
+          <Text style={styles.finalAmount}>
+            {item.withdrawalMethod === 'usdt_trc20'
+              ? `${item.usdtDetails?.usdtAmount || 0} USDT`
+              : `Rs ${item.finalAmount.toLocaleString()}`
+            }
+          </Text>
         </View>
       </View>
 
-      <View style={styles.bankDetails}>
-        <Text style={styles.bankTitle}>Bank Details:</Text>
+      {/* Withdrawal Method Badge */}
+      <View style={styles.methodSection}>
+        <Text style={styles.methodLabel}>Withdrawal Method:</Text>
+        <View style={[
+          styles.methodBadge,
+          item.withdrawalMethod === 'usdt_trc20' ? styles.usdtBadge : styles.bankBadge
+        ]}>
+          <Text style={styles.methodText}>
+            {item.withdrawalMethod === 'usdt_trc20' ? 'USDT TRC20' : 'Bank Transfer'}
+          </Text>
+        </View>
+      </View>
+
+      {/* Conditional Details Section */}
+      {item.withdrawalMethod === 'bank_transfer' ? (
+        <View style={styles.bankDetails}>
+          <Text style={styles.bankTitle}>Bank Details:</Text>
         
         <View style={styles.bankRow}>
           <Text style={styles.bankLabel}>Account Title:</Text>
@@ -226,11 +252,42 @@ export default function PendingWithdrawals() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.bankRow}>
-          <Text style={styles.bankLabel}>Bank:</Text>
-          <Text style={styles.bankValue}>{item.bankDetails?.bank || 'N/A'}</Text>
+          <View style={styles.bankRow}>
+            <Text style={styles.bankLabel}>Bank:</Text>
+            <Text style={styles.bankValue}>{item.bankDetails?.bank || 'N/A'}</Text>
+          </View>
         </View>
-      </View>
+      ) : (
+        <View style={styles.usdtDetails}>
+          <Text style={styles.bankTitle}>USDT Details:</Text>
+
+          <View style={styles.bankRow}>
+            <Text style={styles.bankLabel}>USDT Amount:</Text>
+            <Text style={styles.usdtAmount}>{item.usdtDetails?.usdtAmount || 0} USDT</Text>
+          </View>
+
+          <View style={styles.bankRow}>
+            <Text style={styles.bankLabel}>PKR Equivalent:</Text>
+            <Text style={styles.bankValue}>Rs {(item.usdtDetails?.pkrEquivalent || item.amount).toLocaleString()}</Text>
+          </View>
+
+          <View style={styles.bankRow}>
+            <Text style={styles.bankLabel}>TRC20 Address:</Text>
+            <TouchableOpacity
+              style={styles.copyButton}
+              onPress={() => copyToClipboard(item.usdtDetails?.usdtAddress || '', 'USDT Address')}
+            >
+              <Text style={[styles.bankValue, styles.addressText]}>{item.usdtDetails?.usdtAddress || 'N/A'}</Text>
+              <Ionicons name="copy-outline" size={16} color="#007AFF" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.bankRow}>
+            <Text style={styles.bankLabel}>Network:</Text>
+            <Text style={styles.networkText}>TRON (TRC20)</Text>
+          </View>
+        </View>
+      )}
 
       <View style={styles.withdrawalDetails}>
         <View style={styles.detailRow}>
@@ -312,14 +369,30 @@ export default function PendingWithdrawals() {
                   User: {selectedWithdrawal.userEmail}
                 </Text>
                 <Text style={styles.modalInfoText}>
+                  Method: {selectedWithdrawal.withdrawalMethod === 'usdt_trc20' ? 'USDT TRC20' : 'Bank Transfer'}
+                </Text>
+                <Text style={styles.modalInfoText}>
                   Amount: Rs {selectedWithdrawal.amount.toLocaleString()}
                 </Text>
-                <Text style={styles.modalInfoText}>
-                  Final Amount: Rs {selectedWithdrawal.finalAmount.toLocaleString()}
-                </Text>
-                <Text style={styles.modalInfoText}>
-                  Account: {selectedWithdrawal.bankDetails?.accountTitle || 'N/A'}
-                </Text>
+                {selectedWithdrawal.withdrawalMethod === 'usdt_trc20' ? (
+                  <>
+                    <Text style={styles.modalInfoText}>
+                      USDT Amount: {selectedWithdrawal.usdtDetails?.usdtAmount || 0} USDT
+                    </Text>
+                    <Text style={styles.modalInfoText}>
+                      Address: {selectedWithdrawal.usdtDetails?.usdtAddress || 'N/A'}
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.modalInfoText}>
+                      Final Amount: Rs {selectedWithdrawal.finalAmount.toLocaleString()}
+                    </Text>
+                    <Text style={styles.modalInfoText}>
+                      Account: {selectedWithdrawal.bankDetails?.accountTitle || 'N/A'}
+                    </Text>
+                  </>
+                )}
               </View>
             )}
 
@@ -627,5 +700,57 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#ffffff',
+  },
+  methodSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+    paddingHorizontal: 15,
+  },
+  methodLabel: {
+    fontSize: 14,
+    color: '#ccc',
+    marginRight: 10,
+  },
+  methodBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  bankBadge: {
+    backgroundColor: '#007AFF',
+  },
+  usdtBadge: {
+    backgroundColor: '#f7931a',
+  },
+  methodText: {
+    fontSize: 12,
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
+  usdtDetails: {
+    backgroundColor: '#2a2a2a',
+    padding: 15,
+    marginHorizontal: 15,
+    marginBottom: 15,
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#f7931a',
+  },
+  usdtAmount: {
+    fontSize: 14,
+    color: '#f7931a',
+    fontWeight: 'bold',
+  },
+  addressText: {
+    fontFamily: 'monospace',
+    fontSize: 12,
+    color: '#64ffda',
+  },
+  networkText: {
+    fontSize: 14,
+    color: '#00ff00',
+    fontWeight: 'bold',
   },
 });

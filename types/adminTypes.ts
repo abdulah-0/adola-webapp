@@ -70,17 +70,24 @@ export interface PendingWithdrawalRequest {
   amount: number;
   deductionAmount: number;
   finalAmount: number;
-  bankDetails: {
+  withdrawalMethod: 'bank_transfer' | 'usdt_trc20';
+  bankDetails?: {
     accountTitle: string;
     accountNumber: string;
     iban: string;
     bank: string;
+  };
+  usdtDetails?: {
+    usdtAddress: string;
+    usdtAmount: number;
+    pkrEquivalent: number;
   };
   status: 'pending' | 'approved' | 'rejected' | 'completed';
   createdAt: Date;
   adminNotes?: string;
   processedBy?: string;
   processedAt?: Date;
+  metadata?: any;
 }
 
 export interface UserManagement {

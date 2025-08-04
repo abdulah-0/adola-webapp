@@ -594,9 +594,17 @@ export class NewWalletService {
         return null;
       }
 
-      // Calculate deduction (1%) and final amount
-      const deductionAmount = Math.round(amount * 0.01 * 100) / 100;
-      const finalAmount = amount - deductionAmount;
+      // Calculate deduction and final amount based on withdrawal method
+      const withdrawalMethod = metadata.method || 'bank_transfer';
+      let deductionAmount = 0;
+      let finalAmount = amount;
+
+      if (withdrawalMethod === 'bank_transfer') {
+        // 1% deduction for bank transfers
+        deductionAmount = Math.round(amount * 0.01 * 100) / 100;
+        finalAmount = amount - deductionAmount;
+      }
+      // No deduction for USDT withdrawals
 
       // IMMEDIATELY deduct the withdrawal amount from user's balance
       const newBalance = balanceAmount - amount;
@@ -617,17 +625,26 @@ export class NewWalletService {
         return null;
       }
 
+      // Prepare withdrawal request data based on method
+      const withdrawalRequestData = {
+        user_id: userId,
+        amount: amount,
+        deduction_amount: deductionAmount,
+        final_amount: finalAmount,
+        status: 'pending',
+        metadata: metadata
+      };
+
+      // Add method-specific fields
+      if (withdrawalMethod === 'bank_transfer') {
+        withdrawalRequestData.bank_details = metadata.bank_details || {};
+      }
+      // For USDT, details are stored in metadata
+
       // Create withdrawal request
       const { data: withdrawalData, error: withdrawalError } = await supabase
         .from('withdrawal_requests')
-        .insert({
-          user_id: userId,
-          amount: amount,
-          bank_details: metadata.bank_details || {},
-          deduction_amount: deductionAmount,
-          final_amount: finalAmount,
-          status: 'pending'
-        })
+        .insert(withdrawalRequestData)
         .select();
 
       if (withdrawalError) {
