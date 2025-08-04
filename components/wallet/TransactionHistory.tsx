@@ -5,9 +5,10 @@ import { Transaction } from '../../types/walletTypes';
 
 interface TransactionHistoryProps {
   transactions: Transaction[];
+  currency?: string;
 }
 
-export default function TransactionHistory({ transactions }: TransactionHistoryProps) {
+export default function TransactionHistory({ transactions, currency = 'PKR' }: TransactionHistoryProps) {
   const getTransactionIcon = (type: Transaction['type']) => {
     switch (type) {
       case 'deposit':
@@ -106,7 +107,10 @@ export default function TransactionHistory({ transactions }: TransactionHistoryP
           { color: getTransactionColor(item.type) }
         ]}>
           {item.type === 'withdrawal' || item.type === 'game_loss' ? '-' : '+'}
-          PKR {(item.amount || 0).toFixed(2)}
+          {currency === 'INR' ? '₹' : 'PKR'} {currency === 'INR'
+            ? ((item.amount || 0) * 0.3).toFixed(2)
+            : (item.amount || 0).toFixed(2)
+          }
         </Text>
       </View>
     </View>

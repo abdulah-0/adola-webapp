@@ -8,6 +8,7 @@ interface WalletBalanceProps {
   pendingWithdrawals: number;
   onDeposit: () => void;
   onWithdraw: () => void;
+  currency?: string;
 }
 
 export default function WalletBalance({
@@ -15,7 +16,8 @@ export default function WalletBalance({
   pendingDeposits,
   pendingWithdrawals,
   onDeposit,
-  onWithdraw
+  onWithdraw,
+  currency = 'PKR'
 }: WalletBalanceProps) {
   // Add safety checks for undefined values
   const safeBalance = typeof balance === 'number' ? balance : 0;
@@ -26,7 +28,7 @@ export default function WalletBalance({
     <View style={styles.container}>
       <View style={styles.balanceSection}>
         <Text style={styles.balanceLabel}>Available Balance</Text>
-        <Text style={styles.balanceAmount}>PKR {safeBalance.toFixed(2)}</Text>
+        <Text style={styles.balanceAmount}>{currency} {safeBalance.toFixed(2)}</Text>
       </View>
 
       {(safePendingDeposits > 0 || safePendingWithdrawals > 0) && (
@@ -53,12 +55,12 @@ export default function WalletBalance({
       <View style={styles.actionsSection}>
         <TouchableOpacity style={styles.actionButton} onPress={onDeposit}>
           <Ionicons name="add-circle" size={24} color="#00ff00" />
-          <Text style={styles.actionText}>Deposit</Text>
+          <Text style={styles.actionText}>Deposit {currency}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.actionButton} onPress={onWithdraw}>
           <Ionicons name="remove-circle" size={24} color="#ff6666" />
-          <Text style={styles.actionText}>Withdraw</Text>
+          <Text style={styles.actionText}>Withdraw {currency}</Text>
         </TouchableOpacity>
       </View>
     </View>

@@ -168,6 +168,7 @@ export default function WalletScreen() {
             pendingWithdrawals={pendingWithdrawals}
             onDeposit={() => setShowDepositModal(true)}
             onWithdraw={() => setShowWithdrawalModal(true)}
+            currency="PKR"
           />
 
           <TransactionHistory transactions={transactions} />
