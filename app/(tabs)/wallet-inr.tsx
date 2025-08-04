@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Alert, ScrollView } from 'react-native';
 import { useApp } from '../../contexts/AppContext';
-import { useWallet } from '../../hooks/useWallet';
+import { useWallet } from '../../contexts/WalletContext';
 import DarkGradientBackground from '../../components/ui/DarkGradientBackground';
 import WalletBalance from '../../components/wallet/WalletBalance';
 import TransactionHistory from '../../components/wallet/TransactionHistory';
