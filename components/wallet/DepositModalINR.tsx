@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../../contexts/AppContext';
-import { supabase } from '../../services/supabaseClient';
+import { BANK_ACCOUNTS, USDT_ACCOUNTS } from '../../services/walletService';
 import * as ImagePicker from 'expo-image-picker';
 
 interface DepositModalINRProps {
@@ -72,38 +72,22 @@ export default function DepositModalINR({ visible, onClose, onDeposit }: Deposit
     setDepositMethod('bank_transfer');
   };
 
-  const loadBankAccounts = async () => {
+  const loadBankAccounts = () => {
     try {
-      const { data, error } = await supabase
-        .from('bank_accounts')
-        .select('*')
-        .eq('is_active', true)
-        .order('name');
-
-      if (!error && data) {
-        setBankAccounts(data);
-        if (data.length > 0) {
-          setSelectedBankAccount(data[0].id);
-        }
+      setBankAccounts(BANK_ACCOUNTS);
+      if (BANK_ACCOUNTS.length > 0) {
+        setSelectedBankAccount(BANK_ACCOUNTS[0].id);
       }
     } catch (error) {
       console.error('Error loading bank accounts:', error);
     }
   };
 
-  const loadUsdtAccounts = async () => {
+  const loadUsdtAccounts = () => {
     try {
-      const { data, error } = await supabase
-        .from('usdt_accounts')
-        .select('*')
-        .eq('is_active', true)
-        .order('name');
-
-      if (!error && data) {
-        setUsdtAccounts(data);
-        if (data.length > 0) {
-          setSelectedUsdtAccount(data[0].id);
-        }
+      setUsdtAccounts(USDT_ACCOUNTS);
+      if (USDT_ACCOUNTS.length > 0) {
+        setSelectedUsdtAccount(USDT_ACCOUNTS[0].id);
       }
     } catch (error) {
       console.error('Error loading USDT accounts:', error);
