@@ -80,7 +80,7 @@ export default function WalletScreen() {
     }
   };
 
-  const handleWithdraw = async (amount: number, bankDetails: any, notes?: string) => {
+  const handleWithdraw = async (amount: number, details: any, notes?: string, method: 'bank_transfer' | 'usdt_trc20' = 'bank_transfer') => {
     try {
       // Check if user has sufficient balance
       if (!balance || balance < amount) {
@@ -92,23 +92,38 @@ export default function WalletScreen() {
         return;
       }
 
-      const transactionId = await createWithdrawalRequest(amount, {
-        bank_details: bankDetails,
-        notes: notes || ''
-      });
+      const metadata = method === 'usdt_trc20'
+        ? {
+            method: 'usdt_trc20',
+            usdt_details: details,
+            notes: notes || ''
+          }
+        : {
+            method: 'bank_transfer',
+            bank_details: details,
+            notes: notes || ''
+          };
+
+      const transactionId = await createWithdrawalRequest(amount, metadata);
 
       if (transactionId) {
-        const deductionAmount = Math.round(amount * 0.01 * 100) / 100;
-        const finalAmount = amount - deductionAmount;
+        let message = '';
+
+        if (method === 'usdt_trc20') {
+          const usdtAmount = details.usdtAmount;
+          message = `USDT Withdrawal Request Submitted!\n\nYour USDT withdrawal request has been submitted successfully!\n\nUSDT Amount: ${usdtAmount} USDT\nPKR Equivalent: PKR ${amount.toLocaleString()}\nWallet Address: ${details.usdtAddress}\n\nProcessing will be completed within 24 hours.`;
+        } else {
+          const deductionAmount = Math.round(amount * 0.01 * 100) / 100;
+          const finalAmount = amount - deductionAmount;
+          message = `Bank Withdrawal Request Submitted!\n\nYour withdrawal request for PKR ${amount.toLocaleString()} has been submitted successfully!\n\nAmount deducted from balance: PKR ${amount.toLocaleString()}\nAfter 1% deduction, you will receive: PKR ${finalAmount.toLocaleString()}\n\nProcessing will be completed within 24 hours.`;
+        }
 
         if (typeof window !== 'undefined') {
-          window.alert(
-            `Withdrawal Request Submitted!\n\nYour withdrawal request for PKR ${amount.toLocaleString()} has been submitted successfully!\n\nAmount deducted from balance: PKR ${amount.toLocaleString()}\nAfter 1% deduction, you will receive: PKR ${finalAmount.toLocaleString()}\n\nProcessing will be completed within 24 hours.`
-          );
+          window.alert(message);
         } else {
           Alert.alert(
             'Withdrawal Request Submitted',
-            `Your withdrawal request for PKR ${amount.toLocaleString()} has been submitted successfully!\n\nAmount deducted from balance: PKR ${amount.toLocaleString()}\nAfter 1% deduction, you will receive: PKR ${finalAmount.toLocaleString()}\n\nProcessing will be completed within 24 hours.`,
+            message,
             [{ text: 'OK' }]
           );
         }

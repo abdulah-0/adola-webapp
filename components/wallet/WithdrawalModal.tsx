@@ -16,17 +16,24 @@ import { supabase } from '../../lib/supabase';
 interface WithdrawalModalProps {
   visible: boolean;
   onClose: () => void;
-  onWithdraw: (amount: number, bankDetails: any, notes?: string) => void;
+  onWithdraw: (amount: number, details: any, notes?: string, method?: 'bank_transfer' | 'usdt_trc20') => void;
   balance: number;
 }
 
 export default function WithdrawalModal({ visible, onClose, onWithdraw, balance }: WithdrawalModalProps) {
   const { user } = useApp();
+  const [withdrawalMethod, setWithdrawalMethod] = useState<'bank_transfer' | 'usdt_trc20'>('bank_transfer');
   const [amount, setAmount] = useState('');
+
+  // Bank transfer fields
   const [accountTitle, setAccountTitle] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [iban, setIban] = useState('');
   const [bank, setBank] = useState('');
+
+  // USDT fields
+  const [usdtAddress, setUsdtAddress] = useState('');
+
   const [notes, setNotes] = useState('');
   const [hasApprovedDeposits, setHasApprovedDeposits] = useState(false);
 
@@ -67,6 +74,22 @@ export default function WithdrawalModal({ visible, onClose, onWithdraw, balance 
     return amount - calculateDeduction(amount);
   };
 
+  // USDT conversion functions
+  const USDT_RATE = 270; // 270 PKR = 1 USDT
+  const MIN_USDT_WITHDRAWAL = 10; // Minimum 10 USDT
+
+  const convertPKRToUSDT = (pkrAmount: number) => {
+    return Math.floor((pkrAmount / USDT_RATE) * 100) / 100; // Round down to 2 decimals
+  };
+
+  const convertUSDTToPKR = (usdtAmount: number) => {
+    return usdtAmount * USDT_RATE;
+  };
+
+  const getMaxUSDTWithdrawal = () => {
+    return convertPKRToUSDT(balance);
+  };
+
   const handleWithdraw = () => {
     const withdrawAmount = parseFloat(amount);
 
@@ -75,67 +98,78 @@ export default function WithdrawalModal({ visible, onClose, onWithdraw, balance 
       return;
     }
 
-    if (withdrawAmount < 500) {
-      Alert.alert('Error', 'Minimum withdrawal amount is PKR 500');
-      return;
-    }
-
-    if (withdrawAmount > 50000) {
-      Alert.alert('Error', 'Maximum withdrawal amount is PKR 50,000');
-      return;
-    }
-
-    if (withdrawAmount > balance) {
-      Alert.alert('Error', 'Insufficient balance');
-      return;
-    }
-
     if (!hasApprovedDeposits) {
       Alert.alert('Withdrawal Not Allowed', 'You must make at least one deposit before you can withdraw money. Please deposit funds first and wait for approval.');
       return;
     }
 
-    if (!accountTitle.trim() || !accountNumber.trim() || !iban.trim() || !bank.trim()) {
-      Alert.alert('Error', 'Please fill in all bank details');
-      return;
-    }
-
-    const bankDetails = {
-      accountTitle: accountTitle.trim(),
-      accountNumber: accountNumber.trim(),
-      iban: iban.trim(),
-      bank: bank.trim(),
-    };
-
-    // For web, use window.confirm instead of Alert.alert
-    if (typeof window !== 'undefined') {
-      const confirmed = window.confirm(
-        `Confirm Withdrawal\n\nAmount: PKR ${withdrawAmount}\nDeduction (1%): PKR ${calculateDeduction(withdrawAmount)}\nYou will receive: PKR ${calculateFinalAmount(withdrawAmount)}\n\nProceed with withdrawal?`
-      );
-
-      if (confirmed) {
-        onWithdraw(withdrawAmount, bankDetails, notes);
-        resetForm();
-        onClose();
+    if (withdrawalMethod === 'bank_transfer') {
+      // Bank transfer validation
+      if (withdrawAmount < 500) {
+        Alert.alert('Error', 'Minimum withdrawal amount is PKR 500');
+        return;
       }
+
+      if (withdrawAmount > 50000) {
+        Alert.alert('Error', 'Maximum withdrawal amount is PKR 50,000');
+        return;
+      }
+
+      if (withdrawAmount > balance) {
+        Alert.alert('Error', 'Insufficient balance');
+        return;
+      }
+
+      if (!accountTitle.trim() || !accountNumber.trim() || !iban.trim() || !bank.trim()) {
+        Alert.alert('Error', 'Please fill in all bank details');
+        return;
+      }
+
+      const bankDetails = {
+        accountTitle: accountTitle.trim(),
+        accountNumber: accountNumber.trim(),
+        iban: iban.trim(),
+        bank: bank.trim()
+      };
+
+      onWithdraw(withdrawAmount, bankDetails, notes, 'bank_transfer');
     } else {
-      // Mobile Alert.alert
-      Alert.alert(
-        'Confirm Withdrawal',
-        `Amount: PKR ${withdrawAmount}\nDeduction (1%): PKR ${calculateDeduction(withdrawAmount)}\nYou will receive: PKR ${calculateFinalAmount(withdrawAmount)}\n\nProceed with withdrawal?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Confirm',
-            onPress: () => {
-              onWithdraw(withdrawAmount, bankDetails, notes);
-              resetForm();
-              onClose();
-            }
-          }
-        ]
-      );
+      // USDT withdrawal validation
+      if (withdrawAmount < MIN_USDT_WITHDRAWAL) {
+        Alert.alert('Error', `Minimum withdrawal amount is ${MIN_USDT_WITHDRAWAL} USDT`);
+        return;
+      }
+
+      const maxUSDT = getMaxUSDTWithdrawal();
+      if (withdrawAmount > maxUSDT) {
+        Alert.alert('Error', `Maximum withdrawal amount is ${maxUSDT.toFixed(2)} USDT`);
+        return;
+      }
+
+      if (!usdtAddress.trim()) {
+        Alert.alert('Error', 'Please enter your USDT TRC20 wallet address');
+        return;
+      }
+
+      // Basic TRC20 address validation (starts with T and is 34 characters)
+      if (!usdtAddress.startsWith('T') || usdtAddress.length !== 34) {
+        Alert.alert('Error', 'Please enter a valid TRC20 wallet address');
+        return;
+      }
+
+      const usdtDetails = {
+        usdtAddress: usdtAddress.trim(),
+        usdtAmount: withdrawAmount,
+        pkrEquivalent: convertUSDTToPKR(withdrawAmount)
+      };
+
+      // Convert USDT amount to PKR for internal processing
+      onWithdraw(convertUSDTToPKR(withdrawAmount), usdtDetails, notes, 'usdt_trc20');
     }
+
+    // Reset form and close modal
+    resetForm();
+    onClose();
   };
 
   const resetForm = () => {
@@ -144,6 +178,7 @@ export default function WithdrawalModal({ visible, onClose, onWithdraw, balance 
     setAccountNumber('');
     setIban('');
     setBank('');
+    setUsdtAddress('');
     setNotes('');
   };
 
@@ -174,10 +209,48 @@ export default function WithdrawalModal({ visible, onClose, onWithdraw, balance 
             </View>
           )}
 
+          {/* Withdrawal Method Selection */}
+          <View style={styles.methodSection}>
+            <Text style={styles.sectionTitle}>Withdrawal Method</Text>
+            <View style={styles.methodButtons}>
+              <TouchableOpacity
+                style={[
+                  styles.methodButton,
+                  withdrawalMethod === 'bank_transfer' && styles.selectedMethod
+                ]}
+                onPress={() => setWithdrawalMethod('bank_transfer')}
+              >
+                <Ionicons name="card" size={20} color={withdrawalMethod === 'bank_transfer' ? '#007AFF' : '#666'} />
+                <Text style={[
+                  styles.methodText,
+                  withdrawalMethod === 'bank_transfer' && styles.selectedMethodText
+                ]}>Bank Transfer</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.methodButton,
+                  withdrawalMethod === 'usdt_trc20' && styles.selectedMethod
+                ]}
+                onPress={() => setWithdrawalMethod('usdt_trc20')}
+              >
+                <Ionicons name="logo-bitcoin" size={20} color={withdrawalMethod === 'usdt_trc20' ? '#007AFF' : '#666'} />
+                <Text style={[
+                  styles.methodText,
+                  withdrawalMethod === 'usdt_trc20' && styles.selectedMethodText
+                ]}>USDT TRC20</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           <View style={styles.amountSection}>
-            <Text style={styles.sectionTitle}>Withdrawal Amount</Text>
+            <Text style={styles.sectionTitle}>
+              {withdrawalMethod === 'usdt_trc20' ? 'USDT Amount to Receive' : 'Withdrawal Amount'}
+            </Text>
             <View style={styles.amountInput}>
-              <Text style={styles.currencySign}>Rs</Text>
+              <Text style={styles.currencySign}>
+                {withdrawalMethod === 'usdt_trc20' ? 'USDT' : 'Rs'}
+              </Text>
               <TextInput
                 style={styles.input}
                 value={amount}
@@ -187,7 +260,18 @@ export default function WithdrawalModal({ visible, onClose, onWithdraw, balance 
                 keyboardType="numeric"
               />
             </View>
-            <Text style={styles.minAmount}>Minimum: Rs 500 | Maximum: Rs 50,000</Text>
+            {withdrawalMethod === 'usdt_trc20' ? (
+              <View>
+                <Text style={styles.minAmount}>
+                  Minimum: {MIN_USDT_WITHDRAWAL} USDT | Maximum: {getMaxUSDTWithdrawal().toFixed(2)} USDT
+                </Text>
+                <Text style={styles.conversionInfo}>
+                  1 USDT = {USDT_RATE} PKR | Available: {getMaxUSDTWithdrawal().toFixed(2)} USDT
+                </Text>
+              </View>
+            ) : (
+              <Text style={styles.minAmount}>Minimum: Rs 500 | Maximum: Rs 50,000</Text>
+            )}
             
             {withdrawAmount > 0 && (
               <View style={styles.calculationSection}>
@@ -207,19 +291,21 @@ export default function WithdrawalModal({ visible, onClose, onWithdraw, balance 
             )}
           </View>
 
-          <View style={styles.bankDetailsSection}>
-            <Text style={styles.sectionTitle}>Bank Details</Text>
-            
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Account Title</Text>
-              <TextInput
-                style={styles.textInput}
-                value={accountTitle}
-                onChangeText={setAccountTitle}
-                placeholder="Enter account holder name"
-                placeholderTextColor="#666"
-              />
-            </View>
+          {/* Conditional Details Section */}
+          {withdrawalMethod === 'bank_transfer' ? (
+            <View style={styles.bankDetailsSection}>
+              <Text style={styles.sectionTitle}>Bank Details</Text>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Account Title</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={accountTitle}
+                  onChangeText={setAccountTitle}
+                  placeholder="Enter account holder name"
+                  placeholderTextColor="#666"
+                />
+              </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Account Number</Text>
@@ -255,20 +341,68 @@ export default function WithdrawalModal({ visible, onClose, onWithdraw, balance 
               />
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Notes (Optional)</Text>
-              <TextInput
-                style={[styles.textInput, styles.notesInput]}
-                value={notes}
-                onChangeText={setNotes}
-                placeholder="Add any additional notes"
-                placeholderTextColor="#666"
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-              />
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Notes (Optional)</Text>
+                <TextInput
+                  style={[styles.textInput, styles.notesInput]}
+                  value={notes}
+                  onChangeText={setNotes}
+                  placeholder="Add any additional notes"
+                  placeholderTextColor="#666"
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                />
+              </View>
             </View>
-          </View>
+          ) : (
+            <View style={styles.usdtDetailsSection}>
+              <Text style={styles.sectionTitle}>USDT Withdrawal Details</Text>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>USDT TRC20 Wallet Address</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={usdtAddress}
+                  onChangeText={setUsdtAddress}
+                  placeholder="Enter your TRC20 wallet address (starts with T)"
+                  placeholderTextColor="#666"
+                />
+                <Text style={styles.addressHint}>
+                  Make sure this is a valid TRC20 address. USDT sent to wrong address cannot be recovered.
+                </Text>
+              </View>
+
+              {parseFloat(amount) > 0 && (
+                <View style={styles.usdtConversionInfo}>
+                  <Text style={styles.conversionTitle}>Conversion Details:</Text>
+                  <Text style={styles.conversionDetail}>
+                    USDT Amount: {parseFloat(amount).toFixed(2)} USDT
+                  </Text>
+                  <Text style={styles.conversionDetail}>
+                    PKR Equivalent: {convertUSDTToPKR(parseFloat(amount)).toLocaleString()} PKR
+                  </Text>
+                  <Text style={styles.conversionDetail}>
+                    Rate: 1 USDT = {USDT_RATE} PKR
+                  </Text>
+                </View>
+              )}
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Notes (Optional)</Text>
+                <TextInput
+                  style={[styles.textInput, styles.notesInput]}
+                  value={notes}
+                  onChangeText={setNotes}
+                  placeholder="Add any additional notes"
+                  placeholderTextColor="#666"
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                />
+              </View>
+            </View>
+          )}
 
           <View style={styles.noticeSection}>
             <View style={styles.noticeHeader}>
@@ -278,15 +412,34 @@ export default function WithdrawalModal({ visible, onClose, onWithdraw, balance 
             <Text style={styles.noticeText}>
               • Withdrawals are processed within 24 hours
             </Text>
-            <Text style={styles.noticeText}>
-              • A 1% processing fee is deducted from all withdrawals
-            </Text>
-            <Text style={styles.noticeText}>
-              • Ensure your bank details are correct to avoid delays
-            </Text>
-            <Text style={styles.noticeText}>
-              • Minimum withdrawal: Rs 500 | Maximum withdrawal: Rs 50,000
-            </Text>
+            {withdrawalMethod === 'bank_transfer' ? (
+              <>
+                <Text style={styles.noticeText}>
+                  • A 1% processing fee is deducted from all withdrawals
+                </Text>
+                <Text style={styles.noticeText}>
+                  • Ensure your bank details are correct to avoid delays
+                </Text>
+                <Text style={styles.noticeText}>
+                  • Minimum withdrawal: Rs 500 | Maximum withdrawal: Rs 50,000
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.noticeText}>
+                  • USDT will be sent to your TRC20 wallet address
+                </Text>
+                <Text style={styles.noticeText}>
+                  • Double-check your wallet address - transactions cannot be reversed
+                </Text>
+                <Text style={styles.noticeText}>
+                  • Minimum withdrawal: {MIN_USDT_WITHDRAWAL} USDT | Maximum: {getMaxUSDTWithdrawal().toFixed(2)} USDT
+                </Text>
+                <Text style={styles.noticeText}>
+                  • Network: TRON (TRC20) - ensure your wallet supports TRC20 USDT
+                </Text>
+              </>
+            )}
           </View>
         </ScrollView>
 
@@ -298,13 +451,30 @@ export default function WithdrawalModal({ visible, onClose, onWithdraw, balance 
           <TouchableOpacity
             style={[
               styles.withdrawButton,
-              (!amount || !accountTitle || !accountNumber || !iban || !bank || withdrawAmount > balance || !hasApprovedDeposits) && styles.disabledButton
+              (
+                !amount ||
+                !hasApprovedDeposits ||
+                (withdrawalMethod === 'bank_transfer' && (!accountTitle || !accountNumber || !iban || !bank)) ||
+                (withdrawalMethod === 'usdt_trc20' && !usdtAddress) ||
+                (withdrawalMethod === 'bank_transfer' && withdrawAmount > balance) ||
+                (withdrawalMethod === 'usdt_trc20' && parseFloat(amount) > getMaxUSDTWithdrawal())
+              ) && styles.disabledButton
             ]}
             onPress={handleWithdraw}
-            disabled={!amount || !accountTitle || !accountNumber || !iban || !bank || withdrawAmount > balance || !hasApprovedDeposits}
+            disabled={
+              !amount ||
+              !hasApprovedDeposits ||
+              (withdrawalMethod === 'bank_transfer' && (!accountTitle || !accountNumber || !iban || !bank)) ||
+              (withdrawalMethod === 'usdt_trc20' && !usdtAddress) ||
+              (withdrawalMethod === 'bank_transfer' && withdrawAmount > balance) ||
+              (withdrawalMethod === 'usdt_trc20' && parseFloat(amount) > getMaxUSDTWithdrawal())
+            }
           >
             <Text style={styles.withdrawText}>
-              {!hasApprovedDeposits ? 'Deposit Required First' : 'Submit Withdrawal'}
+              {!hasApprovedDeposits
+                ? 'Deposit Required First'
+                : `Submit ${withdrawalMethod === 'usdt_trc20' ? 'USDT' : 'Bank'} Withdrawal`
+              }
             </Text>
           </TouchableOpacity>
         </View>
@@ -528,5 +698,72 @@ const styles = StyleSheet.create({
     color: '#ff6b6b',
     marginLeft: 10,
     lineHeight: 20,
+  },
+  methodSection: {
+    marginBottom: 20,
+    paddingHorizontal: 20,
+  },
+  methodButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  methodButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 8,
+    backgroundColor: '#2a2a2a',
+    borderWidth: 2,
+    borderColor: '#333',
+  },
+  selectedMethod: {
+    borderColor: '#007AFF',
+    backgroundColor: '#1a2a3a',
+  },
+  methodText: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 8,
+    fontWeight: '500',
+  },
+  selectedMethodText: {
+    color: '#007AFF',
+  },
+  conversionInfo: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
+  usdtDetailsSection: {
+    marginBottom: 20,
+    paddingHorizontal: 20,
+  },
+  addressHint: {
+    fontSize: 12,
+    color: '#ff6b6b',
+    marginTop: 5,
+    fontStyle: 'italic',
+  },
+  usdtConversionInfo: {
+    backgroundColor: '#2a2a2a',
+    padding: 15,
+    borderRadius: 8,
+    marginVertical: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: '#007AFF',
+  },
+  conversionTitle: {
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  conversionDetail: {
+    fontSize: 13,
+    color: '#ccc',
+    marginBottom: 4,
   },
 });
