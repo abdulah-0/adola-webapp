@@ -45,19 +45,28 @@ export default function WithdrawalModal({ visible, onClose, onWithdraw, balance 
   }, [visible, user?.id]);
 
   const checkUserDeposits = async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.log('❌ No user ID available for deposit check');
+      return;
+    }
 
     try {
+      console.log('🔍 Checking deposits for user ID:', user.id);
+
       const { data: approvedDeposits, error } = await supabase
         .from('deposit_requests')
-        .select('id')
+        .select('id, user_id, status, amount')
         .eq('user_id', user.id)
         .eq('status', 'approved')
-        .limit(1);
+        .limit(5);
+
+      console.log('🔍 Deposit check result:', { approvedDeposits, error });
 
       if (!error && approvedDeposits && approvedDeposits.length > 0) {
+        console.log('✅ User has approved deposits:', approvedDeposits.length);
         setHasApprovedDeposits(true);
       } else {
+        console.log('❌ No approved deposits found for user');
         setHasApprovedDeposits(false);
       }
     } catch (error) {

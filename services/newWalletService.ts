@@ -577,17 +577,23 @@ export class NewWalletService {
       const balanceAmount = currentBalance?.balance || 0;
 
       // Check if user has made at least one approved deposit
+      console.log('🔍 Checking deposits for user ID in withdrawal service:', userId);
+
       const { data: approvedDeposits, error: depositError } = await supabase
         .from('deposit_requests')
-        .select('id')
+        .select('id, user_id, status, amount')
         .eq('user_id', userId)
         .eq('status', 'approved')
-        .limit(1);
+        .limit(5);
+
+      console.log('🔍 Withdrawal service deposit check result:', { approvedDeposits, depositError });
 
       if (depositError || !approvedDeposits || approvedDeposits.length === 0) {
-        console.log('❌ User has not made any approved deposits');
+        console.log('❌ User has not made any approved deposits - withdrawal blocked');
         return null;
       }
+
+      console.log('✅ User has approved deposits, withdrawal allowed');
 
       // Check if user has sufficient balance
       if (balanceAmount < amount) {
