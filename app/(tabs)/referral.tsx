@@ -54,6 +54,9 @@ export default function ReferralScreen() {
 
       setReferralCode(code);
 
+      // Recalculate referral stats to ensure accuracy
+      await ReferralService.recalculateReferralStats(userId);
+
       // Get referral stats
       console.log('📊 Fetching referral stats...');
       const referralStats = await ReferralService.getReferralStats(userId);

@@ -388,6 +388,12 @@ export class ReferralService {
         };
       }
 
+      // Process referral if referral code was provided
+      if (referralCode) {
+        console.log('🔗 Processing referral for code:', referralCode);
+        await this.processReferral(userId, referralCode);
+      }
+
       return {
         success: true,
         userReferralCode: newReferralCode,
@@ -400,6 +406,196 @@ export class ReferralService {
         userReferralCode: '',
         message: 'Registration failed'
       };
+    }
+  }
+
+  /**
+   * Process referral when a new user signs up with a referral code
+   */
+  static async processReferral(newUserId: string, referralCode: string): Promise<void> {
+    try {
+      console.log('🔗 Processing referral for new user:', newUserId, 'with code:', referralCode);
+
+      // Find the referrer by referral code
+      const { data: referrer, error: referrerError } = await supabase
+        .from('users')
+        .select('auth_user_id, email, username, total_referrals')
+        .eq('referral_code', referralCode)
+        .maybeSingle();
+
+      if (referrerError || !referrer) {
+        console.log('❌ Referrer not found for code:', referralCode);
+        return;
+      }
+
+      console.log('✅ Found referrer:', referrer.email);
+
+      // Update the new user with referrer information
+      const { error: updateUserError } = await supabase
+        .from('users')
+        .update({
+          referred_by_user_id: referrer.auth_user_id,
+          referral_bonus_received: true
+        })
+        .eq('auth_user_id', newUserId);
+
+      if (updateUserError) {
+        console.error('❌ Error updating referred user:', updateUserError);
+        return;
+      }
+
+      // Create referral record
+      const { error: referralRecordError } = await supabase
+        .from('referrals')
+        .insert({
+          referrer_user_id: referrer.auth_user_id,
+          referred_user_id: newUserId,
+          referral_code: referralCode,
+          bonus_amount: 25.00,
+          bonus_paid: true,
+          bonus_paid_at: new Date().toISOString()
+        });
+
+      if (referralRecordError) {
+        console.error('❌ Error creating referral record:', referralRecordError);
+        return;
+      }
+
+      // Update referrer's total referrals count
+      const { error: updateReferrerError } = await supabase
+        .from('users')
+        .update({
+          total_referrals: (referrer.total_referrals || 0) + 1,
+          referral_bonus_given: true
+        })
+        .eq('auth_user_id', referrer.auth_user_id);
+
+      if (updateReferrerError) {
+        console.error('❌ Error updating referrer count:', updateReferrerError);
+        return;
+      }
+
+      // Give referral bonus to referrer
+      const { data: referrerWallet, error: walletError } = await supabase
+        .from('wallets')
+        .select('balance, referral_earnings')
+        .eq('user_id', referrer.auth_user_id)
+        .maybeSingle();
+
+      if (!walletError && referrerWallet) {
+        const bonusAmount = 25.00;
+        const newBalance = parseFloat(referrerWallet.balance.toString()) + bonusAmount;
+        const newReferralEarnings = parseFloat((referrerWallet.referral_earnings || 0).toString()) + bonusAmount;
+
+        // Update referrer's wallet
+        const { error: walletUpdateError } = await supabase
+          .from('wallets')
+          .update({
+            balance: newBalance,
+            referral_earnings: newReferralEarnings
+          })
+          .eq('user_id', referrer.auth_user_id);
+
+        if (!walletUpdateError) {
+          // Create referral bonus transaction
+          const { error: transactionError } = await supabase
+            .from('wallet_transactions')
+            .insert({
+              user_id: referrer.auth_user_id,
+              type: 'referral_bonus',
+              status: 'auto',
+              amount: bonusAmount,
+              balance_before: parseFloat(referrerWallet.balance.toString()),
+              balance_after: newBalance,
+              description: 'Referral bonus for inviting new user',
+              metadata: {
+                referred_user_id: newUserId,
+                referral_code: referralCode
+              }
+            });
+
+          if (!transactionError) {
+            console.log('✅ Referral processed successfully! Bonus given:', bonusAmount);
+          } else {
+            console.error('❌ Error creating referral transaction:', transactionError);
+          }
+        } else {
+          console.error('❌ Error updating referrer wallet:', walletUpdateError);
+        }
+      } else {
+        console.error('❌ Error getting referrer wallet:', walletError);
+      }
+
+    } catch (error) {
+      console.error('❌ Error processing referral:', error);
+    }
+  }
+
+  /**
+   * Manually recalculate and fix referral counts for a user
+   */
+  static async recalculateReferralStats(userId: string): Promise<void> {
+    try {
+      console.log('🔄 Recalculating referral stats for user:', userId);
+
+      // Count actual referrals from referrals table
+      const { count: actualReferrals, error: countError } = await supabase
+        .from('referrals')
+        .select('*', { count: 'exact', head: true })
+        .eq('referrer_user_id', userId);
+
+      if (countError) {
+        console.error('❌ Error counting referrals:', countError);
+        return;
+      }
+
+      // Update user's total_referrals to match actual count
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          total_referrals: actualReferrals || 0
+        })
+        .eq('auth_user_id', userId);
+
+      if (updateError) {
+        console.error('❌ Error updating referral count:', updateError);
+      } else {
+        console.log('✅ Referral count updated:', actualReferrals);
+      }
+
+    } catch (error) {
+      console.error('❌ Error recalculating referral stats:', error);
+    }
+  }
+
+  /**
+   * Fix all users' referral counts
+   */
+  static async fixAllReferralCounts(): Promise<void> {
+    try {
+      console.log('🔄 Fixing all referral counts...');
+
+      // Get all users with referral codes
+      const { data: users, error: usersError } = await supabase
+        .from('users')
+        .select('auth_user_id, referral_code')
+        .not('referral_code', 'is', null);
+
+      if (usersError) {
+        console.error('❌ Error getting users:', usersError);
+        return;
+      }
+
+      // Fix each user's referral count
+      for (const user of users || []) {
+        await this.recalculateReferralStats(user.auth_user_id);
+        // Small delay to avoid overwhelming the database
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      console.log('✅ All referral counts fixed!');
+    } catch (error) {
+      console.error('❌ Error fixing referral counts:', error);
     }
   }
 }
