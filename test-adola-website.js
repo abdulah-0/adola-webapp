@@ -108,7 +108,7 @@ const dataChecks = [
   'Deposit bonus: 5%',
   'Bank: UBL (United Bank Limited)',
   'ZARBONICS SOLUTIONS: PK10UNIL0109000324585986',
-  'Zoraz Yousaf: PK38UNIL0109000320036376'
+  'Zoraz Yousaf: PK38UNIL01090003200363376'
 ];
 
 console.log('📋 Expected data points:');

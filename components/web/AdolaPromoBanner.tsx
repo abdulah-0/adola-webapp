@@ -145,19 +145,10 @@ export default function AdolaPromoBanner({
         <View style={styles.bankAccounts}>
           <View style={styles.bankAccount}>
             <View style={styles.bankHeader}>
-              <Ionicons name="business" size={20} color={Colors.primary.neonCyan} />
-              <Text style={styles.bankName}>ZARBONICS SOLUTIONS</Text>
-            </View>
-            <Text style={styles.bankDetails}>IBAN: PK10UNIL0109000324585986</Text>
-            <Text style={styles.bankDetails}>Account: 0109000324585986</Text>
-          </View>
-
-          <View style={styles.bankAccount}>
-            <View style={styles.bankHeader}>
               <Ionicons name="person" size={20} color={Colors.primary.hotPink} />
-              <Text style={styles.bankName}>Zoraz Yousaf</Text>
+              <Text style={styles.bankName}>Account 2</Text>
             </View>
-            <Text style={styles.bankDetails}>IBAN: PK38UNIL0109000320036376</Text>
+            <Text style={styles.bankDetails}>IBAN: PK38UNIL01090003200363376</Text>
             <Text style={styles.bankDetails}>Account: 01090003200363376</Text>
           </View>
         </View>

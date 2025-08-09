@@ -584,7 +584,6 @@ export class NewAdminService {
 
       // Bank account mapping
       const bankAccountMap = {
-        'zarbonics': 'Account 1',
         'zoraz': 'Account 2',
         'UBL Bank': 'UBL Bank' // Fallback for old entries
       };

@@ -27,6 +27,7 @@ import MegaDrawScreen from './screens/MegaDrawScreen';
 import LuckyNumbersScreen from './screens/LuckyNumbersScreen';
 import PowerBallScreen from './screens/PowerBallScreen';
 import CricketBettingScreen from './screens/CricketBettingScreen';
+import LudoScreen from './screens/LudoScreen';
 
 export default function GameScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -74,6 +75,8 @@ export default function GameScreen() {
         return <LimboScreen />;
       case 'cricket-betting':
         return <CricketBettingScreen />;
+      case 'ludo':
+        return <LudoScreen />;
       default:
         return (
           <View style={styles.errorContainer}>
@@ -123,23 +126,23 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary.background,
   },
   headerGradient: {
-    paddingTop: 50, // Account for status bar
-    paddingBottom: 15,
+    paddingTop: 40, // Reduced from 50
+    paddingBottom: 8, // Reduced from 15
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 2, // Reduced shadow
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOpacity: 0.2, // Reduced shadow
+    shadowRadius: 4, // Reduced shadow
+    elevation: 4, // Reduced elevation
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingHorizontal: 16, // Reduced from 20
+    paddingVertical: 6, // Reduced from 10
   },
   backButton: {
     width: 40,
@@ -150,7 +153,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   gameTitle: {
-    fontSize: 20,
+    fontSize: 18, // Reduced from 20
     fontWeight: 'bold',
     color: '#ffffff',
     textAlign: 'center',
