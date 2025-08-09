@@ -674,103 +674,7 @@ export default function LudoGame() {
     };
   };
 
-  // Render individual tile based on type (path/home/finish)
-  const renderTile = (row: number, col: number, type: 'path' | 'home' | 'finish' | 'safe' | 'empty') => {
-    const cellSize = BOARD_SIZE / 15;
-    const x = col * cellSize;
-    const y = row * cellSize;
 
-    // Tile colors based on type
-    const getTileColor = (tileType: string) => {
-      switch (tileType) {
-        case 'path': return '#2a2a2a';
-        case 'safe': return '#ffaa00';
-        case 'home': return '#1a1a1a';
-        case 'finish': return '#333333';
-        default: return '#0a0a0a';
-      }
-    };
-
-    return (
-      <View
-        key={`tile-${row}-${col}`}
-        style={{
-          position: 'absolute',
-          left: x,
-          top: y,
-          width: cellSize - 2, // 40px with 2px margin for 5px spacing effect
-          height: cellSize - 2,
-          backgroundColor: getTileColor(type),
-          borderWidth: 1,
-          borderColor: '#444',
-          borderRadius: 2,
-        }}
-      />
-    );
-  };
-
-  // Render the complete 15x15 grid board
-  const renderBoard = () => {
-    const tiles = [];
-    const cellSize = BOARD_SIZE / 15;
-
-    // Create 15x15 grid
-    for (let row = 0; row < 15; row++) {
-      for (let col = 0; col < 15; col++) {
-        let tileType = 'empty';
-
-        // Check if this coordinate is a main path tile
-        const mainTrackCoordinates = [
-          [6,1], [6,2], [6,3], [6,4], [6,5], [6,6],
-          [5,6], [4,6], [3,6], [2,6], [1,6], [1,7],
-          [1,8], [1,9], [1,10], [1,11], [1,12], [2,12],
-          [3,12], [4,12], [5,12], [6,12], [7,12], [8,12],
-          [8,11], [8,10], [8,9], [8,8], [8,7], [8,6],
-          [8,5], [8,4], [8,3], [8,2], [8,1], [8,0],
-          [9,0], [10,0], [10,1], [10,2], [10,3], [10,4],
-          [10,5], [10,6], [9,6], [9,7], [9,8], [9,9],
-          [9,10], [9,11], [10,11], [11,11], [12,11], [12,10],
-          [12,9], [12,8], [12,7], [12,6], [12,5], [12,4],
-          [12,3], [12,2], [12,1], [12,0], [13,0]
-        ];
-
-        const pathIndex = mainTrackCoordinates.findIndex(([r, c]) => r === row && c === col);
-        if (pathIndex !== -1) {
-          tileType = safeZones.includes(pathIndex) ? 'safe' : 'path';
-        }
-
-        // Check if this is a home area
-        const homeAreas = [
-          [[1,1], [1,2], [2,1], [2,2]], // RED
-          [[1,12], [1,13], [2,12], [2,13]], // GREEN
-          [[12,12], [12,13], [13,12], [13,13]], // BLUE
-          [[12,1], [12,2], [13,1], [13,2]], // YELLOW
-        ];
-
-        const isHome = homeAreas.some(area =>
-          area.some(([r, c]) => r === row && c === col)
-        );
-        if (isHome) tileType = 'home';
-
-        // Check if this is a finishing column
-        const finishingAreas = [
-          [[7,6], [8,6], [9,6], [10,6], [11,6], [12,6]], // RED
-          [[2,8], [3,8], [4,8], [5,8], [6,8], [7,8]], // GREEN
-          [[7,8], [7,9], [7,10], [7,11], [7,12], [7,13]], // BLUE
-          [[8,7], [9,7], [10,7], [11,7], [12,7], [13,7]], // YELLOW
-        ];
-
-        const isFinish = finishingAreas.some(area =>
-          area.some(([r, c]) => r === row && c === col)
-        );
-        if (isFinish) tileType = 'finish';
-
-        tiles.push(renderTile(row, col, tileType as any));
-      }
-    }
-
-    return tiles;
-  };
 
   // Bot AI logic
   const makeBotMove = () => {
@@ -975,24 +879,49 @@ export default function LudoGame() {
           <View style={styles.boardSection}>
 
             <View style={styles.gameBoard}>
-              {/* 15x15 Grid-Based Ludo Board */}
+              {/* Board Background */}
               <View style={styles.boardContainer}>
-                {/* Render the complete 15x15 grid with all tiles */}
-                {renderBoard()}
 
-                {/* Player Home Area Labels */}
-                <View style={[styles.gridHomeLabel, { top: BOARD_SIZE / 15 * 1.5, left: BOARD_SIZE / 15 * 1.5 }]}>
-                  <Text style={styles.gridHomeLabelText}>RED</Text>
-                </View>
-                <View style={[styles.gridHomeLabel, { top: BOARD_SIZE / 15 * 1.5, right: BOARD_SIZE / 15 * 1.5 }]}>
-                  <Text style={styles.gridHomeLabelText}>GREEN</Text>
-                </View>
-                <View style={[styles.gridHomeLabel, { bottom: BOARD_SIZE / 15 * 1.5, right: BOARD_SIZE / 15 * 1.5 }]}>
-                  <Text style={styles.gridHomeLabelText}>BLUE</Text>
-                </View>
-                <View style={[styles.gridHomeLabel, { bottom: BOARD_SIZE / 15 * 1.5, left: BOARD_SIZE / 15 * 1.5 }]}>
-                  <Text style={styles.gridHomeLabelText}>YELLOW</Text>
-                </View>
+            {/* Player Home Areas */}
+            {/* Red Home Area (Top Left) */}
+            <View style={[styles.homeArea, styles.redHome]}>
+              <Text style={styles.homeLabel}>RED</Text>
+              <View style={styles.homeGrid}>
+                {[0, 1, 2, 3].map(i => (
+                  <View key={`red-home-${i}`} style={[styles.homeCell, { backgroundColor: PLAYER_COLORS.red }]} />
+                ))}
+              </View>
+            </View>
+
+            {/* Green Home Area (Top Right) */}
+            <View style={[styles.homeArea, styles.greenHome]}>
+              <Text style={styles.homeLabel}>GREEN</Text>
+              <View style={styles.homeGrid}>
+                {[0, 1, 2, 3].map(i => (
+                  <View key={`green-home-${i}`} style={[styles.homeCell, { backgroundColor: PLAYER_COLORS.green }]} />
+                ))}
+              </View>
+            </View>
+
+            {/* Yellow Home Area (Bottom Right) */}
+            <View style={[styles.homeArea, styles.yellowHome]}>
+              <Text style={styles.homeLabel}>YELLOW</Text>
+              <View style={styles.homeGrid}>
+                {[0, 1, 2, 3].map(i => (
+                  <View key={`yellow-home-${i}`} style={[styles.homeCell, { backgroundColor: PLAYER_COLORS.yellow }]} />
+                ))}
+              </View>
+            </View>
+
+            {/* Blue Home Area (Bottom Left) */}
+            <View style={[styles.homeArea, styles.blueHome]}>
+              <Text style={styles.homeLabel}>BLUE</Text>
+              <View style={styles.homeGrid}>
+                {[0, 1, 2, 3].map(i => (
+                  <View key={`blue-home-${i}`} style={[styles.homeCell, { backgroundColor: PLAYER_COLORS.blue }]} />
+                ))}
+              </View>
+            </View>
 
             {/* Board Path */}
             {Array.from({ length: 52 }, (_, i) => {
@@ -1603,19 +1532,5 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: 'bold',
     fontSize: 12,
-  },
-  gridHomeLabel: {
-    position: 'absolute',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  gridHomeLabelText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: 'bold',
   },
 });
