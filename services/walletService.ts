@@ -25,7 +25,7 @@ export const BANK_ACCOUNTS: BankAccount[] = [
   {
     id: 'zoraz',
     name: 'Account 2',
-    accountNumber: '01090003200363376',
+    accountNumber: '0109000320036376',
     iban: 'PK38UNIL0109000320036376',
     bank: 'United Bank Limited (UBL)',
     isActive: true,

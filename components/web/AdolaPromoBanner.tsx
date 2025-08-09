@@ -149,7 +149,7 @@ export default function AdolaPromoBanner({
               <Text style={styles.bankName}>Account 2</Text>
             </View>
             <Text style={styles.bankDetails}>IBAN: PK38UNIL0109000320036376</Text>
-            <Text style={styles.bankDetails}>Account: 01090003200363376</Text>
+            <Text style={styles.bankDetails}>Account: 0109000320036376</Text>
           </View>
         </View>
 
