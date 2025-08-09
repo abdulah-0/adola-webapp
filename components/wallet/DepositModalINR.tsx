@@ -262,7 +262,7 @@ export default function DepositModalINR({ visible, onClose, onDeposit }: Deposit
                     <View style={styles.bankInfo}>
                       <Text style={styles.bankName}>{bank.name}</Text>
                       <Text style={styles.bankDetails}>
-                        Account: {bank.account_number} | IBAN: {bank.iban}
+                        Account: {bank.accountNumber} | IBAN: {bank.iban}
                       </Text>
                     </View>
                     {selectedBankAccount === bank.id && (
