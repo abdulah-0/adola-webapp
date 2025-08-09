@@ -144,7 +144,7 @@ const FooterSection = () => (
     <Text style={styles.bold}>Bank Transfer (UBL):</Text>
     <View style={styles.listContainer}>
       <Text style={styles.listItem}><Text style={styles.bold}>ZARBONICS SOLUTIONS:</Text> PK10UNIL0109000324585986</Text>
-      <Text style={styles.listItem}><Text style={styles.bold}>Zoraz Yousaf:</Text> PK38UNIL01090003200363376</Text>
+      <Text style={styles.listItem}><Text style={styles.bold}>Zoraz Yousaf:</Text> PK38UNIL0109000320036376</Text>
     </View>
 
     <GameStatsTable

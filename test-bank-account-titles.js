@@ -45,7 +45,7 @@ if (fs.existsSync(walletServicePath)) {
     console.log('❌ First account number or IBAN changed');
   }
   
-  if (content.includes('01090003200363376') && content.includes('PK38UNIL01090003200363376')) {
+  if (content.includes('01090003200363376') && content.includes('PK38UNIL0109000320036376')) {
     console.log('✅ Second account number and IBAN unchanged');
   } else {
     console.log('❌ Second account number or IBAN changed');
@@ -81,7 +81,7 @@ console.log('    - Bank: United Bank Limited (UBL)');
 console.log('    - Status: Active');
 console.log('  • Account Two:');
 console.log('    - Account Number: 01090003200363376');
-console.log('    - IBAN: PK38UNIL01090003200363376');
+console.log('    - IBAN: PK38UNIL0109000320036376');
 console.log('    - Bank: United Bank Limited (UBL)');
 console.log('    - Status: Active');
 console.log('');
