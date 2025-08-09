@@ -94,8 +94,8 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
         <View style={styles.statCard}>
           <Ionicons name="trending-up" size={24} color="#00ff88" />
           <Text style={[styles.statValue, { color: '#00ff88' }]}>Rs {stats.totalGameRevenue.toLocaleString()}</Text>
-          <Text style={styles.statLabel}>Game Revenue</Text>
-          <Text style={styles.statSubtext}>Amount players lost</Text>
+          <Text style={styles.statLabel}>Platform Revenue</Text>
+          <Text style={styles.statSubtext}>Deposits - Withdrawals</Text>
         </View>
       </View>
 

@@ -62,12 +62,14 @@ export class AdminService {
       const deposits = transactions?.filter(t => t.type === 'deposit') || [];
       const withdrawals = transactions?.filter(t => t.type === 'withdraw') || [];
 
+      // Calculate total deposits (approved + completed + pending) for live updates
       const totalDeposits = deposits
-        .filter(t => t.status === 'approved' || t.status === 'completed')
+        .filter(t => t.status === 'approved' || t.status === 'completed' || t.status === 'pending')
         .reduce((sum, t) => sum + Number(t.amount), 0);
 
+      // Calculate total withdrawals (approved + completed + pending) for live updates
       const totalWithdrawals = withdrawals
-        .filter(t => t.status === 'approved' || t.status === 'completed')
+        .filter(t => t.status === 'approved' || t.status === 'completed' || t.status === 'pending')
         .reduce((sum, t) => sum + Number(t.amount), 0);
 
       // Get pending amounts from wallet_transactions
@@ -112,10 +114,16 @@ export class AdminService {
       console.log(`📊 Admin Dashboard Stats - Pending Deposits: PKR ${pendingDepositsAmount} (Wallet: ${pendingDepositsFromWallet}, Requests: ${pendingDepositsFromRequests})`);
       console.log(`📊 Admin Dashboard Stats - Pending Withdrawals: PKR ${pendingWithdrawalsAmount} (Wallet: ${pendingWithdrawalsFromWallet}, Requests: ${pendingWithdrawalsFromRequests})`);
 
-      // Calculate real game revenue (house profit = total bets - total winnings)
-      const totalBets = gameSessions?.reduce((sum, session) => sum + Number(session.bet_amount || 0), 0) || 0;
-      const totalWinnings = gameSessions?.reduce((sum, session) => sum + Number(session.win_amount || 0), 0) || 0;
-      const totalGameRevenue = totalBets - totalWinnings; // This is the actual house profit (amount players lost)
+      // Calculate game revenue as total deposits - total withdrawals (platform profit)
+      const approvedDeposits = deposits
+        .filter(t => t.status === 'approved' || t.status === 'completed')
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+
+      const approvedWithdrawals = withdrawals
+        .filter(t => t.status === 'approved' || t.status === 'completed')
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+
+      const totalGameRevenue = approvedDeposits - approvedWithdrawals; // Platform profit (deposits - withdrawals)
 
       const totalReferralBonuses = transactions?.filter(t => t.type === 'referral_bonus').reduce((sum, t) => sum + Number(t.amount), 0) || 0;
 
@@ -167,11 +175,12 @@ export class AdminService {
         console.log('Note: Could not fetch today\'s request data from dedicated tables');
       }
 
-      // Calculate today's game revenue (house profit)
+      // Calculate today's platform revenue (deposits - withdrawals)
+      const todayGameRevenue = todayDeposits - todayWithdrawals; // Platform profit for today
+
+      // Game session stats for additional info
       const todayGameSessions = gameSessions?.filter(session => new Date(session.created_at) >= today) || [];
       const todayBets = todayGameSessions.reduce((sum, session) => sum + Number(session.bet_amount || 0), 0);
-      const todayWinnings = todayGameSessions.reduce((sum, session) => sum + Number(session.win_amount || 0), 0);
-      const todayGameRevenue = todayBets - todayWinnings; // House profit for today
       const todayGamesPlayed = todayGameSessions.length;
 
       console.log(`📊 Today's Activity - New Users: ${todayUsers}, Deposits: PKR ${todayDeposits}, Withdrawals: PKR ${todayWithdrawals}`);
