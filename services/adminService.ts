@@ -60,15 +60,20 @@ export class AdminService {
       const activeUsers = users?.filter(user => user.status === 'online').length || 0;
 
       const deposits = transactions?.filter(t => t.type === 'deposit') || [];
-      const withdrawals = transactions?.filter(t => t.type === 'withdraw') || [];
+      const withdrawals = transactions?.filter(t => t.type === 'withdraw' || t.type === 'withdrawal') || [];
 
-      // Calculate total deposits (approved + completed + pending) for live updates
-      const totalDeposits = deposits
+      console.log(`🔍 Debug - Total transactions: ${transactions?.length || 0}`);
+      console.log(`🔍 Debug - Deposit transactions: ${deposits.length}`);
+      console.log(`🔍 Debug - Withdrawal transactions: ${withdrawals.length}`);
+      console.log(`🔍 Debug - Transaction types found:`, [...new Set(transactions?.map(t => t.type) || [])]);
+
+      // Calculate total deposits from wallet_transactions (approved + completed + pending)
+      const totalDepositsFromWallet = deposits
         .filter(t => t.status === 'approved' || t.status === 'completed' || t.status === 'pending')
         .reduce((sum, t) => sum + Number(t.amount), 0);
 
-      // Calculate total withdrawals (approved + completed + pending) for live updates
-      const totalWithdrawals = withdrawals
+      // Calculate total withdrawals from wallet_transactions (approved + completed + pending)
+      const totalWithdrawalsFromWallet = withdrawals
         .filter(t => t.status === 'approved' || t.status === 'completed' || t.status === 'pending')
         .reduce((sum, t) => sum + Number(t.amount), 0);
 
@@ -81,40 +86,56 @@ export class AdminService {
         .filter(t => t.status === 'pending')
         .reduce((sum, t) => sum + Number(t.amount), 0);
 
-      // Also check dedicated deposit_requests and withdrawal_requests tables for accurate pending amounts
+      // Also check dedicated deposit_requests and withdrawal_requests tables for complete totals
+      let totalDepositsFromRequests = 0;
+      let totalWithdrawalsFromRequests = 0;
       let pendingDepositsFromRequests = 0;
       let pendingWithdrawalsFromRequests = 0;
 
       try {
-        const { data: pendingDepositRequests } = await supabase
+        // Get ALL deposit requests (not just pending)
+        const { data: allDepositRequests } = await supabase
           .from('deposit_requests')
-          .select('amount')
-          .eq('status', 'pending');
+          .select('amount, status');
 
-        const { data: pendingWithdrawalRequests } = await supabase
+        // Get ALL withdrawal requests (not just pending)
+        const { data: allWithdrawalRequests } = await supabase
           .from('withdrawal_requests')
-          .select('amount')
-          .eq('status', 'pending');
+          .select('amount, status');
 
-        if (pendingDepositRequests && pendingDepositRequests.length > 0) {
-          pendingDepositsFromRequests = pendingDepositRequests.reduce((sum, req) => sum + Number(req.amount || 0), 0);
+        if (allDepositRequests && allDepositRequests.length > 0) {
+          totalDepositsFromRequests = allDepositRequests.reduce((sum, req) => sum + Number(req.amount || 0), 0);
+          pendingDepositsFromRequests = allDepositRequests
+            .filter(req => req.status === 'pending')
+            .reduce((sum, req) => sum + Number(req.amount || 0), 0);
         }
 
-        if (pendingWithdrawalRequests && pendingWithdrawalRequests.length > 0) {
-          pendingWithdrawalsFromRequests = pendingWithdrawalRequests.reduce((sum, req) => sum + Number(req.amount || 0), 0);
+        if (allWithdrawalRequests && allWithdrawalRequests.length > 0) {
+          totalWithdrawalsFromRequests = allWithdrawalRequests.reduce((sum, req) => sum + Number(req.amount || 0), 0);
+          pendingWithdrawalsFromRequests = allWithdrawalRequests
+            .filter(req => req.status === 'pending')
+            .reduce((sum, req) => sum + Number(req.amount || 0), 0);
         }
+
+        console.log(`🔍 Debug - Deposits from requests table: ${totalDepositsFromRequests}`);
+        console.log(`🔍 Debug - Withdrawals from requests table: ${totalWithdrawalsFromRequests}`);
       } catch (error) {
         console.log('Note: deposit_requests/withdrawal_requests tables may not exist yet');
       }
 
-      // Use the higher amount (from dedicated tables if available, otherwise from wallet_transactions)
+      // Use the higher amount for totals (from dedicated tables if available, otherwise from wallet_transactions)
+      const totalDeposits = Math.max(totalDepositsFromWallet, totalDepositsFromRequests);
+      const totalWithdrawals = Math.max(totalWithdrawalsFromWallet, totalWithdrawalsFromRequests);
       const pendingDepositsAmount = Math.max(pendingDepositsFromWallet, pendingDepositsFromRequests);
       const pendingWithdrawalsAmount = Math.max(pendingWithdrawalsFromWallet, pendingWithdrawalsFromRequests);
 
+      console.log(`📊 Admin Dashboard Stats - Total Deposits: PKR ${totalDeposits} (Wallet: ${totalDepositsFromWallet}, Requests: ${totalDepositsFromRequests})`);
+      console.log(`📊 Admin Dashboard Stats - Total Withdrawals: PKR ${totalWithdrawals} (Wallet: ${totalWithdrawalsFromWallet}, Requests: ${totalWithdrawalsFromRequests})`);
       console.log(`📊 Admin Dashboard Stats - Pending Deposits: PKR ${pendingDepositsAmount} (Wallet: ${pendingDepositsFromWallet}, Requests: ${pendingDepositsFromRequests})`);
       console.log(`📊 Admin Dashboard Stats - Pending Withdrawals: PKR ${pendingWithdrawalsAmount} (Wallet: ${pendingWithdrawalsFromWallet}, Requests: ${pendingWithdrawalsFromRequests})`);
 
       // Calculate game revenue as total deposits - total withdrawals (platform profit)
+      // Use only approved/completed transactions for revenue calculation (not pending)
       const approvedDeposits = deposits
         .filter(t => t.status === 'approved' || t.status === 'completed')
         .reduce((sum, t) => sum + Number(t.amount), 0);
@@ -123,7 +144,35 @@ export class AdminService {
         .filter(t => t.status === 'approved' || t.status === 'completed')
         .reduce((sum, t) => sum + Number(t.amount), 0);
 
-      const totalGameRevenue = approvedDeposits - approvedWithdrawals; // Platform profit (deposits - withdrawals)
+      // Also check approved amounts from request tables
+      let approvedDepositsFromRequests = 0;
+      let approvedWithdrawalsFromRequests = 0;
+
+      try {
+        const { data: approvedDepositRequests } = await supabase
+          .from('deposit_requests')
+          .select('amount')
+          .in('status', ['approved', 'completed']);
+
+        const { data: approvedWithdrawalRequests } = await supabase
+          .from('withdrawal_requests')
+          .select('amount')
+          .in('status', ['approved', 'completed']);
+
+        if (approvedDepositRequests) {
+          approvedDepositsFromRequests = approvedDepositRequests.reduce((sum, req) => sum + Number(req.amount || 0), 0);
+        }
+
+        if (approvedWithdrawalRequests) {
+          approvedWithdrawalsFromRequests = approvedWithdrawalRequests.reduce((sum, req) => sum + Number(req.amount || 0), 0);
+        }
+      } catch (error) {
+        console.log('Note: Could not fetch approved amounts from request tables');
+      }
+
+      const finalApprovedDeposits = Math.max(approvedDeposits, approvedDepositsFromRequests);
+      const finalApprovedWithdrawals = Math.max(approvedWithdrawals, approvedWithdrawalsFromRequests);
+      const totalGameRevenue = finalApprovedDeposits - finalApprovedWithdrawals; // Platform profit (deposits - withdrawals)
 
       const totalReferralBonuses = transactions?.filter(t => t.type === 'referral_bonus').reduce((sum, t) => sum + Number(t.amount), 0) || 0;
 
