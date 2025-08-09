@@ -174,21 +174,28 @@ export default function LudoGame() {
   const getHomePositions = (color: keyof typeof PLAYER_COLORS) => {
     const cellSize = BOARD_SIZE / 15;
 
-    // Exact home base coordinates as specified
-    const homeCoordinates = {
-      red: [[1,1], [1,2], [2,1], [2,2]],           // Bottom-left
-      green: [[1,12], [1,13], [2,12], [2,13]],     // Top-right
-      blue: [[12,12], [12,13], [13,12], [13,13]],  // Bottom-right
-      yellow: [[12,1], [12,2], [13,1], [13,2]],    // Top-left
+    // Traditional Ludo home positions - 2x2 grid in each corner
+    const homeBasePositions = {
+      red: { x: cellSize * 2, y: cellSize * 10 },      // Bottom-left corner
+      green: { x: cellSize * 2, y: cellSize * 2 },     // Top-left corner
+      blue: { x: cellSize * 10, y: cellSize * 2 },     // Top-right corner
+      yellow: { x: cellSize * 10, y: cellSize * 10 },  // Bottom-right corner
     };
 
-    const coords = homeCoordinates[color];
-    if (!coords) return [];
+    const basePosition = homeBasePositions[color];
+    if (!basePosition) return [];
 
-    // Convert grid coordinates to pixel coordinates
-    return coords.map(([row, col]) => ({
-      x: col * cellSize,
-      y: row * cellSize,
+    // 2x2 grid of piece positions within each home area
+    const pieceOffsets = [
+      { x: 0, y: 0 },                    // Top-left piece
+      { x: cellSize, y: 0 },             // Top-right piece
+      { x: 0, y: cellSize },             // Bottom-left piece
+      { x: cellSize, y: cellSize },      // Bottom-right piece
+    ];
+
+    return pieceOffsets.map(offset => ({
+      x: basePosition.x + offset.x,
+      y: basePosition.y + offset.y,
     }));
   };
 
@@ -605,73 +612,146 @@ export default function LudoGame() {
     }
   };
 
-  // Get board position coordinates - 15x15 grid-based Ludo board
+  // Get board position coordinates - Traditional Ludo board layout
   const getBoardPosition = (position: number) => {
     if (position < 0 || position > 51) return { x: 0, y: 0 };
 
     const cellSize = BOARD_SIZE / 15;
 
-    // Main path coordinates in exact order (0-51) as specified
-    const mainTrackCoordinates = [
-      [6,1], [6,2], [6,3], [6,4], [6,5], [6,6],           // 0-5
-      [5,6], [4,6], [3,6], [2,6], [1,6], [1,7],           // 6-11
-      [1,8], [1,9], [1,10], [1,11], [1,12], [2,12],       // 12-17
-      [3,12], [4,12], [5,12], [6,12], [7,12], [8,12],     // 18-23
-      [8,11], [8,10], [8,9], [8,8], [8,7], [8,6],         // 24-29
-      [8,5], [8,4], [8,3], [8,2], [8,1], [8,0],           // 30-35
-      [9,0], [10,0], [10,1], [10,2], [10,3], [10,4],      // 36-41
-      [10,5], [10,6], [9,6], [9,7], [9,8], [9,9],         // 42-47
-      [9,10], [9,11], [10,11], [11,11], [12,11], [12,10], // 48-53
-      [12,9], [12,8], [12,7], [12,6], [12,5], [12,4],     // 54-59 (but we only use 0-51)
-      [12,3], [12,2], [12,1], [12,0], [13,0]              // 60-64 (but we only use 0-51)
+    // Traditional Ludo board path - clockwise around the cross
+    // Starting from Red's entry point and going clockwise
+    const pathCoordinates = [
+      // Red's starting area and path going up (0-5)
+      { x: cellSize * 1, y: cellSize * 8 },   // 0 - Red start
+      { x: cellSize * 2, y: cellSize * 8 },   // 1
+      { x: cellSize * 3, y: cellSize * 8 },   // 2
+      { x: cellSize * 4, y: cellSize * 8 },   // 3
+      { x: cellSize * 5, y: cellSize * 8 },   // 4
+      { x: cellSize * 6, y: cellSize * 8 },   // 5
+
+      // Going up the left side (6-11)
+      { x: cellSize * 6, y: cellSize * 7 },   // 6
+      { x: cellSize * 6, y: cellSize * 6 },   // 7
+      { x: cellSize * 6, y: cellSize * 5 },   // 8
+      { x: cellSize * 6, y: cellSize * 4 },   // 9
+      { x: cellSize * 6, y: cellSize * 3 },   // 10
+      { x: cellSize * 6, y: cellSize * 2 },   // 11
+
+      // Green's starting area and path going right (12-17)
+      { x: cellSize * 6, y: cellSize * 1 },   // 12 - Green start
+      { x: cellSize * 7, y: cellSize * 1 },   // 13
+      { x: cellSize * 8, y: cellSize * 1 },   // 14
+      { x: cellSize * 9, y: cellSize * 1 },   // 15
+      { x: cellSize * 10, y: cellSize * 1 },  // 16
+      { x: cellSize * 11, y: cellSize * 1 },  // 17
+
+      // Going right across the top (18-23)
+      { x: cellSize * 12, y: cellSize * 1 },  // 18
+      { x: cellSize * 13, y: cellSize * 1 },  // 19
+      { x: cellSize * 13, y: cellSize * 2 },  // 20
+      { x: cellSize * 13, y: cellSize * 3 },  // 21
+      { x: cellSize * 13, y: cellSize * 4 },  // 22
+      { x: cellSize * 13, y: cellSize * 5 },  // 23
+
+      // Going down the right side (24-29)
+      { x: cellSize * 13, y: cellSize * 6 },  // 24
+      { x: cellSize * 12, y: cellSize * 6 },  // 25
+      { x: cellSize * 11, y: cellSize * 6 },  // 26 - Blue start
+      { x: cellSize * 10, y: cellSize * 6 },  // 27
+      { x: cellSize * 9, y: cellSize * 6 },   // 28
+      { x: cellSize * 8, y: cellSize * 6 },   // 29
+
+      // Going down (30-35)
+      { x: cellSize * 8, y: cellSize * 7 },   // 30
+      { x: cellSize * 8, y: cellSize * 8 },   // 31
+      { x: cellSize * 8, y: cellSize * 9 },   // 32
+      { x: cellSize * 8, y: cellSize * 10 },  // 33
+      { x: cellSize * 8, y: cellSize * 11 },  // 34
+      { x: cellSize * 8, y: cellSize * 12 },  // 35
+
+      // Going left across the bottom (36-41)
+      { x: cellSize * 8, y: cellSize * 13 },  // 36
+      { x: cellSize * 7, y: cellSize * 13 },  // 37
+      { x: cellSize * 6, y: cellSize * 13 },  // 38
+      { x: cellSize * 5, y: cellSize * 13 },  // 39 - Yellow start
+      { x: cellSize * 4, y: cellSize * 13 },  // 40
+      { x: cellSize * 3, y: cellSize * 13 },  // 41
+
+      // Going left (42-47)
+      { x: cellSize * 2, y: cellSize * 13 },  // 42
+      { x: cellSize * 1, y: cellSize * 13 },  // 43
+      { x: cellSize * 1, y: cellSize * 12 },  // 44
+      { x: cellSize * 1, y: cellSize * 11 },  // 45
+      { x: cellSize * 1, y: cellSize * 10 },  // 46
+      { x: cellSize * 1, y: cellSize * 9 },   // 47
+
+      // Completing the circuit (48-51)
+      { x: cellSize * 1, y: cellSize * 8 },   // 48 - Back to start area
+      { x: cellSize * 2, y: cellSize * 8 },   // 49
+      { x: cellSize * 3, y: cellSize * 8 },   // 50
+      { x: cellSize * 4, y: cellSize * 8 },   // 51
     ];
 
-    // Get the coordinate for this position
-    const coord = mainTrackCoordinates[position];
-    if (!coord) {
-      return { x: cellSize * 7, y: cellSize * 7 }; // Center fallback
-    }
-
-    // Convert grid coordinates to pixel coordinates
-    const [row, col] = coord;
-    return {
-      x: col * cellSize,
-      y: row * cellSize,
-    };
+    return pathCoordinates[position] || { x: cellSize * 7, y: cellSize * 7 };
   };
 
-  // Safe zone positions - exact indices as specified
-  const safeZones = [0, 8, 13, 21, 26, 34, 39, 47]; // Main path safe indices
+  // Safe zone positions - traditional Ludo safe spots
+  const safeZones = [0, 8, 13, 21, 26, 34, 39, 47]; // Safe positions on the path
 
-  // Path entry points - main track indices where pieces enter
+  // Path entry points - where each color enters the main track
   const startPositions = {
-    red: 0,    // Index 0 → [6,1]
-    green: 12, // Index 12 → [1,8]
-    blue: 26,  // Index 26 → [8,9]
-    yellow: 39, // Index 39 → [10,5]
+    red: 0,    // Red starts at position 0
+    green: 13, // Green starts at position 13
+    blue: 26,  // Blue starts at position 26
+    yellow: 39, // Yellow starts at position 39
   };
 
-  // Finishing columns - branch from main path to center (6 tiles per player)
+  // Finishing columns - path from main track to center (6 tiles per player)
   const getFinishingColumnPosition = (color: keyof typeof PLAYER_COLORS, index: number) => {
     const cellSize = BOARD_SIZE / 15;
 
-    const finishingColumns = {
-      red: [[7,6], [8,6], [9,6], [10,6], [11,6], [12,6]],
-      green: [[2,8], [3,8], [4,8], [5,8], [6,8], [7,8]],
-      blue: [[7,8], [7,9], [7,10], [7,11], [7,12], [7,13]],
-      yellow: [[8,7], [9,7], [10,7], [11,7], [12,7], [13,7]],
+    // Traditional Ludo finishing paths leading to center
+    const finishingPaths = {
+      red: [
+        { x: cellSize * 2, y: cellSize * 8 },   // 0 - Start of red finish path
+        { x: cellSize * 3, y: cellSize * 8 },   // 1
+        { x: cellSize * 4, y: cellSize * 8 },   // 2
+        { x: cellSize * 5, y: cellSize * 8 },   // 3
+        { x: cellSize * 6, y: cellSize * 8 },   // 4
+        { x: cellSize * 7, y: cellSize * 8 },   // 5 - Center
+      ],
+      green: [
+        { x: cellSize * 7, y: cellSize * 2 },   // 0 - Start of green finish path
+        { x: cellSize * 7, y: cellSize * 3 },   // 1
+        { x: cellSize * 7, y: cellSize * 4 },   // 2
+        { x: cellSize * 7, y: cellSize * 5 },   // 3
+        { x: cellSize * 7, y: cellSize * 6 },   // 4
+        { x: cellSize * 7, y: cellSize * 7 },   // 5 - Center
+      ],
+      blue: [
+        { x: cellSize * 12, y: cellSize * 7 },  // 0 - Start of blue finish path
+        { x: cellSize * 11, y: cellSize * 7 },  // 1
+        { x: cellSize * 10, y: cellSize * 7 },  // 2
+        { x: cellSize * 9, y: cellSize * 7 },   // 3
+        { x: cellSize * 8, y: cellSize * 7 },   // 4
+        { x: cellSize * 7, y: cellSize * 7 },   // 5 - Center
+      ],
+      yellow: [
+        { x: cellSize * 7, y: cellSize * 12 },  // 0 - Start of yellow finish path
+        { x: cellSize * 7, y: cellSize * 11 },  // 1
+        { x: cellSize * 7, y: cellSize * 10 },  // 2
+        { x: cellSize * 7, y: cellSize * 9 },   // 3
+        { x: cellSize * 7, y: cellSize * 8 },   // 4
+        { x: cellSize * 7, y: cellSize * 7 },   // 5 - Center
+      ],
     };
 
-    const coords = finishingColumns[color];
-    if (!coords || index < 0 || index >= coords.length) {
+    const path = finishingPaths[color];
+    if (!path || index < 0 || index >= path.length) {
       return { x: cellSize * 7, y: cellSize * 7 }; // Center fallback
     }
 
-    const [row, col] = coords[index];
-    return {
-      x: col * cellSize,
-      y: row * cellSize,
-    };
+    return path[index];
   };
 
 
@@ -1335,22 +1415,22 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
   },
   redHome: {
-    top: CELL_SIZE * 0,
+    top: CELL_SIZE * 9,
     left: CELL_SIZE * 0,
     backgroundColor: 'rgba(255, 0, 0, 0.3)',
   },
   greenHome: {
     top: CELL_SIZE * 0,
-    left: CELL_SIZE * 9,
+    left: CELL_SIZE * 0,
     backgroundColor: 'rgba(0, 255, 0, 0.3)',
   },
   yellowHome: {
     top: CELL_SIZE * 9,
-    left: CELL_SIZE * 0,
+    left: CELL_SIZE * 9,
     backgroundColor: 'rgba(255, 255, 0, 0.3)',
   },
   blueHome: {
-    top: CELL_SIZE * 9,
+    top: CELL_SIZE * 0,
     left: CELL_SIZE * 9,
     backgroundColor: 'rgba(0, 191, 255, 0.3)',
   },
