@@ -647,8 +647,7 @@ INSERT INTO public.game_configs (game_type, game_name, house_edge, base_win_prob
 ('luckynumbers', 'Lucky Numbers', 0.12, 0.08, true, 10.00, 1000.00),
 ('megadraw', 'Mega Draw', 0.10, 0.10, true, 10.00, 1000.00),
 ('limbo', 'Limbo Game', 0.05, 0.15, true, 10.00, 5000.00),
-('rollmaster', 'Roll Master', 0.04, 0.18, true, 10.00, 5000.00),
-('ludo', 'Ludo Game', 0.05, 0.20, true, 10.00, 5000.00)
+('rollmaster', 'Roll Master', 0.04, 0.18, true, 10.00, 5000.00)
 ON CONFLICT (game_type) DO UPDATE SET
     game_name = EXCLUDED.game_name,
     house_edge = EXCLUDED.house_edge,

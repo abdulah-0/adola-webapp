@@ -179,16 +179,7 @@ export default function GamesScreen() {
       players: { current: 1234, max: 2000 },
       status: 'available',
     },
-    {
-      id: 'ludo',
-      name: 'Ludo',
-      description: 'Classic board game with 4 players and betting',
-      category: 'card',
-      icon: '🎲',
-      color: Colors.primary.hotPink,
-      players: { current: 892, max: 2000 },
-      status: 'available',
-    },
+
     {
       id: 'tower',
       name: 'Tower Challenge',

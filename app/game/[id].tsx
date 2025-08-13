@@ -27,7 +27,6 @@ import MegaDrawScreen from './screens/MegaDrawScreen';
 import LuckyNumbersScreen from './screens/LuckyNumbersScreen';
 import PowerBallScreen from './screens/PowerBallScreen';
 import CricketBettingScreen from './screens/CricketBettingScreen';
-import LudoScreen from './screens/LudoScreen';
 
 export default function GameScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -75,8 +74,6 @@ export default function GameScreen() {
         return <LimboScreen />;
       case 'cricket-betting':
         return <CricketBettingScreen />;
-      case 'ludo':
-        return <LudoScreen />;
       default:
         return (
           <View style={styles.errorContainer}>
