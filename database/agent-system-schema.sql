@@ -224,65 +224,95 @@ ALTER TABLE agent_commissions ENABLE ROW LEVEL SECURITY;
 
 -- Agent Applications Policies
 CREATE POLICY "Users can view their own applications" ON agent_applications
-    FOR SELECT USING (auth.uid() = user_id);
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM users
+            WHERE auth_user_id = auth.uid()
+            AND id = agent_applications.user_id
+        )
+    );
 
 CREATE POLICY "Users can create their own applications" ON agent_applications
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
+    FOR INSERT WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM users
+            WHERE auth_user_id = auth.uid()
+            AND id = agent_applications.user_id
+        )
+    );
 
 CREATE POLICY "Admins can view all applications" ON agent_applications
     FOR SELECT USING (
         EXISTS (
-            SELECT 1 FROM users 
-            WHERE id = auth.uid() 
-            AND role = 'admin'
+            SELECT 1 FROM users
+            WHERE auth_user_id = auth.uid()
+            AND (is_admin = true OR is_super_admin = true)
         )
     );
 
 CREATE POLICY "Admins can update applications" ON agent_applications
     FOR UPDATE USING (
         EXISTS (
-            SELECT 1 FROM users 
-            WHERE id = auth.uid() 
-            AND role = 'admin'
+            SELECT 1 FROM users
+            WHERE auth_user_id = auth.uid()
+            AND (is_admin = true OR is_super_admin = true)
         )
     );
 
 -- Agents Policies
 CREATE POLICY "Agents can view their own record" ON agents
-    FOR SELECT USING (auth.uid() = user_id);
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM users
+            WHERE auth_user_id = auth.uid()
+            AND id = agents.user_id
+        )
+    );
 
 CREATE POLICY "Admins can view all agents" ON agents
     FOR SELECT USING (
         EXISTS (
-            SELECT 1 FROM users 
-            WHERE id = auth.uid() 
-            AND role = 'admin'
+            SELECT 1 FROM users
+            WHERE auth_user_id = auth.uid()
+            AND (is_admin = true OR is_super_admin = true)
         )
     );
 
 -- Agent Referrals Policies
 CREATE POLICY "Agents can view their referrals" ON agent_referrals
-    FOR SELECT USING (auth.uid() = agent_user_id);
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM users
+            WHERE auth_user_id = auth.uid()
+            AND id = agent_referrals.agent_user_id
+        )
+    );
 
 CREATE POLICY "Admins can view all referrals" ON agent_referrals
     FOR SELECT USING (
         EXISTS (
-            SELECT 1 FROM users 
-            WHERE id = auth.uid() 
-            AND role = 'admin'
+            SELECT 1 FROM users
+            WHERE auth_user_id = auth.uid()
+            AND (is_admin = true OR is_super_admin = true)
         )
     );
 
 -- Agent Commissions Policies
 CREATE POLICY "Agents can view their commissions" ON agent_commissions
-    FOR SELECT USING (auth.uid() = agent_user_id);
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM users
+            WHERE auth_user_id = auth.uid()
+            AND id = agent_commissions.agent_user_id
+        )
+    );
 
 CREATE POLICY "Admins can view all commissions" ON agent_commissions
     FOR SELECT USING (
         EXISTS (
-            SELECT 1 FROM users 
-            WHERE id = auth.uid() 
-            AND role = 'admin'
+            SELECT 1 FROM users
+            WHERE auth_user_id = auth.uid()
+            AND (is_admin = true OR is_super_admin = true)
         )
     );
 
