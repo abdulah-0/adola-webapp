@@ -24,17 +24,9 @@ export const WALLET_LIMITS = {
 export const BANK_ACCOUNTS: BankAccount[] = [
   {
     id: 'zoraz',
-    name: 'Zoraz Yousaf',
+    name: 'Account 1',
     accountNumber: '0109000320036376',
     iban: 'PK38UNIL0109000320036376',
-    bank: 'United Bank Limited (UBL)',
-    isActive: true,
-  },
-  {
-    id: 'zarbonics',
-    name: 'ZARBONICS SOLUTIONS',
-    accountNumber: '0109000324585986',
-    iban: 'PK10UNIL0109000324585986',
     bank: 'United Bank Limited (UBL)',
     isActive: true,
   },
