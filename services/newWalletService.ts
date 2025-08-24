@@ -478,8 +478,10 @@ export class NewWalletService {
 
       // Add method-specific fields
       if (paymentMethod === 'usdt_trc20') {
-        depositRequestData.bank_account_id = metadata.usdt_account_id || '';
-        depositRequestData.transaction_id = metadata.transaction_hash || '';
+        // For USDT deposits, extract details from nested structure
+        const usdtDetails = metadata.usdt_details || {};
+        depositRequestData.bank_account_id = usdtDetails.usdtAccountId || metadata.usdt_account_id || '';
+        depositRequestData.transaction_id = usdtDetails.transactionHash || metadata.transaction_hash || '';
       } else {
         depositRequestData.bank_account_id = metadata.bank_account_id || 'UBL Bank';
         depositRequestData.transaction_id = metadata.transaction_id || '';
@@ -500,30 +502,8 @@ export class NewWalletService {
 
       const depositRecord = depositData?.[0] || depositData;
 
-      // Create wallet transaction record
-      const { data: txData, error: txError } = await supabase
-        .from('wallet_transactions')
-        .insert({
-          user_id: userId,
-          type: 'deposit',
-          status: 'pending',
-          amount: amount,
-          balance_before: balanceAmount,
-          balance_after: balanceAmount, // Balance doesn't change until approved
-          description: description || `Deposit request - PKR ${amount}`,
-          metadata: metadata,
-          reference_id: depositRecord.id
-        })
-        .select();
-
-      if (txError) {
-        console.error('❌ Error creating transaction record:', txError);
-        // Try to clean up the deposit request
-        await supabase.from('deposit_requests').delete().eq('id', depositRecord.id);
-        return null;
-      }
-
-      const txRecord = txData?.[0] || txData;
+      // Don't create wallet transaction record here - it will be created when admin approves
+      // This prevents duplicate entries in the admin panel
       console.log('✅ Deposit request created:', depositRecord.id);
       return depositRecord.id;
     } catch (error) {

@@ -150,20 +150,25 @@ export class NewAdminService {
       }
       console.log(`✅ Deposit status updated to approved`);
 
-      // Update wallet transaction status for the original deposit
+      // Create wallet transaction record for the approved deposit
       const { error: txError } = await supabase
         .from('wallet_transactions')
-        .update({
+        .insert({
+          user_id: deposit.user_id,
+          type: 'deposit',
           status: 'approved',
+          amount: depositAmount,
           balance_before: balanceBefore,
-          balance_after: balanceBefore + depositAmount, // Only the deposit amount
-          description: `Deposit approved - PKR ${depositAmount} (+ PKR ${bonusAmount} bonus)`
-        })
-        .eq('reference_id', depositId)
-        .eq('type', 'deposit');
+          balance_after: balanceBefore + depositAmount,
+          description: `Deposit approved - PKR ${depositAmount} (+ PKR ${bonusAmount} bonus)`,
+          metadata: deposit.metadata,
+          reference_id: depositId,
+          approved_by: adminId,
+          approved_at: new Date().toISOString()
+        });
 
       if (txError) {
-        console.error('❌ Error updating transaction status:', txError);
+        console.error('❌ Error creating transaction record:', txError);
       }
 
       // Create a separate transaction record for the 5% deposit bonus
@@ -448,20 +453,25 @@ export class NewAdminService {
         return { success: false, error: updateError.message };
       }
 
-      // Update the corresponding wallet transaction
-      const { error: txUpdateError } = await supabase
+      // Create wallet transaction record for the rejected deposit
+      const { error: txCreateError } = await supabase
         .from('wallet_transactions')
-        .update({
+        .insert({
+          user_id: depositRequest.user_id,
+          type: 'deposit',
           status: 'rejected',
+          amount: depositRequest.amount,
+          balance_before: 0, // No balance change for rejected deposits
+          balance_after: 0,
+          description: `Deposit rejected - ${reason}`,
+          metadata: depositRequest.metadata,
+          reference_id: depositId,
           approved_by: adminId,
-          approved_at: new Date().toISOString(),
-          admin_notes: reason
-        })
-        .eq('reference_id', depositId)
-        .eq('type', 'deposit');
+          approved_at: new Date().toISOString()
+        });
 
-      if (txUpdateError) {
-        console.error('❌ Error updating transaction:', txUpdateError);
+      if (txCreateError) {
+        console.error('❌ Error creating transaction record:', txCreateError);
       }
 
       console.log('✅ Deposit rejected successfully:', depositId);
@@ -597,11 +607,27 @@ export class NewAdminService {
       // Get user details separately and format data
       const depositsWithUsers = [];
       for (const deposit of depositRequests || []) {
-        const { data: user } = await supabase
+        // Try both auth_user_id and id fields to find the user
+        let user = null;
+
+        // First try with auth_user_id
+        const { data: userByAuth } = await supabase
           .from('users')
           .select('username, email, display_name')
           .eq('auth_user_id', deposit.user_id)
           .maybeSingle();
+
+        if (userByAuth) {
+          user = userByAuth;
+        } else {
+          // If not found, try with id field
+          const { data: userById } = await supabase
+            .from('users')
+            .select('username, email, display_name')
+            .eq('id', deposit.user_id)
+            .maybeSingle();
+          user = userById;
+        }
 
         // Determine payment method from metadata
         const metadata = deposit.metadata || {};
@@ -683,11 +709,27 @@ export class NewAdminService {
       // Get user details separately and format data properly
       const withdrawalsWithUsers = [];
       for (const withdrawal of withdrawalRequests || []) {
-        const { data: user } = await supabase
+        // Try both auth_user_id and id fields to find the user
+        let user = null;
+
+        // First try with auth_user_id
+        const { data: userByAuth } = await supabase
           .from('users')
           .select('username, email, display_name')
           .eq('auth_user_id', withdrawal.user_id)
           .maybeSingle();
+
+        if (userByAuth) {
+          user = userByAuth;
+        } else {
+          // If not found, try with id field
+          const { data: userById } = await supabase
+            .from('users')
+            .select('username, email, display_name')
+            .eq('id', withdrawal.user_id)
+            .maybeSingle();
+          user = userById;
+        }
 
         // Determine withdrawal method from metadata or bank_details presence
         const metadata = withdrawal.metadata || {};
