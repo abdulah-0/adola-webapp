@@ -77,7 +77,7 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
           <Ionicons name="people" size={24} color="#007AFF" />
           <Text style={styles.statValue}>{stats.totalUsers.toLocaleString()}</Text>
           <Text style={styles.statLabel}>Total Users</Text>
-          <Text style={styles.statSubtext}>{stats.activeUsers} active</Text>
+          <Text style={styles.statSubtext}>{stats.activeUsers} playing now</Text>
         </View>
 
         <View style={styles.statCard}>

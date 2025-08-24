@@ -887,18 +887,49 @@ export class NewAdminService {
         throw withdrawalError;
       }
 
-      // Get game sessions
+      // Get game sessions with user info for active players
       const { data: gameSessions, error: gameError } = await supabase
         .from('game_sessions')
-        .select('bet_amount, win_amount, created_at');
+        .select('user_id, bet_amount, win_amount, created_at, status');
 
       if (gameError) {
         console.error('❌ Error fetching game sessions:', gameError);
       }
 
+      // Get currently active game sessions (last 2 minutes = currently playing)
+      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+      const { data: activeGameSessions, error: activeGameError } = await supabase
+        .from('game_sessions')
+        .select('user_id, created_at, game_name')
+        .gte('created_at', twoMinutesAgo.toISOString())
+        .order('created_at', { ascending: false });
+
+      if (activeGameError) {
+        console.error('❌ Error fetching active game sessions:', activeGameError);
+      }
+
+      // Also check for users who have recent wallet transactions (betting activity)
+      const { data: recentTransactions, error: recentTxError } = await supabase
+        .from('wallet_transactions')
+        .select('user_id, created_at, type')
+        .in('type', ['game_win', 'game_loss'])
+        .gte('created_at', twoMinutesAgo.toISOString());
+
+      if (recentTxError) {
+        console.error('❌ Error fetching recent transactions:', recentTxError);
+      }
+
       // Calculate total statistics
       const totalUsers = users?.length || 0;
-      const activeUsers = users?.filter(u => u.status === 'active').length || 0;
+
+      // Calculate active users as unique players who played OR had game transactions in the last 2 minutes
+      const activePlayerIds = new Set([
+        ...(activeGameSessions?.map(session => session.user_id) || []),
+        ...(recentTransactions?.map(tx => tx.user_id) || [])
+      ]);
+      const activeUsers = activePlayerIds.size;
+
+      console.log(`👥 Active players calculation: ${activeUsers} unique players currently playing (${activeGameSessions?.length || 0} recent sessions + ${recentTransactions?.length || 0} recent transactions in last 2 minutes)`);
 
       // Calculate total deposits and withdrawals (approved only)
       const totalDeposits = depositRequests
