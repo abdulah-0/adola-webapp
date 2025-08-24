@@ -66,21 +66,35 @@ export default function AgentScreen() {
       return;
     }
 
+    if (!user?.id) {
+      Alert.alert('Error', 'User not authenticated. Please log in again.');
+      return;
+    }
+
     try {
+      console.log('Submitting agent application for user:', user.id);
+      console.log('Application reason:', applicationReason.trim());
+
       const success = await AgentService.applyForAgent(user.id, applicationReason.trim());
+
+      console.log('Application submission result:', success);
+
       if (success) {
         Alert.alert(
           'Application Submitted',
           'Your agent application has been submitted successfully. You will be notified once it is reviewed.',
-          [{ text: 'OK', onPress: () => setAgentStatus('pending') }]
+          [{ text: 'OK', onPress: () => {
+            setAgentStatus('pending');
+            loadAgentData(); // Refresh data
+          }}]
         );
         setApplicationReason('');
       } else {
-        Alert.alert('Error', 'Failed to submit agent application. Please try again.');
+        Alert.alert('Error', 'Failed to submit agent application. Please check the console for details and try again.');
       }
     } catch (error) {
       console.error('Error applying for agent:', error);
-      Alert.alert('Error', 'Failed to submit agent application. Please try again.');
+      Alert.alert('Error', `Failed to submit agent application: ${error.message || 'Unknown error'}`);
     }
   };
 

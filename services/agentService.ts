@@ -33,15 +33,45 @@ export interface AgentReferral {
 
 export class AgentService {
   /**
+   * Get internal user ID from auth user ID
+   */
+  private static async getInternalUserId(authUserId: string): Promise<string | null> {
+    try {
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_user_id', authUserId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error getting internal user ID:', error);
+        return null;
+      }
+
+      return user?.id || null;
+    } catch (error) {
+      console.error('Error getting internal user ID:', error);
+      return null;
+    }
+  }
+
+  /**
    * Check if user is an agent and get their status
    */
-  static async getAgentStatus(userId: string): Promise<'not_applied' | 'pending' | 'approved' | 'rejected'> {
+  static async getAgentStatus(authUserId: string): Promise<'not_applied' | 'pending' | 'approved' | 'rejected'> {
     try {
+      // Get internal user ID
+      const internalUserId = await this.getInternalUserId(authUserId);
+      if (!internalUserId) {
+        console.error('Could not find internal user ID for auth user:', authUserId);
+        return 'not_applied';
+      }
+
       // Check if user has an agent application
       const { data: application, error: appError } = await supabase
         .from('agent_applications')
         .select('status')
-        .eq('user_id', userId)
+        .eq('user_id', internalUserId)
         .order('applied_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -65,18 +95,27 @@ export class AgentService {
   /**
    * Apply to become an agent
    */
-  static async applyForAgent(userId: string, reason: string): Promise<boolean> {
+  static async applyForAgent(authUserId: string, reason: string): Promise<boolean> {
     try {
+      // Get internal user ID
+      const internalUserId = await this.getInternalUserId(authUserId);
+      if (!internalUserId) {
+        console.error('Could not find internal user ID for auth user:', authUserId);
+        return false;
+      }
+
       // Check if user already has a pending or approved application
-      const currentStatus = await this.getAgentStatus(userId);
+      const currentStatus = await this.getAgentStatus(authUserId);
       if (currentStatus === 'pending' || currentStatus === 'approved') {
         throw new Error('You already have a pending or approved agent application');
       }
 
+      console.log('Submitting agent application for user:', internalUserId);
+
       const { error } = await supabase
         .from('agent_applications')
         .insert({
-          user_id: userId,
+          user_id: internalUserId,
           reason: reason,
           status: 'pending',
           applied_at: new Date().toISOString()
@@ -87,6 +126,7 @@ export class AgentService {
         return false;
       }
 
+      console.log('Agent application submitted successfully');
       return true;
     } catch (error) {
       console.error('Error applying for agent:', error);
@@ -97,10 +137,17 @@ export class AgentService {
   /**
    * Get agent statistics (for approved agents only)
    */
-  static async getAgentStats(userId: string): Promise<AgentStats | null> {
+  static async getAgentStats(authUserId: string): Promise<AgentStats | null> {
     try {
+      // Get internal user ID
+      const internalUserId = await this.getInternalUserId(authUserId);
+      if (!internalUserId) {
+        console.error('Could not find internal user ID for auth user:', authUserId);
+        return null;
+      }
+
       // First check if user is an approved agent
-      const status = await this.getAgentStatus(userId);
+      const status = await this.getAgentStatus(authUserId);
       if (status !== 'approved') {
         return null;
       }
@@ -109,7 +156,7 @@ export class AgentService {
       const { data: agent, error: agentError } = await supabase
         .from('agents')
         .select('referral_code')
-        .eq('user_id', userId)
+        .eq('user_id', internalUserId)
         .maybeSingle();
 
       if (agentError || !agent) {
@@ -121,7 +168,7 @@ export class AgentService {
       const { data: referrals, error: referralsError } = await supabase
         .from('agent_referrals')
         .select('id, total_commission')
-        .eq('agent_user_id', userId);
+        .eq('agent_user_id', internalUserId);
 
       if (referralsError) {
         console.error('Error getting referrals:', referralsError);
@@ -139,7 +186,7 @@ export class AgentService {
       const { data: thisMonthCommissions, error: monthError } = await supabase
         .from('agent_commissions')
         .select('amount')
-        .eq('agent_user_id', userId)
+        .eq('agent_user_id', internalUserId)
         .gte('created_at', thisMonthStart.toISOString());
 
       const thisMonthTotal = thisMonthCommissions?.reduce((sum, comm) => sum + comm.amount, 0) || 0;
@@ -148,7 +195,7 @@ export class AgentService {
       const { data: pendingCommissions, error: pendingError } = await supabase
         .from('agent_commissions')
         .select('amount')
-        .eq('agent_user_id', userId)
+        .eq('agent_user_id', internalUserId)
         .eq('status', 'pending');
 
       const pendingTotal = pendingCommissions?.reduce((sum, comm) => sum + comm.amount, 0) || 0;
@@ -169,8 +216,15 @@ export class AgentService {
   /**
    * Get agent's referrals list
    */
-  static async getAgentReferrals(userId: string): Promise<AgentReferral[]> {
+  static async getAgentReferrals(authUserId: string): Promise<AgentReferral[]> {
     try {
+      // Get internal user ID
+      const internalUserId = await this.getInternalUserId(authUserId);
+      if (!internalUserId) {
+        console.error('Could not find internal user ID for auth user:', authUserId);
+        return [];
+      }
+
       const { data: referrals, error } = await supabase
         .from('agent_referrals')
         .select(`
@@ -183,7 +237,7 @@ export class AgentService {
             email
           )
         `)
-        .eq('agent_user_id', userId)
+        .eq('agent_user_id', internalUserId)
         .order('created_at', { ascending: false });
 
       if (error) {
