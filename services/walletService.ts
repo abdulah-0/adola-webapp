@@ -20,8 +20,25 @@ export const WALLET_LIMITS = {
   MAX_SINGLE_BET: 5000,
 };
 
-// Bank Accounts Configuration - Removed (Crypto only)
-export const BANK_ACCOUNTS: BankAccount[] = [];
+// Bank Accounts Configuration (for PKR wallet)
+export const BANK_ACCOUNTS: BankAccount[] = [
+  {
+    id: 'zoraz',
+    name: 'Zoraz Yousaf',
+    accountNumber: '0109000320036376',
+    iban: 'PK38UNIL0109000320036376',
+    bank: 'United Bank Limited (UBL)',
+    isActive: true,
+  },
+  {
+    id: 'zarbonics',
+    name: 'ZARBONICS SOLUTIONS',
+    accountNumber: '0109000324585986',
+    iban: 'PK10UNIL0109000324585986',
+    bank: 'United Bank Limited (UBL)',
+    isActive: true,
+  },
+];
 
 // USDT TRC20 Accounts Configuration
 export const USDT_ACCOUNTS: USDTAccount[] = [
