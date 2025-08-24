@@ -16,6 +16,7 @@ import UserManagement from '../../components/admin/UserManagement';
 import TransactionManagement from '../../components/admin/TransactionManagement';
 import GameManagement from '../../components/admin/GameManagement';
 import GameStatistics from '../../components/admin/GameStatistics';
+import PendingAgentRequests from '../../components/admin/PendingAgentRequests';
 import { getRealTimeAdminStats, getUserActivityStats } from '../../services/realTimeStatsService.js';
 import { getAllTransactionRequests, testTransactionStorage } from '../../services/transactionService.js';
 
@@ -124,6 +125,8 @@ export default function AdminPanel() {
         return <GameManagement />;
       case 'statistics':
         return <GameStatistics />;
+      case 'agent-requests':
+        return <PendingAgentRequests />;
       case 'overview':
       default:
         return renderOverview();
@@ -294,7 +297,15 @@ export default function AdminPanel() {
               <Text style={styles.actionIcon}>📊</Text>
               <Text style={styles.actionText}>Game Statistics</Text>
             </TouchableOpacity>
-            
+
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => setCurrentSection('agent-requests')}
+            >
+              <Text style={styles.actionIcon}>💼</Text>
+              <Text style={styles.actionText}>Agent Requests</Text>
+            </TouchableOpacity>
+
             <TouchableOpacity style={styles.actionButton}>
               <Text style={styles.actionIcon}>📈</Text>
               <Text style={styles.actionText}>Analytics</Text>

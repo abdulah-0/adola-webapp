@@ -2,6 +2,7 @@
 // Implements admin operations for wallet management using secure RPC functions
 
 import { supabase } from '../lib/supabase';
+import { AgentService } from './agentService';
 import { TransactionResult } from './newWalletService';
 
 export class NewAdminService {
@@ -276,6 +277,14 @@ export class NewAdminService {
       } catch (referralError) {
         console.error('❌ Error processing referral bonus (non-blocking):', referralError);
         // Continue with deposit approval even if referral bonus fails
+      }
+
+      // Process agent commission if user was referred by an agent
+      try {
+        await AgentService.processAgentCommission(deposit.user_id, depositAmount);
+      } catch (commissionError) {
+        console.error('❌ Error processing agent commission:', commissionError);
+        // Don't fail the deposit approval if commission processing fails
       }
 
       console.log(`✅ Deposit approved successfully: ${depositId} - PKR ${depositAmount} + PKR ${bonusAmount} bonus = PKR ${totalAmount} total`);
@@ -841,6 +850,165 @@ export class NewAdminService {
         totalUsers: 0
       };
     }
+  }
+
+  /**
+   * Get pending agent applications for admin review
+   */
+  static async getPendingAgentApplications() {
+    try {
+      const { data: applications, error } = await supabase
+        .from('agent_applications')
+        .select(`
+          id,
+          user_id,
+          reason,
+          status,
+          applied_at,
+          users!agent_applications_user_id_fkey (
+            username,
+            email,
+            display_name
+          )
+        `)
+        .eq('status', 'pending')
+        .order('applied_at', { ascending: true });
+
+      if (error) {
+        console.error('❌ Error fetching pending agent applications:', error);
+        throw error;
+      }
+
+      return applications?.map(app => ({
+        id: app.id,
+        user_id: app.user_id,
+        reason: app.reason,
+        status: app.status,
+        applied_at: app.applied_at,
+        username: app.users?.username || app.users?.display_name || 'Unknown',
+        email: app.users?.email || ''
+      })) || [];
+    } catch (error) {
+      console.error('❌ Error getting pending agent applications:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Approve agent application
+   */
+  static async approveAgentApplication(applicationId: string, adminId: string) {
+    try {
+      // Get the application details
+      const { data: application, error: appError } = await supabase
+        .from('agent_applications')
+        .select('user_id')
+        .eq('id', applicationId)
+        .maybeSingle();
+
+      if (appError || !application) {
+        console.error('❌ Error getting application:', appError);
+        return { success: false, error: 'Application not found' };
+      }
+
+      // Generate unique referral code
+      const referralCode = await this.generateReferralCode();
+
+      // Update application status
+      const { error: updateError } = await supabase
+        .from('agent_applications')
+        .update({
+          status: 'approved',
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: adminId
+        })
+        .eq('id', applicationId);
+
+      if (updateError) {
+        console.error('❌ Error updating application:', updateError);
+        return { success: false, error: 'Failed to update application' };
+      }
+
+      // Create agent record
+      const { error: agentError } = await supabase
+        .from('agents')
+        .insert({
+          user_id: application.user_id,
+          referral_code: referralCode,
+          status: 'active',
+          approved_at: new Date().toISOString(),
+          approved_by: adminId
+        });
+
+      if (agentError) {
+        console.error('❌ Error creating agent record:', agentError);
+        return { success: false, error: 'Failed to create agent record' };
+      }
+
+      console.log(`✅ Agent application approved: ${applicationId}`);
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error approving agent application:', error);
+      return { success: false, error: 'Internal server error' };
+    }
+  }
+
+  /**
+   * Reject agent application
+   */
+  static async rejectAgentApplication(applicationId: string, adminId: string, reason: string) {
+    try {
+      const { error } = await supabase
+        .from('agent_applications')
+        .update({
+          status: 'rejected',
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: adminId,
+          rejection_reason: reason
+        })
+        .eq('id', applicationId);
+
+      if (error) {
+        console.error('❌ Error rejecting application:', error);
+        return { success: false, error: 'Failed to reject application' };
+      }
+
+      console.log(`✅ Agent application rejected: ${applicationId}`);
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error rejecting agent application:', error);
+      return { success: false, error: 'Internal server error' };
+    }
+  }
+
+  /**
+   * Generate unique referral code for agents
+   */
+  private static async generateReferralCode(): Promise<string> {
+    let code: string;
+    let isUnique = false;
+    let attempts = 0;
+
+    do {
+      // Generate 6-character alphanumeric code
+      code = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+      // Check if code already exists
+      const { data, error } = await supabase
+        .from('agents')
+        .select('id')
+        .eq('referral_code', code)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('❌ Error checking referral code uniqueness:', error);
+      }
+
+      isUnique = !data;
+      attempts++;
+    } while (!isUnique && attempts < 10);
+
+    return code;
   }
 
   /**

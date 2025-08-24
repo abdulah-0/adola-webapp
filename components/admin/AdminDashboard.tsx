@@ -202,7 +202,19 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
           <Ionicons name="chevron-forward" size={20} color="#666" />
         </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => onNavigate('agent-requests')}
+        >
+          <Ionicons name="briefcase" size={24} color="#9b59b6" />
+          <View style={styles.actionContent}>
+            <Text style={styles.actionTitle}>Pending Agent Requests</Text>
+            <Text style={styles.actionSubtitle}>Review and approve agent applications</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#666" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
           style={styles.actionButton}
           onPress={() => onNavigate('users')}
         >

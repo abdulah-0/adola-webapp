@@ -51,6 +51,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="agent"
+        options={{
+          title: 'Agent',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'briefcase' : 'briefcase-outline'} color={color} size={24} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="admin"
         options={{
           title: 'Admin',
