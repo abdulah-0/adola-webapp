@@ -816,7 +816,7 @@ export class NewAdminService {
 
       // Calculate statistics
       const totalWalletBalance = totalBalances?.reduce((sum, wallet) => sum + parseFloat(wallet.balance), 0) || 0;
-      
+
       const pendingDeposits = transactionCounts?.filter(t => t.type === 'deposit' && t.status === 'pending').length || 0;
       const pendingWithdrawals = transactionCounts?.filter(t => t.type === 'withdraw' && t.status === 'pending').length || 0;
       const approvedDeposits = transactionCounts?.filter(t => t.type === 'deposit' && t.status === 'approved').length || 0;
@@ -839,6 +839,194 @@ export class NewAdminService {
         approvedDeposits: 0,
         approvedWithdrawals: 0,
         totalUsers: 0
+      };
+    }
+  }
+
+  /**
+   * Get real-time dashboard statistics with proper today's activity
+   */
+  static async getDashboardStats() {
+    try {
+      console.log('📊 Fetching real-time dashboard statistics...');
+
+      // Get current date boundaries for today's stats
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+      const todayStartISO = todayStart.toISOString();
+
+      console.log(`📅 Today's date range: ${todayStartISO} to ${now.toISOString()}`);
+
+      // Get all users
+      const { data: users, error: usersError } = await supabase
+        .from('users')
+        .select('id, auth_user_id, created_at, status, wallet_balance');
+
+      if (usersError) {
+        console.error('❌ Error fetching users:', usersError);
+        throw usersError;
+      }
+
+      // Get all deposit requests
+      const { data: depositRequests, error: depositError } = await supabase
+        .from('deposit_requests')
+        .select('id, amount, status, created_at, approved_at');
+
+      if (depositError) {
+        console.error('❌ Error fetching deposit requests:', depositError);
+        throw depositError;
+      }
+
+      // Get all withdrawal requests
+      const { data: withdrawalRequests, error: withdrawalError } = await supabase
+        .from('withdrawal_requests')
+        .select('id, amount, status, created_at, approved_at');
+
+      if (withdrawalError) {
+        console.error('❌ Error fetching withdrawal requests:', withdrawalError);
+        throw withdrawalError;
+      }
+
+      // Get game sessions
+      const { data: gameSessions, error: gameError } = await supabase
+        .from('game_sessions')
+        .select('bet_amount, win_amount, created_at');
+
+      if (gameError) {
+        console.error('❌ Error fetching game sessions:', gameError);
+      }
+
+      // Calculate total statistics
+      const totalUsers = users?.length || 0;
+      const activeUsers = users?.filter(u => u.status === 'active').length || 0;
+
+      // Calculate total deposits and withdrawals (approved only)
+      const totalDeposits = depositRequests
+        ?.filter(d => d.status === 'approved')
+        .reduce((sum, d) => sum + Number(d.amount || 0), 0) || 0;
+
+      const totalWithdrawals = withdrawalRequests
+        ?.filter(w => w.status === 'approved')
+        .reduce((sum, w) => sum + Number(w.amount || 0), 0) || 0;
+
+      // Calculate pending amounts
+      const pendingDeposits = depositRequests
+        ?.filter(d => d.status === 'pending')
+        .reduce((sum, d) => sum + Number(d.amount || 0), 0) || 0;
+
+      const pendingWithdrawals = withdrawalRequests
+        ?.filter(w => w.status === 'pending')
+        .reduce((sum, w) => sum + Number(w.amount || 0), 0) || 0;
+
+      // Calculate game revenue
+      const totalGameRevenue = totalDeposits - totalWithdrawals;
+      const totalReferralBonuses = 0; // TODO: Calculate from referral system
+
+      // Calculate TODAY'S statistics with proper date filtering
+      const todayUsers = users?.filter(user => {
+        const userDate = new Date(user.created_at);
+        return userDate >= todayStart;
+      }).length || 0;
+
+      const todayDepositRequests = depositRequests?.filter(d => {
+        const requestDate = new Date(d.created_at);
+        return requestDate >= todayStart;
+      }) || [];
+
+      const todayWithdrawalRequests = withdrawalRequests?.filter(w => {
+        const requestDate = new Date(w.created_at);
+        return requestDate >= todayStart;
+      }) || [];
+
+      // Today's approved amounts (approved today OR created today and approved)
+      const todayDeposits = depositRequests?.filter(d => {
+        const createdToday = new Date(d.created_at) >= todayStart;
+        const approvedToday = d.approved_at && new Date(d.approved_at) >= todayStart;
+        return d.status === 'approved' && (createdToday || approvedToday);
+      }).reduce((sum, d) => sum + Number(d.amount || 0), 0) || 0;
+
+      const todayWithdrawals = withdrawalRequests?.filter(w => {
+        const createdToday = new Date(w.created_at) >= todayStart;
+        const approvedToday = w.approved_at && new Date(w.approved_at) >= todayStart;
+        return w.status === 'approved' && (createdToday || approvedToday);
+      }).reduce((sum, w) => sum + Number(w.amount || 0), 0) || 0;
+
+      // Today's pending amounts
+      const todayPendingDeposits = todayDepositRequests
+        .filter(d => d.status === 'pending')
+        .reduce((sum, d) => sum + Number(d.amount || 0), 0);
+
+      const todayPendingWithdrawals = todayWithdrawalRequests
+        .filter(w => w.status === 'pending')
+        .reduce((sum, w) => sum + Number(w.amount || 0), 0);
+
+      // Today's game statistics
+      const todayGameSessions = gameSessions?.filter(session => {
+        const sessionDate = new Date(session.created_at);
+        return sessionDate >= todayStart;
+      }) || [];
+
+      const todayGamesPlayed = todayGameSessions.length;
+      const todayBets = todayGameSessions.reduce((sum, s) => sum + Number(s.bet_amount || 0), 0);
+      const todayGameRevenue = todayDeposits - todayWithdrawals;
+
+      const stats = {
+        totalUsers,
+        activeUsers,
+        totalDeposits,
+        totalWithdrawals,
+        pendingDeposits,
+        pendingWithdrawals,
+        totalGameRevenue,
+        totalReferralBonuses,
+        todayStats: {
+          newUsers: todayUsers,
+          deposits: todayDeposits,
+          withdrawals: todayWithdrawals,
+          gameRevenue: todayGameRevenue,
+          pendingDeposits: todayPendingDeposits,
+          pendingWithdrawals: todayPendingWithdrawals,
+          depositRequests: todayDepositRequests.length,
+          withdrawalRequests: todayWithdrawalRequests.length,
+          gamesPlayed: todayGamesPlayed,
+          totalBets: todayBets,
+        },
+      };
+
+      console.log(`📊 Real-time stats calculated:`, {
+        totalUsers: stats.totalUsers,
+        todayUsers: stats.todayStats.newUsers,
+        todayDeposits: stats.todayStats.deposits,
+        todayWithdrawals: stats.todayStats.withdrawals,
+        todayDepositRequests: stats.todayStats.depositRequests,
+        todayWithdrawalRequests: stats.todayStats.withdrawalRequests,
+      });
+
+      return stats;
+    } catch (error) {
+      console.error('❌ Error getting dashboard stats:', error);
+      // Return fallback data
+      return {
+        totalUsers: 0,
+        activeUsers: 0,
+        totalDeposits: 0,
+        totalWithdrawals: 0,
+        pendingDeposits: 0,
+        pendingWithdrawals: 0,
+        totalGameRevenue: 0,
+        totalReferralBonuses: 0,
+        todayStats: {
+          newUsers: 0,
+          deposits: 0,
+          withdrawals: 0,
+          gameRevenue: 0,
+          pendingDeposits: 0,
+          pendingWithdrawals: 0,
+          depositRequests: 0,
+          withdrawalRequests: 0,
+          gamesPlayed: 0,
+          totalBets: 0,
+        },
       };
     }
   }

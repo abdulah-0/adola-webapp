@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { AdminService } from '../../services/adminService';
+import { NewAdminService } from '../../services/newAdminService';
 import { AdminDashboardStats } from '../../types/adminTypes';
 
 interface AdminDashboardProps {
@@ -12,20 +12,24 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   useEffect(() => {
     loadDashboardData();
-    // Set up auto-refresh every 30 seconds for live statistics
-    const interval = setInterval(loadDashboardData, 30000);
+    // Set up auto-refresh every 15 seconds for more real-time statistics
+    const interval = setInterval(loadDashboardData, 15000);
     return () => clearInterval(interval);
   }, []);
 
   const loadDashboardData = async () => {
     try {
-      const dashboardStats = await AdminService.getDashboardStats();
+      console.log('📊 Loading dashboard data with real-time stats...');
+      const dashboardStats = await NewAdminService.getDashboardStats();
       setStats(dashboardStats);
+      setLastUpdated(new Date());
+      console.log('✅ Dashboard data loaded:', dashboardStats.todayStats);
     } catch (error) {
-      console.error('Error loading dashboard data:', error);
+      console.error('❌ Error loading dashboard data:', error);
     } finally {
       setLoading(false);
     }
@@ -63,7 +67,10 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       {/* Live Statistics */}
       <View style={styles.liveStatsSection}>
         <Text style={styles.sectionTitle}>📊 Live Platform Statistics</Text>
-        <Text style={styles.sectionSubtitle}>Real-time data • Auto-updates every 30 seconds</Text>
+        <Text style={styles.sectionSubtitle}>
+          Real-time data • Auto-updates every 15 seconds
+          {lastUpdated && ` • Last updated: ${lastUpdated.toLocaleTimeString()}`}
+        </Text>
       </View>
       <View style={styles.statsGrid}>
         <View style={styles.statCard}>
@@ -102,7 +109,10 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       {/* Today's Stats */}
       <View style={styles.todaySection}>
         <Text style={styles.sectionTitle}>📅 Today's Activity</Text>
-        <Text style={styles.sectionSubtitle}>Live data • Updates every 30 seconds</Text>
+        <Text style={styles.sectionSubtitle}>
+          Live data • Updates every 15 seconds
+          {lastUpdated && ` • Last updated: ${lastUpdated.toLocaleTimeString()}`}
+        </Text>
 
         {/* First Row - Users & Transactions */}
         <View style={styles.todayGrid}>
