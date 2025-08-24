@@ -8,12 +8,10 @@ import {
   TextInput,
   ScrollView,
   Alert,
-  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../../contexts/AppContext';
-import { BANK_ACCOUNTS, USDT_ACCOUNTS } from '../../services/walletService';
-import * as ImagePicker from 'expo-image-picker';
+import { USDT_ACCOUNTS } from '../../services/walletService';
 
 interface DepositModalINRProps {
   visible: boolean;
@@ -30,15 +28,10 @@ const MIN_USDT_DEPOSIT = 1; // Minimum USDT deposit
 export default function DepositModalINR({ visible, onClose, onDeposit }: DepositModalINRProps) {
   const { user } = useApp();
   const [amount, setAmount] = useState('');
-  const [depositMethod, setDepositMethod] = useState<'bank_transfer' | 'usdt_trc20'>('bank_transfer');
-  const [selectedBankAccount, setSelectedBankAccount] = useState('');
-  const [transactionId, setTransactionId] = useState('');
-  const [receiptImage, setReceiptImage] = useState('');
-  const [notes, setNotes] = useState('');
-  const [bankAccounts, setBankAccounts] = useState<any[]>([]);
   const [usdtAccounts, setUsdtAccounts] = useState<any[]>([]);
   const [selectedUsdtAccount, setSelectedUsdtAccount] = useState('');
   const [transactionHash, setTransactionHash] = useState('');
+  const [loading, setLoading] = useState(false);
 
   // USDT conversion functions for INR
   const convertINRToUSDT = (inrAmount: number): number => {
@@ -55,7 +48,6 @@ export default function DepositModalINR({ visible, onClose, onDeposit }: Deposit
 
   useEffect(() => {
     if (visible) {
-      loadBankAccounts();
       loadUsdtAccounts();
       resetForm();
     }
@@ -63,25 +55,11 @@ export default function DepositModalINR({ visible, onClose, onDeposit }: Deposit
 
   const resetForm = () => {
     setAmount('');
-    setSelectedBankAccount('');
     setSelectedUsdtAccount('');
-    setTransactionId('');
     setTransactionHash('');
-    setReceiptImage('');
-    setNotes('');
-    setDepositMethod('bank_transfer');
   };
 
-  const loadBankAccounts = () => {
-    try {
-      setBankAccounts(BANK_ACCOUNTS);
-      if (BANK_ACCOUNTS.length > 0) {
-        setSelectedBankAccount(BANK_ACCOUNTS[0].id);
-      }
-    } catch (error) {
-      console.error('Error loading bank accounts:', error);
-    }
-  };
+
 
   const loadUsdtAccounts = () => {
     try {
@@ -94,18 +72,7 @@ export default function DepositModalINR({ visible, onClose, onDeposit }: Deposit
     }
   };
 
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-    });
 
-    if (!result.canceled && result.assets[0]) {
-      setReceiptImage(result.assets[0].uri);
-    }
-  };
 
   const handleDeposit = () => {
     const depositAmount = parseFloat(amount);
@@ -120,48 +87,30 @@ export default function DepositModalINR({ visible, onClose, onDeposit }: Deposit
       return;
     }
 
-    if (depositMethod === 'bank_transfer') {
-      if (!selectedBankAccount || !transactionId.trim()) {
-        Alert.alert('Error', 'Please select a bank account and enter transaction ID');
-        return;
-      }
+    const usdtAmount = convertINRToUSDT(depositAmount);
 
-      const selectedBank = bankAccounts.find(bank => bank.id === selectedBankAccount);
-      
-      onDeposit(depositAmount, {
-        bankAccountId: selectedBankAccount,
-        bankAccountName: selectedBank?.name || 'Unknown Bank',
-        transactionId: transactionId.trim(),
-        receiptImage,
-      }, notes, 'bank_transfer');
-    } else {
-      const usdtAmount = convertINRToUSDT(depositAmount);
-      
-      if (usdtAmount < MIN_USDT_DEPOSIT) {
-        Alert.alert('Error', `Minimum USDT deposit is ${MIN_USDT_DEPOSIT} USDT (₹${USDT_RATE_INR})`);
-        return;
-      }
-
-      if (!selectedUsdtAccount || !transactionHash.trim()) {
-        Alert.alert('Error', 'Please select a USDT account and enter transaction hash');
-        return;
-      }
-
-      const selectedUsdt = usdtAccounts.find(account => account.id === selectedUsdtAccount);
-      
-      onDeposit(depositAmount, {
-        usdtAccountId: selectedUsdtAccount,
-        usdtAccountName: selectedUsdt?.name || 'Unknown USDT Account',
-        usdtAddress: selectedUsdt?.address || '',
-        transactionHash: transactionHash.trim(),
-        usdtAmount: usdtAmount,
-        inrEquivalent: depositAmount,
-        receiptImage,
-      }, notes, 'usdt_trc20');
+    if (usdtAmount < MIN_USDT_DEPOSIT) {
+      Alert.alert('Error', `Minimum USDT deposit is ${MIN_USDT_DEPOSIT} USDT (₹${USDT_RATE_INR})`);
+      return;
     }
+
+    if (!selectedUsdtAccount || !transactionHash.trim()) {
+      Alert.alert('Error', 'Please select a USDT account and enter transaction hash');
+      return;
+    }
+
+    const selectedUsdt = usdtAccounts.find(account => account.id === selectedUsdtAccount);
+
+    onDeposit(depositAmount, {
+      usdtAccountId: selectedUsdtAccount,
+      usdtAccountName: selectedUsdt?.name || 'Unknown USDT Account',
+      usdtAddress: selectedUsdt?.address || '',
+      transactionHash: transactionHash.trim(),
+      usdtAmount: usdtAmount,
+      inrEquivalent: depositAmount,
+    }, '', 'usdt_trc20');
   };
 
-  const selectedBankData = bankAccounts.find(bank => bank.id === selectedBankAccount);
   const selectedUsdtData = usdtAccounts.find(account => account.id === selectedUsdtAccount);
 
   return (
@@ -176,45 +125,18 @@ export default function DepositModalINR({ visible, onClose, onDeposit }: Deposit
           </View>
 
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            {/* Deposit Method Selection */}
+            {/* USDT Deposit Header */}
             <View style={styles.methodSection}>
-              <Text style={styles.sectionTitle}>Deposit Method</Text>
-              <View style={styles.methodButtons}>
-                <TouchableOpacity
-                  style={[
-                    styles.methodButton,
-                    depositMethod === 'bank_transfer' && styles.selectedMethod
-                  ]}
-                  onPress={() => setDepositMethod('bank_transfer')}
-                >
-                  <Ionicons name="card" size={20} color={depositMethod === 'bank_transfer' ? '#007AFF' : '#666'} />
-                  <Text style={[
-                    styles.methodText,
-                    depositMethod === 'bank_transfer' && styles.selectedMethodText
-                  ]}>Bank Transfer</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={[
-                    styles.methodButton,
-                    depositMethod === 'usdt_trc20' && styles.selectedMethod
-                  ]}
-                  onPress={() => setDepositMethod('usdt_trc20')}
-                >
-                  <Ionicons name="logo-bitcoin" size={20} color={depositMethod === 'usdt_trc20' ? '#007AFF' : '#666'} />
-                  <Text style={[
-                    styles.methodText,
-                    depositMethod === 'usdt_trc20' && styles.selectedMethodText
-                  ]}>USDT TRC20</Text>
-                </TouchableOpacity>
+              <Text style={styles.sectionTitle}>USDT TRC20 Deposit</Text>
+              <View style={styles.cryptoHeader}>
+                <Ionicons name="logo-bitcoin" size={24} color="#007AFF" />
+                <Text style={styles.cryptoHeaderText}>Crypto Deposit Only</Text>
               </View>
             </View>
 
             {/* Amount Section */}
             <View style={styles.amountSection}>
-              <Text style={styles.sectionTitle}>
-                {depositMethod === 'usdt_trc20' ? 'INR Amount to Deposit' : 'Deposit Amount'}
-              </Text>
+              <Text style={styles.sectionTitle}>INR Amount to Deposit</Text>
               <View style={styles.amountInput}>
                 <Text style={styles.currencySign}>₹</Text>
                 <TextInput
@@ -226,140 +148,73 @@ export default function DepositModalINR({ visible, onClose, onDeposit }: Deposit
                   keyboardType="numeric"
                 />
               </View>
-              {depositMethod === 'usdt_trc20' ? (
-                <View>
-                  <Text style={styles.minAmount}>
-                    Minimum: ₹{MIN_INR_DEPOSIT} | Maximum: ₹{MAX_INR_DEPOSIT.toLocaleString()}
-                  </Text>
+              <View>
+                <Text style={styles.minAmount}>
+                  Minimum: ₹{MIN_INR_DEPOSIT} | Maximum: ₹{MAX_INR_DEPOSIT.toLocaleString()}
+                </Text>
+                <Text style={styles.conversionInfo}>
+                  1 USDT = ₹{USDT_RATE_INR} | Min USDT: {MIN_USDT_DEPOSIT} USDT
+                </Text>
+                {parseFloat(amount) > 0 && (
                   <Text style={styles.conversionInfo}>
-                    1 USDT = ₹{USDT_RATE_INR} | Min USDT: {MIN_USDT_DEPOSIT} USDT
+                    USDT Amount: {convertINRToUSDT(parseFloat(amount)).toFixed(6)} USDT
                   </Text>
-                  {parseFloat(amount) > 0 && (
-                    <Text style={styles.conversionInfo}>
-                      USDT Amount: {convertINRToUSDT(parseFloat(amount)).toFixed(6)} USDT
-                    </Text>
+                )}
+              </View>
+            </View>
+
+            {/* USDT Details Section */}
+            <View style={styles.usdtDetailsSection}>
+              <Text style={styles.sectionTitle}>USDT Account Selection</Text>
+
+              {usdtAccounts.map((account) => (
+                <TouchableOpacity
+                  key={account.id}
+                  style={[
+                    styles.usdtOption,
+                    selectedUsdtAccount === account.id && styles.selectedUsdtOption
+                  ]}
+                  onPress={() => setSelectedUsdtAccount(account.id)}
+                >
+                  <View style={styles.usdtInfo}>
+                    <Text style={styles.usdtName}>{account.name}</Text>
+                    <Text style={styles.usdtAddress}>{account.address}</Text>
+                    <Text style={styles.networkText}>Network: TRON (TRC20)</Text>
+                  </View>
+                  {selectedUsdtAccount === account.id && (
+                    <Ionicons name="checkmark-circle" size={24} color="#f7931a" />
                   )}
+                </TouchableOpacity>
+              ))}
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Transaction Hash</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={transactionHash}
+                  onChangeText={setTransactionHash}
+                  placeholder="Enter USDT transaction hash"
+                  placeholderTextColor="#666"
+                />
+              </View>
+
+              {parseFloat(amount) > 0 && (
+                <View style={styles.usdtConversionInfo}>
+                  <Text style={styles.conversionTitle}>Transaction Details:</Text>
+                  <Text style={styles.conversionDetail}>
+                    INR Amount: ₹{parseFloat(amount).toFixed(2)}
+                  </Text>
+                  <Text style={styles.conversionDetail}>
+                    USDT Amount: {convertINRToUSDT(parseFloat(amount)).toFixed(6)} USDT
+                  </Text>
+                  <Text style={styles.conversionDetail}>
+                    Rate: 1 USDT = ₹{USDT_RATE_INR}
+                  </Text>
                 </View>
-              ) : (
-                <Text style={styles.minAmount}>Minimum: ₹{MIN_INR_DEPOSIT} | Maximum: ₹{MAX_INR_DEPOSIT.toLocaleString()}</Text>
               )}
             </View>
 
-            {/* Conditional Details Section */}
-            {depositMethod === 'bank_transfer' ? (
-              <View style={styles.bankDetailsSection}>
-                <Text style={styles.sectionTitle}>Bank Account Selection</Text>
 
-                {bankAccounts.map((bank) => (
-                  <TouchableOpacity
-                    key={bank.id}
-                    style={[
-                      styles.bankOption,
-                      selectedBankAccount === bank.id && styles.selectedBankOption
-                    ]}
-                    onPress={() => setSelectedBankAccount(bank.id)}
-                  >
-                    <View style={styles.bankInfo}>
-                      <Text style={styles.bankName}>{bank.name}</Text>
-                      <Text style={styles.bankDetails}>
-                        Account: {bank.accountNumber} | IBAN: {bank.iban}
-                      </Text>
-                    </View>
-                    {selectedBankAccount === bank.id && (
-                      <Ionicons name="checkmark-circle" size={24} color="#00ff00" />
-                    )}
-                  </TouchableOpacity>
-                ))}
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Transaction ID</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    value={transactionId}
-                    onChangeText={setTransactionId}
-                    placeholder="Enter transaction ID from your bank"
-                    placeholderTextColor="#666"
-                  />
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Receipt Image (Optional)</Text>
-                  <TouchableOpacity style={styles.imageButton} onPress={pickImage}>
-                    <Ionicons name="camera" size={20} color="#007AFF" />
-                    <Text style={styles.imageButtonText}>
-                      {receiptImage ? 'Change Image' : 'Upload Receipt'}
-                    </Text>
-                  </TouchableOpacity>
-                  {receiptImage && (
-                    <Image source={{ uri: receiptImage }} style={styles.receiptPreview} />
-                  )}
-                </View>
-              </View>
-            ) : (
-              <View style={styles.usdtDetailsSection}>
-                <Text style={styles.sectionTitle}>USDT Account Selection</Text>
-
-                {usdtAccounts.map((account) => (
-                  <TouchableOpacity
-                    key={account.id}
-                    style={[
-                      styles.usdtOption,
-                      selectedUsdtAccount === account.id && styles.selectedUsdtOption
-                    ]}
-                    onPress={() => setSelectedUsdtAccount(account.id)}
-                  >
-                    <View style={styles.usdtInfo}>
-                      <Text style={styles.usdtName}>{account.name}</Text>
-                      <Text style={styles.usdtAddress}>{account.address}</Text>
-                      <Text style={styles.networkText}>Network: TRON (TRC20)</Text>
-                    </View>
-                    {selectedUsdtAccount === account.id && (
-                      <Ionicons name="checkmark-circle" size={24} color="#f7931a" />
-                    )}
-                  </TouchableOpacity>
-                ))}
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Transaction Hash</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    value={transactionHash}
-                    onChangeText={setTransactionHash}
-                    placeholder="Enter USDT transaction hash"
-                    placeholderTextColor="#666"
-                  />
-                </View>
-
-                {parseFloat(amount) > 0 && (
-                  <View style={styles.usdtConversionInfo}>
-                    <Text style={styles.conversionTitle}>Transaction Details:</Text>
-                    <Text style={styles.conversionDetail}>
-                      INR Amount: ₹{parseFloat(amount).toFixed(2)}
-                    </Text>
-                    <Text style={styles.conversionDetail}>
-                      USDT Amount: {convertINRToUSDT(parseFloat(amount)).toFixed(6)} USDT
-                    </Text>
-                    <Text style={styles.conversionDetail}>
-                      Rate: 1 USDT = ₹{USDT_RATE_INR}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            )}
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Notes (Optional)</Text>
-              <TextInput
-                style={[styles.textInput, styles.notesInput]}
-                value={notes}
-                onChangeText={setNotes}
-                placeholder="Add any additional notes"
-                placeholderTextColor="#666"
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-              />
-            </View>
           </ScrollView>
 
           <View style={styles.footer}>
@@ -370,21 +225,12 @@ export default function DepositModalINR({ visible, onClose, onDeposit }: Deposit
             <TouchableOpacity
               style={[
                 styles.depositButton,
-                (!amount || 
-                 (depositMethod === 'bank_transfer' && (!selectedBankAccount || !transactionId.trim())) ||
-                 (depositMethod === 'usdt_trc20' && (!selectedUsdtAccount || !transactionHash.trim()))
-                ) && styles.disabledButton
+                (!amount || !selectedUsdtAccount || !transactionHash.trim()) && styles.disabledButton
               ]}
               onPress={handleDeposit}
-              disabled={
-                !amount || 
-                (depositMethod === 'bank_transfer' && (!selectedBankAccount || !transactionId.trim())) ||
-                (depositMethod === 'usdt_trc20' && (!selectedUsdtAccount || !transactionHash.trim()))
-              }
+              disabled={!amount || !selectedUsdtAccount || !transactionHash.trim()}
             >
-              <Text style={styles.depositText}>
-                Submit {depositMethod === 'usdt_trc20' ? 'USDT' : 'Bank'} Deposit
-              </Text>
+              <Text style={styles.depositText}>Submit USDT Deposit</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -658,5 +504,17 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#ccc',
     marginBottom: 4,
+  },
+  cryptoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  cryptoHeaderText: {
+    fontSize: 16,
+    color: '#007AFF',
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });

@@ -20,17 +20,8 @@ export const WALLET_LIMITS = {
   MAX_SINGLE_BET: 5000,
 };
 
-// Bank Accounts Configuration
-export const BANK_ACCOUNTS: BankAccount[] = [
-  {
-    id: 'zoraz',
-    name: 'Account 2',
-    accountNumber: '0109000320036376',
-    iban: 'PK38UNIL0109000320036376',
-    bank: 'United Bank Limited (UBL)',
-    isActive: true,
-  },
-];
+// Bank Accounts Configuration - Removed (Crypto only)
+export const BANK_ACCOUNTS: BankAccount[] = [];
 
 // USDT TRC20 Accounts Configuration
 export const USDT_ACCOUNTS: USDTAccount[] = [
