@@ -44,6 +44,19 @@ export default function AgentScreen() {
   const loadAgentData = async () => {
     try {
       setLoading(true);
+
+      // Test database connection first
+      console.log('🔍 Testing agent database connection...');
+      const dbTest = await AgentService.testDatabaseConnection();
+      if (!dbTest) {
+        console.error('❌ Agent database tables not accessible');
+        Alert.alert(
+          'Database Error',
+          'Agent system tables are not set up. Please run the agent system setup SQL script in your Supabase database.'
+        );
+        return;
+      }
+
       const status = await AgentService.getAgentStatus(user.id);
       setAgentStatus(status);
 
@@ -60,6 +73,16 @@ export default function AgentScreen() {
     }
   };
 
+  const handleTestDatabase = async () => {
+    console.log('🧪 Manual database test initiated...');
+    const dbTest = await AgentService.testDatabaseConnection();
+    Alert.alert(
+      'Database Test',
+      dbTest ? 'Database connection successful!' : 'Database connection failed. Check console for details.',
+      [{ text: 'OK' }]
+    );
+  };
+
   const handleApplyForAgent = async () => {
     if (!applicationReason.trim()) {
       Alert.alert('Error', 'Please provide a reason for your agent application');
@@ -72,12 +95,19 @@ export default function AgentScreen() {
     }
 
     try {
-      console.log('Submitting agent application for user:', user.id);
-      console.log('Application reason:', applicationReason.trim());
+      console.log('🚀 Submitting agent application for user:', user.id);
+      console.log('📝 Application reason:', applicationReason.trim());
+
+      // Test database first
+      const dbTest = await AgentService.testDatabaseConnection();
+      if (!dbTest) {
+        Alert.alert('Database Error', 'Agent system is not properly set up. Please contact support.');
+        return;
+      }
 
       const success = await AgentService.applyForAgent(user.id, applicationReason.trim());
 
-      console.log('Application submission result:', success);
+      console.log('✅ Application submission result:', success);
 
       if (success) {
         Alert.alert(
@@ -93,7 +123,7 @@ export default function AgentScreen() {
         Alert.alert('Error', 'Failed to submit agent application. Please check the console for details and try again.');
       }
     } catch (error) {
-      console.error('Error applying for agent:', error);
+      console.error('❌ Error applying for agent:', error);
       Alert.alert('Error', `Failed to submit agent application: ${error.message || 'Unknown error'}`);
     }
   };
@@ -164,6 +194,11 @@ export default function AgentScreen() {
         <TouchableOpacity style={styles.applyButton} onPress={handleApplyForAgent}>
           <Ionicons name="send" size={20} color="#fff" />
           <Text style={styles.applyButtonText}>Submit Application</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={[styles.applyButton, { backgroundColor: '#666', marginTop: 10 }]} onPress={handleTestDatabase}>
+          <Ionicons name="bug" size={20} color="#fff" />
+          <Text style={styles.applyButtonText}>Test Database Connection</Text>
         </TouchableOpacity>
       </View>
     </View>

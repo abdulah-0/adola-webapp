@@ -7,12 +7,13 @@ import { AdminService } from '../../services/adminService';
 import AdminDashboard from '../../components/admin/AdminDashboard';
 import PendingDeposits from '../../components/admin/PendingDeposits';
 import PendingWithdrawals from '../../components/admin/PendingWithdrawals';
+import PendingAgentRequests from '../../components/admin/PendingAgentRequests';
 import NotificationManager from '../../components/admin/NotificationManager';
 import GameStatistics from '../../components/admin/GameStatistics';
 import GameManagement from '../../components/admin/GameManagement';
 import DarkGradientBackground from '../../components/common/DarkGradientBackground';
 
-type AdminScreen = 'dashboard' | 'deposits' | 'withdrawals' | 'users' | 'games' | 'statistics' | 'notifications';
+type AdminScreen = 'dashboard' | 'deposits' | 'withdrawals' | 'users' | 'games' | 'statistics' | 'notifications' | 'agent-requests';
 
 export default function AdminScreen() {
   const { user, logout } = useApp();
@@ -93,6 +94,8 @@ export default function AdminScreen() {
         return <PendingDeposits />;
       case 'withdrawals':
         return <PendingWithdrawals />;
+      case 'agent-requests':
+        return <PendingAgentRequests />;
       case 'users':
         return (
           <View style={styles.comingSoonContainer}>

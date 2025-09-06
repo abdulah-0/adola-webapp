@@ -33,6 +33,35 @@ export interface AgentReferral {
 
 export class AgentService {
   /**
+   * Test database connection and table existence
+   */
+  static async testDatabaseConnection(): Promise<boolean> {
+    try {
+      console.log('🔍 Testing agent database tables...');
+
+      // Test if agent_applications table exists
+      const { data, error } = await supabase
+        .from('agent_applications')
+        .select('id')
+        .limit(1);
+
+      if (error) {
+        console.error('❌ Agent tables test failed:', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        console.error('Error details:', error.details);
+        return false;
+      }
+
+      console.log('✅ Agent tables accessible');
+      return true;
+    } catch (error) {
+      console.error('❌ Database connection test failed:', error);
+      return false;
+    }
+  }
+
+  /**
    * Get internal user ID from auth user ID
    */
   private static async getInternalUserId(authUserId: string): Promise<string | null> {
