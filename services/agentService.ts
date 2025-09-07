@@ -126,7 +126,18 @@ export class AgentService {
    */
   static async applyForAgent(authUserId: string, reason: string): Promise<boolean> {
     try {
-      // Get internal user ID
+      // Prefer secure RPC to avoid RLS friction and ID lookups from client
+      const { data: rpcData, error: rpcError } = await supabase.rpc('apply_for_agent', { p_reason: reason });
+      if (!rpcError && (rpcData === true || rpcData === null)) {
+        // Some RPCs return null on success; treat as success if no error
+        return true;
+      }
+
+      if (rpcError) {
+        console.warn('RPC apply_for_agent failed, falling back to direct insert:', rpcError.message || rpcError);
+      }
+
+      // Fallback: direct insert with internal ID resolution
       const internalUserId = await this.getInternalUserId(authUserId);
       if (!internalUserId) {
         console.error('Could not find internal user ID for auth user:', authUserId);
@@ -136,10 +147,9 @@ export class AgentService {
       // Check if user already has a pending or approved application
       const currentStatus = await this.getAgentStatus(authUserId);
       if (currentStatus === 'pending' || currentStatus === 'approved') {
-        throw new Error('You already have a pending or approved agent application');
+        console.warn('User already has a pending or approved agent application');
+        return false;
       }
-
-      console.log('Submitting agent application for user:', internalUserId);
 
       const { error } = await supabase
         .from('agent_applications')
@@ -151,11 +161,10 @@ export class AgentService {
         });
 
       if (error) {
-        console.error('Error applying for agent:', error);
+        console.error('Error applying for agent (fallback path):', error);
         return false;
       }
 
-      console.log('Agent application submitted successfully');
       return true;
     } catch (error) {
       console.error('Error applying for agent:', error);
