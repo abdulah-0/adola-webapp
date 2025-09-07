@@ -189,27 +189,27 @@ export default function PendingWithdrawals() {
         </View>
         <View style={styles.amountContainer}>
           <Text style={styles.amount}>
-            {item.currency === 'INR' ? '₹' : 'PKR'} {(item.displayAmount || item.amount).toLocaleString()}
+            {item.currency === 'INR' ? '₹' : item.currency === 'BDT' ? '৳' : 'PKR'} {(item.displayAmount || item.amount).toLocaleString()}
           </Text>
-          {item.currency === 'INR' && (
+          {(item.currency === 'INR' || item.currency === 'BDT') && (
             <Text style={styles.pkrEquivalent}>
               PKR {item.amount.toLocaleString()}
             </Text>
           )}
           {item.withdrawalMethod === 'bank_transfer' && (
             <Text style={styles.deduction}>
-              -{item.currency === 'INR' ? '₹' : 'PKR'} {item.currency === 'INR'
+              -{item.currency === 'INR' ? '₹' : item.currency === 'BDT' ? '৳' : 'PKR'} {item.currency === 'INR'
                 ? (item.deductionAmount * 0.3).toFixed(2)
-                : item.deductionAmount.toLocaleString()
+                : item.currency === 'BDT' ? (item.deductionAmount * 0.44).toFixed(2) : item.deductionAmount.toLocaleString()
               } (1%)
             </Text>
           )}
           <Text style={styles.finalAmount}>
             {item.withdrawalMethod === 'usdt_trc20'
               ? `${item.usdtDetails?.usdtAmount || 0} USDT`
-              : `${item.currency === 'INR' ? '₹' : 'PKR'} ${item.currency === 'INR'
+              : `${item.currency === 'INR' ? '₹' : item.currency === 'BDT' ? '৳' : 'PKR'} ${item.currency === 'INR'
                   ? ((item.finalAmount || item.amount) * 0.3).toFixed(2)
-                  : (item.finalAmount || item.amount).toLocaleString()
+                  : item.currency === 'BDT' ? ((item.finalAmount || item.amount) * 0.44).toFixed(2) : (item.finalAmount || item.amount).toLocaleString()
                 }`
             }
           </Text>

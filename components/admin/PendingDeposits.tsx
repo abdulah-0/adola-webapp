@@ -206,7 +206,10 @@ export default function PendingDeposits() {
                 {item.paymentMethod === 'usdt_trc20' ? 'USDT TRC20' : 'Bank Transfer'}
               </Text>
             </View>
-            <View style={[styles.currencyBadge, item.currency === 'INR' ? styles.inrBadge : styles.pkrBadge]}>
+            <View style={[
+              styles.currencyBadge,
+              item.currency === 'INR' ? styles.inrBadge : item.currency === 'BDT' ? styles.bdtBadge : styles.pkrBadge
+            ]}>
               <Text style={styles.currencyText}>{item.currency || 'PKR'}</Text>
             </View>
           </View>
@@ -663,6 +666,9 @@ const styles = StyleSheet.create({
   },
   inrBadge: {
     backgroundColor: '#ff9500',
+  },
+  bdtBadge: {
+    backgroundColor: '#0f766e',
   },
   currencyText: {
     fontSize: 10,

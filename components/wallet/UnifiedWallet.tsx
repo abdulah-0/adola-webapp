@@ -124,11 +124,14 @@ export default function UnifiedWallet({ initialTab = 'pkr' }: UnifiedWalletProps
       const pkrAmount = inrAmount * 3.33;
       
       const depositId = await createDepositRequest(pkrAmount, {
-        payment_method: method,
-        payment_details: paymentDetails,
+        method: method,
+        currency: 'INR',
         notes: notes,
         original_currency: 'INR',
-        original_amount: inrAmount
+        original_amount: inrAmount,
+        usdt_details: paymentDetails,
+        usdt_account_id: paymentDetails?.usdtAccountId,
+        transaction_hash: paymentDetails?.transactionHash
       });
 
       if (depositId) {
@@ -154,11 +157,12 @@ export default function UnifiedWallet({ initialTab = 'pkr' }: UnifiedWalletProps
       const pkrAmount = inrAmount * 3.33;
       
       const withdrawalId = await createWithdrawalRequest(pkrAmount, {
-        payment_method: method,
-        payment_details: paymentDetails,
+        method: method,
+        currency: 'INR',
         notes: notes,
         original_currency: 'INR',
-        original_amount: inrAmount
+        original_amount: inrAmount,
+        usdt_details: paymentDetails
       });
 
       if (withdrawalId) {
@@ -232,11 +236,14 @@ export default function UnifiedWallet({ initialTab = 'pkr' }: UnifiedWalletProps
       const pkrAmount = bdtAmount * 2.25;
 
       const depositId = await createDepositRequest(pkrAmount, {
-        payment_method: method,
-        payment_details: paymentDetails,
+        method: method,
+        currency: 'BDT',
         notes: notes,
         original_currency: 'BDT',
-        original_amount: bdtAmount
+        original_amount: bdtAmount,
+        usdt_details: paymentDetails,
+        usdt_account_id: paymentDetails?.usdtAccountId,
+        transaction_hash: paymentDetails?.transactionHash
       });
 
       if (depositId) {
@@ -262,11 +269,12 @@ export default function UnifiedWallet({ initialTab = 'pkr' }: UnifiedWalletProps
       const pkrAmount = bdtAmount * 2.25;
 
       const withdrawalId = await createWithdrawalRequest(pkrAmount, {
-        payment_method: method,
-        payment_details: paymentDetails,
+        method: method,
+        currency: 'BDT',
         notes: notes,
         original_currency: 'BDT',
-        original_amount: bdtAmount
+        original_amount: bdtAmount,
+        usdt_details: paymentDetails
       });
 
       if (withdrawalId) {

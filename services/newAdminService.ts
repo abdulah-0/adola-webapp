@@ -665,9 +665,9 @@ export class NewAdminService {
         }
 
         // Determine currency and amounts
-        const currency = metadata.currency || 'PKR';
-        const originalAmount = metadata.original_inr_amount || Number(deposit.amount);
-        const displayAmount = currency === 'INR' ? originalAmount : Number(deposit.amount);
+        const currency = metadata.currency || metadata.original_currency || (metadata.original_inr_amount ? 'INR' : 'PKR');
+        const originalAmount = metadata.original_amount || metadata.original_inr_amount || Number(deposit.amount);
+        const displayAmount = currency && currency !== 'PKR' ? originalAmount : Number(deposit.amount);
 
         depositsWithUsers.push({
           id: deposit.id,
@@ -772,9 +772,9 @@ export class NewAdminService {
         }
 
         // Determine currency and amounts
-        const currency = metadata.currency || 'PKR';
-        const originalAmount = metadata.original_inr_amount || Number(withdrawal.amount);
-        const displayAmount = currency === 'INR' ? originalAmount : Number(withdrawal.amount);
+        const currency = metadata.currency || metadata.original_currency || (metadata.original_inr_amount ? 'INR' : 'PKR');
+        const originalAmount = metadata.original_amount || metadata.original_inr_amount || Number(withdrawal.amount);
+        const displayAmount = currency && currency !== 'PKR' ? originalAmount : Number(withdrawal.amount);
 
         withdrawalsWithUsers.push({
           id: withdrawal.id,
