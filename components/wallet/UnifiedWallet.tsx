@@ -17,12 +17,14 @@ import DepositModal from './DepositModal';
 import WithdrawalModal from './WithdrawalModal';
 import DepositModalINR from './DepositModalINR';
 import WithdrawalModalINR from './WithdrawalModalINR';
+import DepositModalBDT from './DepositModalBDT';
+import WithdrawalModalBDT from './WithdrawalModalBDT';
 import TransactionHistory from './TransactionHistory';
 import { Colors } from '../../constants/Colors';
 
 const { width } = Dimensions.get('window');
 
-type WalletTab = 'pkr' | 'inr';
+type WalletTab = 'pkr' | 'inr' | 'bdt';
 
 interface UnifiedWalletProps {
   initialTab?: WalletTab;
@@ -46,6 +48,8 @@ export default function UnifiedWallet({ initialTab = 'pkr' }: UnifiedWalletProps
 
   // Convert PKR balance to INR (assuming 1 PKR = 0.3 INR for display)
   const inrBalance = balance ? balance * 0.3 : 0;
+  // Convert PKR balance to BDT (approx 1 PKR = 0.44 BDT for display)
+  const bdtBalance = balance ? balance * 0.44 : 0;
 
   // Calculate pending amounts for PKR
   const pkrPendingDeposits = transactions
@@ -56,9 +60,11 @@ export default function UnifiedWallet({ initialTab = 'pkr' }: UnifiedWalletProps
     ?.filter(t => t.type === 'withdraw' && t.status === 'pending')
     .reduce((sum, t) => sum + (t.amount || 0), 0) || 0;
 
-  // Calculate pending amounts for INR (converted from PKR)
+  // Calculate pending amounts for INR/BDT (converted from PKR)
   const inrPendingDeposits = pkrPendingDeposits * 0.3;
   const inrPendingWithdrawals = pkrPendingWithdrawals * 0.3;
+  const bdtPendingDeposits = pkrPendingDeposits * 0.44;
+  const bdtPendingWithdrawals = pkrPendingWithdrawals * 0.44;
 
   // PKR Wallet handlers
   const handlePKRDeposit = async (amount: number, paymentDetails: any, notes: string, method: PaymentMethod) => {
@@ -219,6 +225,81 @@ export default function UnifiedWallet({ initialTab = 'pkr' }: UnifiedWalletProps
     </>
   );
 
+  // BDT Wallet handlers (BDT is crypto-only via USDT TRC20). Convert BDT to PKR for backend
+  const handleBDTDeposit = async (bdtAmount: number, paymentDetails: any, notes: string, method: PaymentMethod) => {
+    try {
+      // Convert BDT to PKR (approx 1 BDT = 2.25 PKR)
+      const pkrAmount = bdtAmount * 2.25;
+
+      const depositId = await createDepositRequest(pkrAmount, {
+        payment_method: method,
+        payment_details: paymentDetails,
+        notes: notes,
+        original_currency: 'BDT',
+        original_amount: bdtAmount
+      });
+
+      if (depositId) {
+        Alert.alert(
+          'Deposit Request Submitted',
+          `Your ৳${bdtAmount} deposit request has been submitted and is pending approval.`,
+          [{ text: 'OK', onPress: () => setShowDepositModal(false) }]
+        );
+        refreshBalance();
+        refreshTransactions();
+      } else {
+        Alert.alert('Error', 'Failed to submit deposit request. Please try again.');
+      }
+    } catch (error) {
+      console.error('BDT Deposit error:', error);
+      Alert.alert('Error', 'Failed to submit deposit request. Please try again.');
+    }
+  };
+
+  const handleBDTWithdraw = async (bdtAmount: number, paymentDetails: any, notes: string, method: PaymentMethod) => {
+    try {
+      // Convert BDT to PKR for backend storage
+      const pkrAmount = bdtAmount * 2.25;
+
+      const withdrawalId = await createWithdrawalRequest(pkrAmount, {
+        payment_method: method,
+        payment_details: paymentDetails,
+        notes: notes,
+        original_currency: 'BDT',
+        original_amount: bdtAmount
+      });
+
+      if (withdrawalId) {
+        Alert.alert(
+          'Withdrawal Request Submitted',
+          `Your ৳${bdtAmount} withdrawal request has been submitted and is pending approval.`,
+          [{ text: 'OK', onPress: () => setShowWithdrawalModal(false) }]
+        );
+        refreshBalance();
+        refreshTransactions();
+      } else {
+        Alert.alert('Error', 'Failed to submit withdrawal request. Please try again.');
+      }
+    } catch (error) {
+      console.error('BDT Withdrawal error:', error);
+      Alert.alert('Error', 'Failed to submit withdrawal request. Please try again.');
+    }
+  };
+
+  const renderBDTWallet = () => (
+    <>
+      <WalletBalance
+        balance={bdtBalance}
+        pendingDeposits={bdtPendingDeposits}
+        pendingWithdrawals={bdtPendingWithdrawals}
+        onDeposit={() => setShowDepositModal(true)}
+        onWithdraw={() => setShowWithdrawalModal(true)}
+        currency="BDT"
+      />
+      <TransactionHistory transactions={transactions} currency="BDT" />
+    </>
+  );
+
   return (
     <View style={styles.container}>
       {/* Tab Header */}
@@ -227,12 +308,13 @@ export default function UnifiedWallet({ initialTab = 'pkr' }: UnifiedWalletProps
         <View style={styles.tabContainer}>
           {renderTabButton('pkr', 'PKR Wallet', 'wallet', 'Pakistani Rupee')}
           {renderTabButton('inr', 'INR Wallet', 'card', 'Indian Rupee')}
+          {renderTabButton('bdt', 'BDT Wallet', 'cash', 'Bangladeshi Taka')}
         </View>
       </View>
 
       {/* Wallet Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {activeTab === 'pkr' ? renderPKRWallet() : renderINRWallet()}
+        {activeTab === 'pkr' ? renderPKRWallet() : activeTab === 'inr' ? renderINRWallet() : renderBDTWallet()}
       </ScrollView>
 
       {/* Modals */}
@@ -250,7 +332,7 @@ export default function UnifiedWallet({ initialTab = 'pkr' }: UnifiedWalletProps
             balance={balance || 0}
           />
         </>
-      ) : (
+      ) : activeTab === 'inr' ? (
         <>
           <DepositModalINR
             visible={showDepositModal}
@@ -262,6 +344,20 @@ export default function UnifiedWallet({ initialTab = 'pkr' }: UnifiedWalletProps
             onClose={() => setShowWithdrawalModal(false)}
             onWithdraw={handleINRWithdraw}
             balance={inrBalance}
+          />
+        </>
+      ) : (
+        <>
+          <DepositModalBDT
+            visible={showDepositModal}
+            onClose={() => setShowDepositModal(false)}
+            onDeposit={handleBDTDeposit}
+          />
+          <WithdrawalModalBDT
+            visible={showWithdrawalModal}
+            onClose={() => setShowWithdrawalModal(false)}
+            onWithdraw={handleBDTWithdraw}
+            balance={bdtBalance}
           />
         </>
       )}
