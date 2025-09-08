@@ -60,6 +60,17 @@ export default function GamesScreen() {
   const games = [
 
     {
+      id: 'plinko1000',
+      name: 'Plinko 1000',
+      description: 'Evolution Plinko (provider launch)',
+      category: 'casino',
+      icon: '🟢',
+      color: Colors.primary.neonCyan,
+      players: { current: 0, max: 10000 },
+      status: 'available',
+    },
+
+    {
       id: 'crash',
       name: 'Crash',
       description: 'Classic crash game with rocket and multipliers',

@@ -19,6 +19,7 @@ import DragonTigerScreen from './screens/DragonTigerScreen';
 import TowerScreen from './screens/TowerScreen';
 import CrashScreen from './screens/CrashScreen';
 import LimboScreen from './screens/LimboScreen';
+import Plinko1000Screen from './screens/Plinko1000Screen';
 
 import RollMasterScreen from './screens/RollMasterScreen';
 import DiamondSlotsScreen from './screens/DiamondSlotsScreen';
@@ -74,6 +75,8 @@ export default function GameScreen() {
         return <LimboScreen />;
       case 'cricket-betting':
         return <CricketBettingScreen />;
+      case 'plinko1000':
+        return <Plinko1000Screen />;
       default:
         return (
           <View style={styles.errorContainer}>
