@@ -19,10 +19,18 @@ export type StartSessionResult = {
  * As per provider docs, this may need a server-side create-session call; we will adjust after live testing.
  */
 export async function startEvolutionSession(userId: string, gameId: string, options?: { username?: string }) : Promise<StartSessionResult> {
+  // Resolve local users.id from either auth_user_id or id
+  const { data: localUser } = await supabase
+    .from('users')
+    .select('id, username, email')
+    .or(`id.eq.${userId},auth_user_id.eq.${userId}`)
+    .maybeSingle();
+  const localUserId = localUser?.id || userId;
+
   // 1) Create local session row
   const { data: sessionRow, error: sessionErr } = await supabase
     .from('provider_game_sessions')
-    .insert({ user_id: userId, provider: 'evolution', game_id: gameId, status: 'active' })
+    .insert({ user_id: localUserId, provider: 'evolution', game_id: gameId, status: 'active' })
     .select('id')
     .single();
 
@@ -35,7 +43,9 @@ export async function startEvolutionSession(userId: string, gameId: string, opti
   const url = new URL(EVOLUTION_LAUNCH_BASE.replace(/\/$/, '') + '/launch');
   url.searchParams.set('game_id', gameId);
   if (EVOLUTION_TOKEN) url.searchParams.set('token', EVOLUTION_TOKEN);
-  if (options?.username) url.searchParams.set('user', options.username);
+  // Send local user id so callback can credit wallet correctly
+  url.searchParams.set('user', localUserId);
+  if (options?.username) url.searchParams.set('username', options.username);
   if (EVOLUTION_CALLBACK_URL) url.searchParams.set('callback', EVOLUTION_CALLBACK_URL);
 
   return { launchUrl: url.toString(), sessionId: sessionRow?.id };
