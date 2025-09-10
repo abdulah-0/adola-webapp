@@ -57,6 +57,12 @@
       "evolution": {
         "EXPO_PUBLIC_EVOLUTION_API_BASE": "https://huser.hardapi.live",
         "EXPO_PUBLIC_EVOLUTION_LAUNCH_BASE": "https://hardapi.live",
+        "EXPO_PUBLIC_EVOLUTION_LAUNCH_PATH": "",
+        "EXPO_PUBLIC_EVOLUTION_PARAM_GAME": "game_id",
+        "EXPO_PUBLIC_EVOLUTION_PARAM_TOKEN": "token",
+        "EXPO_PUBLIC_EVOLUTION_PARAM_USER": "user",
+        "EXPO_PUBLIC_EVOLUTION_PARAM_USERNAME": "username",
+        "EXPO_PUBLIC_EVOLUTION_PARAM_CALLBACK": "callback",
         "EXPO_PUBLIC_EVOLUTION_CALLBACK_URL": "https://ltxxtuugfunyybsowknv.functions.supabase.co/evolution-callback",
         "EXPO_PUBLIC_EVOLUTION_TOKEN": "e90023de-2c97-4fdd-8d1b-297c29"
       }

@@ -43,6 +43,7 @@ export default function Plinko1000Screen() {
     return (
       <View style={{ flex: 1, backgroundColor: '#000' }}>
         <div style={{ padding: 8, background: '#111', color: '#fff', fontSize: 12 }}>
+          <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>URL: {launchUrl}</div>
           Having trouble loading? <a href={launchUrl} target="_blank" rel="noreferrer" style={{ color: '#00FFC6' }}>Open game in a new tab</a>
         </div>
         <iframe

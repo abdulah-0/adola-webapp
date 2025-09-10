@@ -8,8 +8,16 @@ const extra = (Constants?.expoConfig?.extra as any) || {};
 const evoExtra = extra?.evolution || extra;
 const EVOLUTION_API_BASE = process.env.EXPO_PUBLIC_EVOLUTION_API_BASE || evoExtra?.EXPO_PUBLIC_EVOLUTION_API_BASE || 'https://huser.hardapi.live';
 const EVOLUTION_LAUNCH_BASE = process.env.EXPO_PUBLIC_EVOLUTION_LAUNCH_BASE || evoExtra?.EXPO_PUBLIC_EVOLUTION_LAUNCH_BASE || 'https://hardapi.live';
+const EVOLUTION_LAUNCH_PATH = process.env.EXPO_PUBLIC_EVOLUTION_LAUNCH_PATH || evoExtra?.EXPO_PUBLIC_EVOLUTION_LAUNCH_PATH || '';
 const EVOLUTION_CALLBACK_URL = process.env.EXPO_PUBLIC_EVOLUTION_CALLBACK_URL || evoExtra?.EXPO_PUBLIC_EVOLUTION_CALLBACK_URL || '';
 const EVOLUTION_TOKEN = process.env.EXPO_PUBLIC_EVOLUTION_TOKEN || evoExtra?.EXPO_PUBLIC_EVOLUTION_TOKEN || '';
+
+// Allow customizing provider param names without code changes
+const PARAM_GAME = process.env.EXPO_PUBLIC_EVOLUTION_PARAM_GAME || evoExtra?.EXPO_PUBLIC_EVOLUTION_PARAM_GAME || 'game_id';
+const PARAM_TOKEN = process.env.EXPO_PUBLIC_EVOLUTION_PARAM_TOKEN || evoExtra?.EXPO_PUBLIC_EVOLUTION_PARAM_TOKEN || 'token';
+const PARAM_USER = process.env.EXPO_PUBLIC_EVOLUTION_PARAM_USER || evoExtra?.EXPO_PUBLIC_EVOLUTION_PARAM_USER || 'user';
+const PARAM_USERNAME = process.env.EXPO_PUBLIC_EVOLUTION_PARAM_USERNAME || evoExtra?.EXPO_PUBLIC_EVOLUTION_PARAM_USERNAME || 'username';
+const PARAM_CALLBACK = process.env.EXPO_PUBLIC_EVOLUTION_PARAM_CALLBACK || evoExtra?.EXPO_PUBLIC_EVOLUTION_PARAM_CALLBACK || 'callback';
 
 export type StartSessionResult = {
   launchUrl: string;
@@ -41,15 +49,17 @@ export async function startEvolutionSession(userId: string, gameId: string, opti
     console.warn('Failed to create local session:', sessionErr);
   }
 
-  // 2) Build launch URL (placeholder; align with api-doc once confirmed)
-  // Common params used by providers: game_id, token, user, callback
-  const url = new URL(EVOLUTION_LAUNCH_BASE.replace(/\/$/, '') + '/launch');
-  url.searchParams.set('game_id', gameId);
-  if (EVOLUTION_TOKEN) url.searchParams.set('token', EVOLUTION_TOKEN);
+  // 2) Build launch URL (flexible configuration)
+  // If provider requires a server-side session, we will adjust to call our Edge Function instead.
+  const base = EVOLUTION_LAUNCH_BASE.replace(/\/$/, '');
+  const path = EVOLUTION_LAUNCH_PATH ? (EVOLUTION_LAUNCH_PATH.startsWith('/') ? EVOLUTION_LAUNCH_PATH : '/' + EVOLUTION_LAUNCH_PATH) : '';
+  const url = new URL(base + path);
+  url.searchParams.set(PARAM_GAME, gameId);
+  if (EVOLUTION_TOKEN) url.searchParams.set(PARAM_TOKEN, EVOLUTION_TOKEN);
   // Send local user id so callback can credit wallet correctly
-  url.searchParams.set('user', localUserId);
-  if (options?.username) url.searchParams.set('username', options.username);
-  if (EVOLUTION_CALLBACK_URL) url.searchParams.set('callback', EVOLUTION_CALLBACK_URL);
+  url.searchParams.set(PARAM_USER, localUserId);
+  if (options?.username) url.searchParams.set(PARAM_USERNAME, options.username);
+  if (EVOLUTION_CALLBACK_URL) url.searchParams.set(PARAM_CALLBACK, EVOLUTION_CALLBACK_URL);
 
   return { launchUrl: url.toString(), sessionId: sessionRow?.id };
 }
