@@ -1,6 +1,6 @@
 // Plinko 1000 (Evolution) - WebView launcher
 import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator, Alert } from 'react-native';
+import { View, ActivityIndicator, Alert, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useApp } from '../../../contexts/AppContext';
 import { startEvolutionSession } from '../../../services/games/EvolutionService';
@@ -32,6 +32,19 @@ export default function Plinko1000Screen() {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#000' }}>
         <ActivityIndicator size="large" color="#00FFC6" />
+      </View>
+    );
+  }
+
+  if (Platform.OS === 'web') {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#000' }}>
+        <iframe
+          src={launchUrl}
+          style={{ border: 'none', width: '100%', height: '100%' }}
+          allow="fullscreen; autoplay; clipboard-read; clipboard-write"
+          sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+        />
       </View>
     );
   }
