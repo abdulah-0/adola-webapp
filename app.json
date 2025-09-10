@@ -53,6 +53,12 @@
     "extra": {
       "eas": {
         "projectId": "f498b192-8b15-4a5a-aae8-6665bb6e1b4b"
+      },
+      "evolution": {
+        "EXPO_PUBLIC_EVOLUTION_API_BASE": "https://huser.hardapi.live",
+        "EXPO_PUBLIC_EVOLUTION_LAUNCH_BASE": "https://hardapi.live",
+        "EXPO_PUBLIC_EVOLUTION_CALLBACK_URL": "https://ltxxtuugfunyybsowknv.functions.supabase.co/evolution-callback",
+        "EXPO_PUBLIC_EVOLUTION_TOKEN": "e90023de-2c97-4fdd-8d1b-297c29"
       }
     }
   }
