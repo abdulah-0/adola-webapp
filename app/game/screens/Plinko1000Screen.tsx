@@ -37,13 +37,20 @@ export default function Plinko1000Screen() {
   }
 
   if (Platform.OS === 'web') {
+    // On web, some providers block iframing with X-Frame-Options/CSP.
+    // We provide an iframe plus a visible "Open in new tab" link as fallback.
+    // Also broaden the allow attributes and remove sandbox to avoid blocking loads.
     return (
       <View style={{ flex: 1, backgroundColor: '#000' }}>
+        <div style={{ padding: 8, background: '#111', color: '#fff', fontSize: 12 }}>
+          Having trouble loading? <a href={launchUrl} target="_blank" rel="noreferrer" style={{ color: '#00FFC6' }}>Open game in a new tab</a>
+        </div>
         <iframe
           src={launchUrl}
+          title="Plinko 1000"
           style={{ border: 'none', width: '100%', height: '100%' }}
-          allow="fullscreen; autoplay; clipboard-read; clipboard-write"
-          sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+          allow="fullscreen; autoplay; clipboard-read; clipboard-write; encrypted-media; payment; geolocation; microphone; camera"
+          allowFullScreen
         />
       </View>
     );
