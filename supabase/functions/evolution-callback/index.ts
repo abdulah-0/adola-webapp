@@ -24,9 +24,13 @@ serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 });
     }
 
+    const serviceKey = Deno.env.get('SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (!serviceKey) {
+      return new Response(JSON.stringify({ error: 'missing_service_role_key' }), { status: 500 });
+    }
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      serviceKey
     );
 
     const body = await req.json().catch(() => ({}));
