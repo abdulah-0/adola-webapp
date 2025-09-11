@@ -10,6 +10,7 @@ const PLINKO_GAME_ID = 'eb3f4260c17737e09767bc4c06796a61';
 export default function Plinko1000Screen() {
   const { user } = useApp();
   const [launchUrl, setLaunchUrl] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -20,15 +21,35 @@ export default function Plinko1000Screen() {
         }
         const res = await startEvolutionSession(user.id, PLINKO_GAME_ID, { username: user.username || user.email });
         setLaunchUrl(res.launchUrl);
-      } catch (e) {
+      } catch (e: any) {
         console.error('Failed to start session', e);
-        Alert.alert('Error', 'Failed to start game session.');
+        setErrorMsg(e?.message || 'Failed to start game session');
+        if (Platform.OS !== 'web') {
+          Alert.alert('Error', 'Failed to start game session.');
+        }
       }
     };
     init();
   }, [user?.id]);
 
   if (!launchUrl) {
+    if (Platform.OS === 'web') {
+      return (
+        <View style={{ flex: 1, backgroundColor: '#000', color: '#fff' }}>
+          <div style={{ padding: 12, background: '#221', color: '#fff', fontSize: 12 }}>
+            <div>Starting Plinko session…</div>
+            {errorMsg && (
+              <div style={{ marginTop: 8, color: '#ff8080' }}>
+                Failed to obtain launch URL: {String(errorMsg)}. Open DevTools → Network and check /api/evolution-launch for details.
+              </div>
+            )}
+          </div>
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <ActivityIndicator size="large" color="#00FFC6" />
+          </View>
+        </View>
+      );
+    }
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#000' }}>
         <ActivityIndicator size="large" color="#00FFC6" />

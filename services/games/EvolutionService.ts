@@ -76,6 +76,14 @@ export async function startEvolutionSession(userId: string, gameId: string, opti
   // On web, use our Vercel API proxy to avoid CORS; on native, call provider directly
   const endpoint = Platform.OS === 'web' ? '/api/evolution-launch' : EVOLUTION_SERVER_URL;
 
+  // Log (web only) for easier debugging
+  if (Platform.OS === 'web') {
+    try {
+      const dbg = { ...payload, token: EVOLUTION_TOKEN ? '***' : '' } as any;
+      console.debug('Evolution POST endpoint:', endpoint, 'payload:', dbg);
+    } catch {}
+  }
+
   const resp = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -84,31 +92,27 @@ export async function startEvolutionSession(userId: string, gameId: string, opti
 
   const contentType = resp.headers.get('content-type') || '';
   let launchUrl: string | null = null;
+  let rawBody: any = null;
   if (contentType.includes('application/json')) {
     const data = await resp.json();
+    rawBody = data;
     launchUrl = data?.url || data?.launch_url || data?.game_url || null;
     if (!launchUrl && typeof data === 'string') launchUrl = data;
   } else {
     // If provider returns HTML/redirect, rely on final URL if available
+    const text = await resp.text();
+    rawBody = text;
     launchUrl = (resp as any).url || null;
   }
 
   if (!resp.ok) {
-    console.warn('Evolution launch error', await resp.text());
+    console.warn('Evolution launch error', rawBody);
     throw new Error('Failed to obtain launch URL');
   }
 
   if (!launchUrl) {
-    // Fallback to GET pattern if no URL returned (misconfiguration)
-    const base = EVOLUTION_LAUNCH_BASE.replace(/\/$/, '');
-    const path = EVOLUTION_LAUNCH_PATH ? (EVOLUTION_LAUNCH_PATH.startsWith('/') ? EVOLUTION_LAUNCH_PATH : '/' + EVOLUTION_LAUNCH_PATH) : '';
-    const url = new URL(base + path);
-    url.searchParams.set(PARAM_GAME, gameId);
-    if (EVOLUTION_TOKEN) url.searchParams.set(PARAM_TOKEN, EVOLUTION_TOKEN);
-    url.searchParams.set(PARAM_USER, localUserId);
-    if (options?.username) url.searchParams.set(PARAM_USERNAME, options.username);
-    if (EVOLUTION_CALLBACK_URL) url.searchParams.set(PARAM_CALLBACK, EVOLUTION_CALLBACK_URL);
-    launchUrl = url.toString();
+    console.warn('Evolution launch: no URL returned from server.', rawBody);
+    throw new Error('No launch URL');
   }
 
   return { launchUrl, sessionId: sessionRow?.id };
