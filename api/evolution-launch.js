@@ -43,13 +43,19 @@ export default async function handler(req, res) {
       domain_url: domain_url || (req.headers['x-forwarded-host'] ? `https://${req.headers['x-forwarded-host']}` : (process.env.EXPO_PUBLIC_EVOLUTION_DOMAIN_URL || 'https://example.com')),
     };
 
+    // Provider expects form-encoded payload (common for PHP backends)
+    const form = new URLSearchParams();
+    Object.entries(payload).forEach(([k, v]) => {
+      if (v !== undefined && v !== null) form.append(k, String(v));
+    });
+
     const providerResp = await fetch(serverUrl, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
         'Accept': 'application/json,text/plain,*/*',
       },
-      body: JSON.stringify(payload),
+      body: form.toString(),
       redirect: 'follow',
     });
 

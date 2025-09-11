@@ -65,3 +65,27 @@ select t.*, u.email, u.username
 from public.provider_game_transactions t
 left join public.users u on u.id = t.user_id;
 
+
+
+-- 5) Enable RLS and policies so authenticated users can manage their own provider sessions/txs
+alter table if exists public.provider_game_sessions enable row level security;
+create policy if not exists provider_sessions_insert_own
+on public.provider_game_sessions
+for insert to authenticated
+with check (user_id = (select id from public.users where auth_user_id = auth.uid()));
+
+create policy if not exists provider_sessions_select_own
+on public.provider_game_sessions
+for select to authenticated
+using (user_id = (select id from public.users where auth_user_id = auth.uid()));
+
+alter table if exists public.provider_game_transactions enable row level security;
+create policy if not exists provider_txs_insert_own
+on public.provider_game_transactions
+for insert to authenticated
+with check (user_id = (select id from public.users where auth_user_id = auth.uid()));
+
+create policy if not exists provider_txs_select_own
+on public.provider_game_transactions
+for select to authenticated
+using (user_id = (select id from public.users where auth_user_id = auth.uid()));
