@@ -83,6 +83,7 @@ export default async function handler(req, res) {
       url.searchParams.set('token', String(core.token));
       url.searchParams.set('timestamp', String(core.timestamp));
       url.searchParams.set('payload', payloadEnc);
+      url.searchParams.set('a', payloadEnc);
       if (username) url.searchParams.set('username', String(username));
       if (currency) url.searchParams.set('currency', String(currency));
       url.searchParams.set('return_url', resolvedDomain);
@@ -99,6 +100,7 @@ export default async function handler(req, res) {
     form.append('token', String(core.token));
     form.append('timestamp', String(core.timestamp));
     form.append('payload', payloadEnc);
+    form.append('a', payloadEnc);
     if (username) form.append('username', String(username));
     if (currency) form.append('currency', String(currency));
     form.append('return_url', resolvedDomain);
