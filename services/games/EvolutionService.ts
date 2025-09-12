@@ -13,7 +13,9 @@ const EVOLUTION_LAUNCH_BASE = process.env.EXPO_PUBLIC_EVOLUTION_LAUNCH_BASE || e
 const EVOLUTION_LAUNCH_PATH = process.env.EXPO_PUBLIC_EVOLUTION_LAUNCH_PATH || evoExtra?.EXPO_PUBLIC_EVOLUTION_LAUNCH_PATH || '';
 const EVOLUTION_CALLBACK_URL = process.env.EXPO_PUBLIC_EVOLUTION_CALLBACK_URL || evoExtra?.EXPO_PUBLIC_EVOLUTION_CALLBACK_URL || '';
 const EVOLUTION_CURRENCY = process.env.EXPO_PUBLIC_EVOLUTION_CURRENCY || evoExtra?.EXPO_PUBLIC_EVOLUTION_CURRENCY || 'PKR';
+const EVOLUTION_GAME_UID = process.env.EXPO_PUBLIC_EVOLUTION_GAME_UID || evoExtra?.EXPO_PUBLIC_EVOLUTION_GAME_UID || '';
 const EVOLUTION_TOKEN = process.env.EXPO_PUBLIC_EVOLUTION_TOKEN || evoExtra?.EXPO_PUBLIC_EVOLUTION_TOKEN || '';
+const WEB_API_BASE = process.env.EXPO_PUBLIC_WEB_API_BASE || evoExtra?.EXPO_PUBLIC_WEB_API_BASE || '';
 const EVOLUTION_DOMAIN_URL = process.env.EXPO_PUBLIC_EVOLUTION_DOMAIN_URL || evoExtra?.EXPO_PUBLIC_EVOLUTION_DOMAIN_URL || '';
 
 // Allow customizing provider param names without code changes (GET fallback only)
@@ -62,29 +64,34 @@ export async function startEvolutionSession(userId: string, gameId: string, opti
       .select('balance')
       .eq('user_id', localUserId)
       .maybeSingle();
-    wallet_amount = Math.floor(Number(wallet?.balance || 0));
+    wallet_amount = Number(wallet?.balance || 0);
   } catch {}
 
   const payload = {
     user_id: localUserId,
     wallet_amount,
-    game_uid: gameId,
+    game_uid: gameId || EVOLUTION_GAME_UID,
     token: EVOLUTION_TOKEN,
-    timestamp: Math.floor(Date.now() / 1000),
     domain_url: Platform.OS === 'web' ? (typeof window !== 'undefined' ? window.location.origin : EVOLUTION_DOMAIN_URL) : EVOLUTION_DOMAIN_URL,
     username: options?.username,
     currency: EVOLUTION_CURRENCY,
     callback_url: EVOLUTION_CALLBACK_URL,
   };
 
-  // On web, use our Vercel API proxy to avoid CORS; on native, call provider directly
-  const endpoint = Platform.OS === 'web' ? '/api/evolution-launch' : EVOLUTION_SERVER_URL;
+  // On web, call the deployed Vercel proxy; in dev without Vercel, set EXPO_PUBLIC_WEB_API_BASE to your deployed domain
+  const endpointPath = '/api/evolution-launch';
+  const endpoint = Platform.OS === 'web'
+    ? (WEB_API_BASE ? `${WEB_API_BASE.replace(/\/$/, '')}${endpointPath}` : endpointPath)
+    : EVOLUTION_SERVER_URL;
 
   // Log (web only) for easier debugging
   if (Platform.OS === 'web') {
     try {
       const dbg = { ...payload, token: EVOLUTION_TOKEN ? '***' : '' } as any;
-      console.debug('Evolution POST endpoint:', endpoint, 'payload:', dbg);
+      console.debug('Evolution POST endpoint:', endpoint, 'origin:', (typeof window !== 'undefined' ? window.location.origin : ''), 'payload:', dbg);
+      if (!WEB_API_BASE && typeof window !== 'undefined' && !/vercel\.app|adolagaming\.com/i.test(window.location.hostname)) {
+        console.warn('Tip: Set EXPO_PUBLIC_WEB_API_BASE to your deployed domain so /api routes resolve during local web dev.');
+      }
     } catch {}
   }
 
