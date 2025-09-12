@@ -1,6 +1,27 @@
 // Vercel Serverless Function (non-Next): Evolution launch proxy
 // Path: /api/evolution-launch
 
+const crypto = require('crypto');
+
+function makeAes256EcbKey(secret) {
+  // Ensure 32-byte key; if not 32, derive via SHA-256 of the provided secret
+  if (!secret) return null;
+  const buf = Buffer.from(secret, 'utf8');
+  if (buf.length === 32) return buf;
+  return crypto.createHash('sha256').update(buf).digest();
+}
+
+function encryptPayload(secret, dataObj) {
+  const key = makeAes256EcbKey(secret);
+  if (!key) return null;
+  const plaintext = JSON.stringify(dataObj);
+  const cipher = crypto.createCipheriv('aes-256-ecb', key, null);
+  cipher.setAutoPadding(true);
+  let encrypted = cipher.update(plaintext, 'utf8', 'base64');
+  encrypted += cipher.final('base64');
+  return encrypted;
+}
+
 export default async function handler(req, res) {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -23,7 +44,7 @@ export default async function handler(req, res) {
       wallet_amount = 0,
       game_uid,
       token,
-      timestamp,
+      // timestamp will be generated here in ms
       domain_url,
       username,
       currency,
@@ -38,34 +59,60 @@ export default async function handler(req, res) {
     const serverUrl = process.env.EXPO_PUBLIC_EVOLUTION_SERVER_URL || 'https://hardapi.live/launch_game1';
 
     const resolvedDomain = domain_url || (req.headers['x-forwarded-host'] ? `https://${req.headers['x-forwarded-host']}` : (process.env.EXPO_PUBLIC_EVOLUTION_DOMAIN_URL || 'https://example.com'));
-    const resolvedCallback = callback_url || process.env.EXPO_PUBLIC_EVOLUTION_CALLBACK_URL || '';
+    const tsMs = Date.now();
 
-    const payload = {
+    // Core fields for provider per doc
+    const core = {
       user_id,
-      wallet_amount: Math.floor(Number(wallet_amount || 0)),
+      wallet_amount: Number(wallet_amount || 0),
       game_uid,
       token,
-      timestamp: timestamp || Math.floor(Date.now() / 1000),
-      domain_url: resolvedDomain,
-      // common extras some providers expect
-      username,
-      user_name: username,
-      currency,
-      callback_url: resolvedCallback,
-      call_back_url: resolvedCallback,
-      return_url: resolvedDomain,
+      timestamp: tsMs,
     };
 
-    // Provider expects form-encoded payload (common for PHP backends)
+    const secret = process.env.EVOLUTION_SECRET;
+    const payloadEnc = encryptPayload(secret, core);
+    if (!payloadEnc) {
+      return res.status(500).json({ error: 'missing_or_invalid_secret', message: 'Server is missing EVOLUTION_SECRET or it is invalid' });
+    }
+
+
+    // Two provider variants observed: GET /launch_game and POST /launch_game1
+    const isGetLaunch = /\/launch_game(?:\?|$)/.test(serverUrl);
+    if (isGetLaunch) {
+      // Build GET URL and return it to client to load directly (avoid prefetching)
+      const url = new URL(serverUrl);
+      url.searchParams.set('user_id', String(core.user_id));
+      url.searchParams.set('wallet_amount', String(core.wallet_amount));
+      url.searchParams.set('game_uid', String(core.game_uid));
+      url.searchParams.set('token', String(core.token));
+      url.searchParams.set('timestamp', String(core.timestamp));
+      url.searchParams.set('payload', payloadEnc);
+      // Optional extras
+      if (username) url.searchParams.set('username', String(username));
+      if (currency) url.searchParams.set('currency', String(currency));
+      url.searchParams.set('return_url', resolvedDomain);
+      url.searchParams.set('callback_url', process.env.EXPO_PUBLIC_EVOLUTION_CALLBACK_URL || '');
+      return res.status(200).json({ url: url.toString() });
+    }
+
+    // Fallback: POST form to serverUrl (e.g., launch_game1)
     const form = new URLSearchParams();
-    Object.entries(payload).forEach(([k, v]) => {
-      if (v !== undefined && v !== null) form.append(k, String(v));
-    });
+    form.append('user_id', String(core.user_id));
+    form.append('wallet_amount', String(core.wallet_amount));
+    form.append('game_uid', String(core.game_uid));
+    form.append('token', String(core.token));
+    form.append('timestamp', String(core.timestamp));
+    form.append('payload', payloadEnc);
+    if (username) form.append('username', String(username));
+    if (currency) form.append('currency', String(currency));
+    form.append('return_url', resolvedDomain);
+    form.append('callback_url', process.env.EXPO_PUBLIC_EVOLUTION_CALLBACK_URL || '');
 
     const headers = {
       'Content-Type': 'application/x-www-form-urlencoded',
       'Accept': 'application/json,text/plain,*/*',
-    } as Record<string, string>;
+    };
     const basicUser = process.env.EVOLUTION_BASIC_USER;
     const basicPass = process.env.EVOLUTION_BASIC_PASS;
     if (basicUser && basicPass) {
@@ -73,41 +120,21 @@ export default async function handler(req, res) {
       headers['Authorization'] = `Basic ${token64}`;
     }
 
-    const providerResp = await fetch(serverUrl, {
-      method: 'POST',
-      headers,
-      body: form.toString(),
-      redirect: 'follow',
-    });
-
+    const providerResp = await fetch(serverUrl, { method: 'POST', headers, body: form.toString(), redirect: 'follow' });
     const contentType = providerResp.headers.get('content-type') || '';
     let data = null;
     let text = '';
+    if (contentType.includes('application/json')) data = await providerResp.json();
+    else text = await providerResp.text();
 
-    if (contentType.includes('application/json')) {
-      data = await providerResp.json();
-    } else {
-      text = await providerResp.text();
+    if (!providerResp.ok) {
+      return res.status(providerResp.status).json({ error: 'provider_error', status: providerResp.status, data: data || text });
     }
 
     const candidateUrl = data?.url || data?.launch_url || data?.game_url || data?.data?.url || providerResp.url;
-
-    if (!providerResp.ok) {
-      res.status(providerResp.status).json({ error: 'provider_error', status: providerResp.status, data: data || text });
-      return;
-    }
-
-    if (candidateUrl && typeof candidateUrl === 'string') {
-      res.status(200).json({ url: candidateUrl, raw: data || text });
-      return;
-    }
-
-    if (text) {
-      res.status(200).send(text);
-      return;
-    }
-
-    res.status(200).json({ ok: true, raw: data });
+    if (candidateUrl && typeof candidateUrl === 'string') return res.status(200).json({ url: candidateUrl, raw: data || text });
+    if (text) return res.status(200).send(text);
+    return res.status(200).json({ ok: true, raw: data });
   } catch (err) {
     console.error('evolution-launch proxy error:', err);
     res.status(500).json({ error: 'internal_error', message: err?.message || String(err) });
