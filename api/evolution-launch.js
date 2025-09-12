@@ -25,6 +25,9 @@ export default async function handler(req, res) {
       token,
       timestamp,
       domain_url,
+      username,
+      currency,
+      callback_url,
     } = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
 
     if (!user_id || !game_uid || !token) {
@@ -34,13 +37,23 @@ export default async function handler(req, res) {
 
     const serverUrl = process.env.EXPO_PUBLIC_EVOLUTION_SERVER_URL || 'https://hardapi.live/launch_game1';
 
+    const resolvedDomain = domain_url || (req.headers['x-forwarded-host'] ? `https://${req.headers['x-forwarded-host']}` : (process.env.EXPO_PUBLIC_EVOLUTION_DOMAIN_URL || 'https://example.com'));
+    const resolvedCallback = callback_url || process.env.EXPO_PUBLIC_EVOLUTION_CALLBACK_URL || '';
+
     const payload = {
       user_id,
-      wallet_amount,
+      wallet_amount: Math.floor(Number(wallet_amount || 0)),
       game_uid,
       token,
       timestamp: timestamp || Math.floor(Date.now() / 1000),
-      domain_url: domain_url || (req.headers['x-forwarded-host'] ? `https://${req.headers['x-forwarded-host']}` : (process.env.EXPO_PUBLIC_EVOLUTION_DOMAIN_URL || 'https://example.com')),
+      domain_url: resolvedDomain,
+      // common extras some providers expect
+      username,
+      user_name: username,
+      currency,
+      callback_url: resolvedCallback,
+      call_back_url: resolvedCallback,
+      return_url: resolvedDomain,
     };
 
     // Provider expects form-encoded payload (common for PHP backends)
@@ -49,12 +62,20 @@ export default async function handler(req, res) {
       if (v !== undefined && v !== null) form.append(k, String(v));
     });
 
+    const headers = {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Accept': 'application/json,text/plain,*/*',
+    } as Record<string, string>;
+    const basicUser = process.env.EVOLUTION_BASIC_USER;
+    const basicPass = process.env.EVOLUTION_BASIC_PASS;
+    if (basicUser && basicPass) {
+      const token64 = Buffer.from(`${basicUser}:${basicPass}`).toString('base64');
+      headers['Authorization'] = `Basic ${token64}`;
+    }
+
     const providerResp = await fetch(serverUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json,text/plain,*/*',
-      },
+      headers,
       body: form.toString(),
       redirect: 'follow',
     });

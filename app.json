@@ -66,7 +66,8 @@
         "EXPO_PUBLIC_EVOLUTION_PARAM_CALLBACK": "callback",
         "EXPO_PUBLIC_EVOLUTION_CALLBACK_URL": "https://ltxxtuugfunyybsowknv.functions.supabase.co/evolution-callback",
         "EXPO_PUBLIC_EVOLUTION_TOKEN": "e90023de-2c97-4fdd-8d1b-297c29",
-        "EXPO_PUBLIC_EVOLUTION_DOMAIN_URL": "https://adolagaming.com"
+        "EXPO_PUBLIC_EVOLUTION_DOMAIN_URL": "https://adolagaming.com",
+        "EXPO_PUBLIC_EVOLUTION_CURRENCY": "PKR"
       }
     }
   }

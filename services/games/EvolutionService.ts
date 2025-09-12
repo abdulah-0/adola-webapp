@@ -12,6 +12,7 @@ const EVOLUTION_SERVER_URL = process.env.EXPO_PUBLIC_EVOLUTION_SERVER_URL || evo
 const EVOLUTION_LAUNCH_BASE = process.env.EXPO_PUBLIC_EVOLUTION_LAUNCH_BASE || evoExtra?.EXPO_PUBLIC_EVOLUTION_LAUNCH_BASE || 'https://hardapi.live';
 const EVOLUTION_LAUNCH_PATH = process.env.EXPO_PUBLIC_EVOLUTION_LAUNCH_PATH || evoExtra?.EXPO_PUBLIC_EVOLUTION_LAUNCH_PATH || '';
 const EVOLUTION_CALLBACK_URL = process.env.EXPO_PUBLIC_EVOLUTION_CALLBACK_URL || evoExtra?.EXPO_PUBLIC_EVOLUTION_CALLBACK_URL || '';
+const EVOLUTION_CURRENCY = process.env.EXPO_PUBLIC_EVOLUTION_CURRENCY || evoExtra?.EXPO_PUBLIC_EVOLUTION_CURRENCY || 'PKR';
 const EVOLUTION_TOKEN = process.env.EXPO_PUBLIC_EVOLUTION_TOKEN || evoExtra?.EXPO_PUBLIC_EVOLUTION_TOKEN || '';
 const EVOLUTION_DOMAIN_URL = process.env.EXPO_PUBLIC_EVOLUTION_DOMAIN_URL || evoExtra?.EXPO_PUBLIC_EVOLUTION_DOMAIN_URL || '';
 
@@ -61,7 +62,7 @@ export async function startEvolutionSession(userId: string, gameId: string, opti
       .select('balance')
       .eq('user_id', localUserId)
       .maybeSingle();
-    wallet_amount = Number(wallet?.balance || 0);
+    wallet_amount = Math.floor(Number(wallet?.balance || 0));
   } catch {}
 
   const payload = {
@@ -71,6 +72,9 @@ export async function startEvolutionSession(userId: string, gameId: string, opti
     token: EVOLUTION_TOKEN,
     timestamp: Math.floor(Date.now() / 1000),
     domain_url: Platform.OS === 'web' ? (typeof window !== 'undefined' ? window.location.origin : EVOLUTION_DOMAIN_URL) : EVOLUTION_DOMAIN_URL,
+    username: options?.username,
+    currency: EVOLUTION_CURRENCY,
+    callback_url: EVOLUTION_CALLBACK_URL,
   };
 
   // On web, use our Vercel API proxy to avoid CORS; on native, call provider directly
