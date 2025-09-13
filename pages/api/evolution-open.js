@@ -22,8 +22,11 @@ export default async function handler(req, res) {
   const return_url = q.return_url || '';
   const callback_url = q.callback_url || '';
 
-  // Provider POST endpoint
-  const action = process.env.EXPO_PUBLIC_EVOLUTION_SERVER_URL || 'https://hardapi.live/launch_game1';
+  // Provider POST endpoint (force POST variant)
+  const configured = process.env.EXPO_PUBLIC_EVOLUTION_SERVER_URL || 'https://hardapi.live/launch_game1';
+  let action = configured;
+  // If someone configured GET endpoint (/launch_game), coerce to POST endpoint (/launch_game1)
+  action = action.replace(/\/launch_game(?:\/?)(?:\?.*)?$/i, '/launch_game1');
 
   const html = `<!doctype html>
 <html>
@@ -45,13 +48,16 @@ export default async function handler(req, res) {
   </div>
   <form id="f" method="post" action="${action}">
     <input type="hidden" name="user_id" value="${String(user_id)}" />
+    <input type="hidden" name="user" value="${String(user_id)}" />
     <input type="hidden" name="wallet_amount" value="${String(wallet_amount)}" />
     <input type="hidden" name="game_uid" value="${String(game_uid)}" />
+    <input type="hidden" name="game_id" value="${String(game_uid)}" />
     <input type="hidden" name="token" value="${String(token)}" />
     <input type="hidden" name="timestamp" value="${String(timestamp)}" />
     <input type="hidden" name="payload" value="${String(payload)}" />
-    <input type="hidden" name="a" value="${String(a)}" />
+    <input type="hidden" name="a" value="${String(a || payload)}" />
     <input type="hidden" name="username" value="${String(username)}" />
+    <input type="hidden" name="user_name" value="${String(username)}" />
     <input type="hidden" name="currency" value="${String(currency)}" />
     <input type="hidden" name="return_url" value="${String(return_url)}" />
     <input type="hidden" name="callback_url" value="${String(callback_url)}" />

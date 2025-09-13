@@ -98,13 +98,16 @@ export default async function handler(req, res) {
     // Fallback: POST variant (e.g., launch_game1)
     const form = new URLSearchParams();
     form.append('user_id', String(core.user_id));
+    form.append('user', String(core.user_id));
     form.append('wallet_amount', String(core.wallet_amount));
     form.append('game_uid', String(core.game_uid));
+    form.append('game_id', String(core.game_uid));
     form.append('token', String(core.token));
     form.append('timestamp', String(core.timestamp));
     form.append('payload', payloadEnc);
     form.append('a', payloadEnc);
     if (username) form.append('username', String(username));
+    if (username) form.append('user_name', String(username));
     if (currency) form.append('currency', String(currency));
     form.append('return_url', resolvedDomain);
     form.append('callback_url', process.env.EXPO_PUBLIC_EVOLUTION_CALLBACK_URL || '');
