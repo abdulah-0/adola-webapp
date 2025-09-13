@@ -1,11 +1,15 @@
 // Plinko 1000 (Evolution) - WebView launcher
 import React, { useEffect, useState } from 'react';
+import Constants from 'expo-constants';
 import { View, ActivityIndicator, Alert, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useApp } from '../../../contexts/AppContext';
 import { startEvolutionSession } from '../../../services/games/EvolutionService';
 
-const PLINKO_GAME_ID = 'eb3f4260c17737e09767bc4c06796a61';
+const extraCfg: any = (Constants?.expoConfig?.extra as any) || {};
+const evoExtra = extraCfg?.evolution || extraCfg;
+// Provider expects a 'game_uid' that matches your allowed provider slug. Defaulting to 'evolution'.
+const PLINKO_GAME_ID = process.env.EXPO_PUBLIC_EVOLUTION_GAME_UID || evoExtra?.EXPO_PUBLIC_EVOLUTION_GAME_UID || 'evolution';
 
 export default function Plinko1000Screen() {
   const { user } = useApp();
