@@ -80,21 +80,21 @@ export default async function handler(req, res) {
     // Two provider variants observed: GET /launch_game and POST /launch_game1
     const isGetLaunch = /\/launch_game(?:\?|$)/.test(serverUrl);
     if (isGetLaunch) {
-      // Build GET URL and return it to client to load directly (avoid prefetching)
-      const url = new URL(serverUrl);
-      url.searchParams.set('user_id', String(core.user_id));
-      url.searchParams.set('wallet_amount', String(core.wallet_amount));
-      url.searchParams.set('game_uid', String(core.game_uid));
-      url.searchParams.set('token', String(core.token));
-      url.searchParams.set('timestamp', String(core.timestamp));
-      url.searchParams.set('payload', payloadEnc);
-      url.searchParams.set('a', payloadEnc);
-      // Optional extras
-      if (username) url.searchParams.set('username', String(username));
-      if (currency) url.searchParams.set('currency', String(currency));
-      url.searchParams.set('return_url', resolvedDomain);
-      url.searchParams.set('callback_url', process.env.EXPO_PUBLIC_EVOLUTION_CALLBACK_URL || '');
-      return res.status(200).json({ url: url.toString() });
+      // Return our own auto-submit POST bridge URL so provider receives POST fields (including 'a').
+      const origin = req.headers['x-forwarded-host'] ? `https://${req.headers['x-forwarded-host']}` : '';
+      const qs = new URLSearchParams();
+      qs.set('user_id', String(core.user_id));
+      qs.set('wallet_amount', String(core.wallet_amount));
+      qs.set('game_uid', String(core.game_uid));
+      qs.set('token', String(core.token));
+      qs.set('timestamp', String(core.timestamp));
+      qs.set('payload', payloadEnc);
+      qs.set('a', payloadEnc);
+      if (username) qs.set('username', String(username));
+      if (currency) qs.set('currency', String(currency));
+      qs.set('return_url', resolvedDomain);
+      qs.set('callback_url', process.env.EXPO_PUBLIC_EVOLUTION_CALLBACK_URL || '');
+      return res.status(200).json({ url: `${origin}/api/evolution-open?${qs.toString()}` });
     }
 
     // Fallback: POST form to serverUrl (e.g., launch_game1)
