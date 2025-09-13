@@ -1,5 +1,6 @@
 // Games Tab Screen for Adola App
 import React, { useState } from 'react';
+import Constants from 'expo-constants';
 import {
   View,
   Text,
@@ -56,6 +57,10 @@ export default function GamesScreen() {
     { id: 'card', name: 'Card Games', icon: '🃏' },
     { id: 'sports', name: 'Sports', icon: '⚽' },
   ];
+
+  const extraCfg: any = (Constants?.expoConfig?.extra as any) || {};
+  const evoExtra = extraCfg?.evolution || extraCfg;
+  const showLegacy = String(process.env.EXPO_PUBLIC_SHOW_LEGACY_GAMES || evoExtra?.EXPO_PUBLIC_SHOW_LEGACY_GAMES || 'false').toLowerCase() === 'true';
 
   const games = [
 
@@ -295,10 +300,12 @@ export default function GamesScreen() {
 
   // Debug logging
   console.log('📋 Categories available:', categories.map(c => c.name));
-  console.log('🎮 Total games:', games.length);
+  const effectiveGames = showLegacy ? games : games.filter(g => ['plinko1000'].includes(g.id));
+
+  console.log('🎮 Total games:', effectiveGames.length);
   console.log('🏏 Sports games:', games.filter(g => g.category === 'sports').map(g => g.name));
 
-  const filteredGames = games.filter(game => {
+  const filteredGames = effectiveGames.filter(game => {
     const matchesSearch = game.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          game.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || game.category === selectedCategory;
@@ -317,7 +324,7 @@ export default function GamesScreen() {
 
   // Use web-specific layout if on web platform
   if (isWeb) {
-    return <WebGamesTab games={games} onGamePress={handleGamePress} />;
+    return <WebGamesTab games={effectiveGames} onGamePress={handleGamePress} />;
   }
 
   return (

@@ -37,8 +37,8 @@ export default function SimpleAdolaWebsite({ onSignOut, playerName = 'Player' }:
     }
   ];
 
-  // Top games data
-  const topGames = [
+  // Top games data (legacy list)
+  const allTopGames = [
     {
       id: 'aviator',
       name: 'Aviator',
@@ -80,12 +80,12 @@ export default function SimpleAdolaWebsite({ onSignOut, playerName = 'Player' }:
       route: '/game/tower'
     },
     {
-      id: 'plinko',
-      name: 'Plinko',
+      id: 'plinko1000',
+      name: 'Plinko 1000',
       icon: '🎯',
-      players: '1.2k',
+      players: '—',
       category: 'Casino',
-      route: '/game/plinko'
+      route: '/game/plinko1000'
     },
     {
       id: 'blackjack',
@@ -134,6 +134,11 @@ export default function SimpleAdolaWebsite({ onSignOut, playerName = 'Player' }:
       window.location.href = '/games';
     }
   };
+
+  const showLegacy = String(process.env.EXPO_PUBLIC_SHOW_LEGACY_GAMES || 'false').toLowerCase() === 'true';
+  const topGames = showLegacy ? allTopGames : [
+    { id: 'plinko1000', name: 'Plinko 1000', icon: '🎯', players: '—', category: 'Casino', route: '/game/plinko1000' }
+  ];
 
   const gamesPerView = screenWidth < 768 ? 2 : 4;
   const maxIndex = Math.max(0, topGames.length - gamesPerView);

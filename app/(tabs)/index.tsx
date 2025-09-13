@@ -11,6 +11,7 @@ import {
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import Constants from 'expo-constants';
 import { Colors } from '../../constants/Colors';
 import { useApp } from '../../contexts/AppContext';
 import { useWallet } from '../../contexts/WalletContext';
@@ -79,25 +80,30 @@ export default function HomeScreen() {
     return <WebHomepage onSignOut={handleSignOut} />;
   }
 
-  const featuredGames = [
+  const showLegacy = String(process.env.EXPO_PUBLIC_SHOW_LEGACY_GAMES || (Constants?.expoConfig?.extra as any)?.EXPO_PUBLIC_SHOW_LEGACY_GAMES || 'false').toLowerCase() === 'true';
+
+  const featuredGames = showLegacy ? [
     { name: 'Aviator', icon: '✈️', players: '1.2k', color: Colors.primary.neonCyan, route: '/game/aviator' },
     { name: 'Cricket Betting', icon: '🏏', players: '1.5k', color: Colors.primary.gold, route: '/game/cricket-betting' },
     { name: 'Dice', icon: '🎲', players: '856', color: Colors.primary.hotPink, route: '/game/dice' },
     { name: 'Slots', icon: '🎰', players: '2.1k', color: Colors.primary.gold, route: '/game/slots' },
     { name: 'Roulette', icon: '🎡', players: '743', color: Colors.primary.neonCyan, route: '/game/roulette' },
+  ] : [
+    { name: 'Plinko 1000', icon: '🎯', players: '—', color: Colors.primary.neonCyan, route: '/game/plinko1000' },
   ];
 
-  const popularGames = [
+  const popularGames = showLegacy ? [
     { name: 'Tower', icon: '🏗️', players: '2.5k', color: Colors.primary.neonCyan, route: '/game/tower' },
     { name: 'Mines', icon: '💣', players: '1.8k', color: Colors.primary.hotPink, route: '/game/mines' },
     { name: 'Aviator', icon: '✈️', players: '3.2k', color: Colors.primary.gold, route: '/game/aviator' },
-  ];
+  ] : [];
 
-  const lotteryGames = [
+  const lotteryGames = showLegacy ? [
     { name: 'Mega Draw', icon: '🎫', players: '5.1k', color: Colors.primary.gold, route: '/game/megadraw' },
     { name: 'Lucky Numbers', icon: '🍀', players: '2.9k', color: Colors.primary.neonCyan, route: '/game/luckynumbers' },
     { name: 'Power Ball', icon: '⚡', players: '4.3k', color: Colors.primary.hotPink, route: '/game/powerball' },
-  ];
+  ] : [];
+
 
 
 
