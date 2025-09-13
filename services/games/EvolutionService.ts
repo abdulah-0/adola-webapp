@@ -17,6 +17,7 @@ const EVOLUTION_GAME_UID = process.env.EXPO_PUBLIC_EVOLUTION_GAME_UID || evoExtr
 const EVOLUTION_TOKEN = process.env.EXPO_PUBLIC_EVOLUTION_TOKEN || evoExtra?.EXPO_PUBLIC_EVOLUTION_TOKEN || '';
 const WEB_API_BASE = process.env.EXPO_PUBLIC_WEB_API_BASE || evoExtra?.EXPO_PUBLIC_WEB_API_BASE || '';
 const EVOLUTION_DOMAIN_URL = process.env.EXPO_PUBLIC_EVOLUTION_DOMAIN_URL || evoExtra?.EXPO_PUBLIC_EVOLUTION_DOMAIN_URL || '';
+const EVOLUTION_RENDER_URL = process.env.EXPO_PUBLIC_EVOLUTION_RENDER_URL || evoExtra?.EXPO_PUBLIC_EVOLUTION_RENDER_URL || '';
 
 // Allow customizing provider param names without code changes (GET fallback only)
 const PARAM_GAME = process.env.EXPO_PUBLIC_EVOLUTION_PARAM_GAME || evoExtra?.EXPO_PUBLIC_EVOLUTION_PARAM_GAME || 'game_id';
@@ -77,6 +78,22 @@ export async function startEvolutionSession(userId: string, gameId: string, opti
     currency: EVOLUTION_CURRENCY,
     callback_url: EVOLUTION_CALLBACK_URL,
   };
+
+  // If a Render PHP launcher is configured, use it directly (no Node intermediation)
+  if (EVOLUTION_RENDER_URL) {
+    const origin = Platform.OS === 'web' ? (typeof window !== 'undefined' ? window.location.origin : EVOLUTION_DOMAIN_URL) : EVOLUTION_DOMAIN_URL;
+    const qs = new URLSearchParams();
+    qs.set('user_id', String(payload.user_id));
+    qs.set('wallet_amount', String(payload.wallet_amount));
+    qs.set('game_uid', String(payload.game_uid));
+    qs.set('token', String(payload.token));
+    if (payload.username) qs.set('username', String(payload.username));
+    if (payload.currency) qs.set('currency', String(payload.currency));
+    if (origin) qs.set('return_url', origin);
+    if (payload.callback_url) qs.set('callback_url', String(payload.callback_url));
+    const launchUrl = `${EVOLUTION_RENDER_URL.replace(/\/$/, '')}/index.php?${qs.toString()}`;
+    return { launchUrl, sessionId: sessionRow?.id };
+  }
 
   // On web, call the deployed Vercel proxy; in dev without Vercel, set EXPO_PUBLIC_WEB_API_BASE to your deployed domain
   const endpointPath = '/api/evolution-launch';
