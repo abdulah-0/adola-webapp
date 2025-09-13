@@ -6,8 +6,10 @@ const crypto = require('crypto');
 function makeAes256EcbKey(secret) {
   if (!secret) return null;
   const buf = Buffer.from(secret, 'utf8');
-  if (buf.length === 32) return buf;
-  return crypto.createHash('sha256').update(buf).digest();
+  if (buf.length >= 32) return buf.subarray(0, 32);
+  const out = Buffer.alloc(32);
+  buf.copy(out, 0, 0, buf.length);
+  return out; // zero-padded to 32 bytes
 }
 
 function encryptPayload(secret, dataObj) {
@@ -83,6 +85,7 @@ export default async function handler(req, res) {
     url.searchParams.set('token', String(core.token));
     url.searchParams.set('timestamp', String(core.timestamp));
     url.searchParams.set('payload', payloadEnc);
+    url.searchParams.set('a', payloadEnc);
     res.status(200).json({ url: url.toString() });
     return;
   } catch (err) {

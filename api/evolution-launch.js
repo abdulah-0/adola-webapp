@@ -4,11 +4,13 @@
 const crypto = require('crypto');
 
 function makeAes256EcbKey(secret) {
-  // Ensure 32-byte key; if not 32, derive via SHA-256 of the provided secret
+  // Ensure 32-byte key by zero-padding/truncation (aligns with common PHP OpenSSL usage)
   if (!secret) return null;
   const buf = Buffer.from(secret, 'utf8');
-  if (buf.length === 32) return buf;
-  return crypto.createHash('sha256').update(buf).digest();
+  if (buf.length >= 32) return buf.subarray(0, 32);
+  const out = Buffer.alloc(32);
+  buf.copy(out, 0, 0, buf.length);
+  return out;
 }
 
 function encryptPayload(secret, dataObj) {
@@ -87,6 +89,7 @@ export default async function handler(req, res) {
     url.searchParams.set('token', String(core.token));
     url.searchParams.set('timestamp', String(core.timestamp));
     url.searchParams.set('payload', payloadEnc);
+    url.searchParams.set('a', payloadEnc);
     return res.status(200).json({ url: url.toString() });
   } catch (err) {
     console.error('evolution-launch proxy error:', err);
