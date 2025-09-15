@@ -42,6 +42,7 @@ $core = [
   'wallet_amount' => (0 + $wallet_amount),
   'game_uid' => $game_uid,
   'token' => $token,
+  'domain_url' => 'https://www.adolagaming.com',
   'timestamp' => (0 + $timestamp)
 ];
 $json = json_encode($core, JSON_UNESCAPED_SLASHES);
@@ -81,4 +82,6 @@ if (stripos($accept, 'application/json') !== false) {
 
 header('Location: ' . $finalUrl, true, 302);
 exit;
+
+
 
