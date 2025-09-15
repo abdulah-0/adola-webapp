@@ -8,8 +8,8 @@ import { startEvolutionSession } from '../../../services/games/EvolutionService'
 
 const extraCfg: any = (Constants?.expoConfig?.extra as any) || {};
 const evoExtra = extraCfg?.evolution || extraCfg;
-// Provider expects a 'game_uid' that matches your allowed provider slug. Defaulting to 'evolution'.
-const PLINKO_GAME_ID = process.env.EXPO_PUBLIC_EVOLUTION_GAME_UID || evoExtra?.EXPO_PUBLIC_EVOLUTION_GAME_UID || 'evolution';
+// Default to the specific provider game UID provided by you.
+const PLINKO_GAME_ID = process.env.EXPO_PUBLIC_EVOLUTION_GAME_UID || evoExtra?.EXPO_PUBLIC_EVOLUTION_GAME_UID || 'c4fc4643a2307e4a5390667c21484c50';
 
 export default function Plinko1000Screen() {
   const { user } = useApp();
