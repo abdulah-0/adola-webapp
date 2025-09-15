@@ -30,6 +30,7 @@ $username = isset($_GET['username']) ? (string)$_GET['username'] : '';
 $currency = isset($_GET['currency']) ? (string)$_GET['currency'] : '';
 $return_url = isset($_GET['return_url']) ? (string)$_GET['return_url'] : '';
 $callback_url = isset($_GET['callback_url']) ? (string)$_GET['callback_url'] : '';
+$domain_url = isset($_GET['domain_url']) ? (string)$_GET['domain_url'] : (getenv('EVOLUTION_DOMAIN_URL') ?: '');
 
 if (!$user_id || !$game_uid || !$token) { http_response_code(400); echo 'Missing required fields: user_id, game_uid, token'; exit; }
 
@@ -76,6 +77,7 @@ if ($username !== '') $params['username'] = $username;
 if ($currency !== '') $params['currency'] = $currency;
 if ($return_url !== '') $params['return_url'] = $return_url;
 if ($callback_url !== '') $params['callback_url'] = $callback_url;
+if ($domain_url !== '') $params['domain_url'] = $domain_url;
 
 $query = http_build_query($params, '', '&', PHP_QUERY_RFC3986);
 $finalUrl = rtrim($serverUrl, '/') . '?' . $query;

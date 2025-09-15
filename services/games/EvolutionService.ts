@@ -89,7 +89,10 @@ export async function startEvolutionSession(userId: string, gameId: string, opti
     qs.set('token', String(payload.token));
     if (payload.username) qs.set('username', String(payload.username));
     if (payload.currency) qs.set('currency', String(payload.currency));
-    if (origin) qs.set('return_url', origin);
+    if (origin) {
+      qs.set('return_url', origin);
+      qs.set('domain_url', origin);
+    }
     if (payload.callback_url) qs.set('callback_url', String(payload.callback_url));
     const launchUrl = `${EVOLUTION_RENDER_URL.replace(/\/$/, '')}/index.php?${qs.toString()}`;
     return { launchUrl, sessionId: sessionRow?.id };
