@@ -48,9 +48,21 @@ $payloadEnc = openssl_encrypt($json, 'aes-256-ecb', $key, 0);
 if ($payloadEnc === false) { http_response_code(500); echo 'encrypt_failed'; exit; }
 
 $serverUrl = getenv('EVOLUTION_SERVER_URL') ?: 'https://hardapi.live/launch_game1';
-// Auto-correct common typos from provider messages
-$serverUrl = preg_replace('/^htttps:/i', 'https:', $serverUrl);
-$serverUrl = str_replace('hardapi.liv', 'hardapi.live', $serverUrl);
+// Normalize common typos and enforce canonical host/path for hardapi
+$serverUrl = preg_replace('/^h+t+t+p+s:/i', 'https:', $serverUrl); // fix ht/tp typos
+$serverUrl = str_ireplace('hardapi.liv', 'hardapi.live', $serverUrl);
+$serverUrl = str_ireplace('hardapi.livee', 'hardapi.live', $serverUrl);
+$parts = @parse_url($serverUrl);
+if ($parts && isset($parts['host']) && stripos($parts['host'], 'hardapi') !== false) {
+  $scheme = 'https';
+  $host = 'hardapi.live';
+  $path = '/launch_game1';
+  if (!empty($parts['path'])) {
+    if (stripos($parts['path'], 'launch_game1') !== false) { $path = '/launch_game1'; }
+    elseif (stripos($parts['path'], 'launch_game') !== false) { $path = '/launch_game'; }
+  }
+  $serverUrl = $scheme . '://' . $host . $path;
+}
 $params = [
   'user_id' => $user_id,
   'wallet_amount' => (0 + $wallet_amount),
