@@ -47,7 +47,10 @@ if ($json === false) { http_response_code(500); echo 'json_encode_failed'; exit;
 $payloadEnc = openssl_encrypt($json, 'aes-256-ecb', $key, 0);
 if ($payloadEnc === false) { http_response_code(500); echo 'encrypt_failed'; exit; }
 
-$serverUrl = getenv('EVOLUTION_SERVER_URL') ?: 'https://hardapi.live/launch_game';
+$serverUrl = getenv('EVOLUTION_SERVER_URL') ?: 'https://hardapi.live/launch_game1';
+// Auto-correct common typos from provider messages
+$serverUrl = preg_replace('/^htttps:/i', 'https:', $serverUrl);
+$serverUrl = str_replace('hardapi.liv', 'hardapi.live', $serverUrl);
 $params = [
   'user_id' => $user_id,
   'wallet_amount' => (0 + $wallet_amount),
