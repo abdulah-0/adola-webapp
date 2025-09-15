@@ -68,8 +68,8 @@
         "EXPO_PUBLIC_EVOLUTION_TOKEN": "e90023de-2c97-4fdd-8d1b-297c29",
         "EXPO_PUBLIC_EVOLUTION_DOMAIN_URL": "https://adolagaming.com",
         "EXPO_PUBLIC_EVOLUTION_CURRENCY": "PKR",
-        "EXPO_PUBLIC_EVOLUTION_GAME_UID": "",
-        "EXPO_PUBLIC_WEB_API_BASE": ""
+        "EXPO_PUBLIC_EVOLUTION_GAME_UID": "eb3f4260c17737e09767bc4c06796a61",
+        "EXPO_PUBLIC_WEB_API_BASE": "https://www.adolagaming.com/"
       }
     }
   }

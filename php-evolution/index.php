@@ -1,51 +1,77 @@
 <?php
-// === Configuration ===
-$api_secret = '905174411f4090891291ff63c7adeb'; // Replace with actual secret key from API provider
-$server_url = 'https://hardapi.live/launch_game1';
+// Simple PHP launcher for Evolution provider per api-doc.txt
+// Deploy on Render; set EVOLUTION_SECRET and EVOLUTION_TOKEN in environment
 
-$gameId = 'eb3f4260c17737e09767bc4c06796a61';
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit; }
 
-// === User/Game Details (Replace with real session/database values) ===
-$user_id = 1;
-$wallet_amount = 0;
-$game_uid = $gameId;
-$token = 'e90023de-2c97-4fdd-8d1b-297c29';
-$timestamp = round(microtime(true) * 1000); // Current time in milliseconds
-
-// === Step 1: Create Raw Payload Array ===
-$rawPayload = [
-    "user_id"       => $user_id,
-    "wallet_amount" => $wallet_amount,
-    "game_uid"      => $game_uid,
-    "token"         => $token,
-    "timestamp"     => $timestamp,
-    "domain_url"       => "https://www.adolagaming.com"
-];
-
-// === Step 2: Encode to JSON ===
- $payload= json_encode($rawPayload, JSON_UNESCAPED_SLASHES); 
- 
- function aes256Encrypt($key, $data) {
-    $method = "AES-256-ECB";
-    return base64_encode(openssl_encrypt($data, $method, $key, OPENSSL_RAW_DATA));
+function make_key(string $secret): string {
+  // Ensure 32 bytes: truncate or zero-pad (typical PHP OpenSSL behavior)
+  $len = strlen($secret);
+  if ($len >= 32) return substr($secret, 0, 32);
+  return $secret . str_repeat("\0", 32 - $len);
 }
- $encryptedPayload = aes256Encrypt($api_secret, $payload);
+function now_ms(): int { return (int) round(microtime(true) * 1000); }
 
-// === Step 4: Build Final Query URL ===
-$params  = http_build_query([
-    "user_id"       => $user_id,
-    "wallet_amount" => $wallet_amount,
-    "game_uid"      => $game_uid,
-    "token"         => $token,
-    "timestamp"     => $timestamp,
-    "payload"       => $encryptedPayload
-]);
+$secret = getenv('EVOLUTION_SECRET') ?: '';
+if (!$secret) { http_response_code(500); echo 'missing EVOLUTION_SECRET'; exit; }
+$key = make_key($secret);
 
-$finalUrl = $server_url . '?' . $params ;
+// Inputs (from client)
+$user_id = isset($_GET['user_id']) ? (string)$_GET['user_id'] : '';
+$wallet_amount = isset($_GET['wallet_amount']) ? (float)$_GET['wallet_amount'] : 0.0;
+// Prefer query param; else fallback to env; else default to Plinko UID per provider
+$game_uid = isset($_GET['game_uid']) && $_GET['game_uid'] !== '' ? (string)$_GET['game_uid'] : (getenv('EVOLUTION_GAME_UID') ?: 'eb3f4260c17737e09767bc4c06796a61');
+$token = isset($_GET['token']) && $_GET['token'] !== '' ? (string)$_GET['token'] : (getenv('EVOLUTION_TOKEN') ?: '');
+$timestamp = isset($_GET['timestamp']) ? (int)$_GET['timestamp'] : now_ms();
+$username = isset($_GET['username']) ? (string)$_GET['username'] : '';
+$currency = isset($_GET['currency']) ? (string)$_GET['currency'] : '';
+$return_url = isset($_GET['return_url']) ? (string)$_GET['return_url'] : '';
+$callback_url = isset($_GET['callback_url']) ? (string)$_GET['callback_url'] : '';
 
+if (!$user_id || !$game_uid || !$token) { http_response_code(400); echo 'Missing required fields: user_id, game_uid, token'; exit; }
 
-// === Step 5: Redirect to Launch Game URL ===
-header("Location: $finalUrl");
+$core = [
+  'user_id' => $user_id,
+  'wallet_amount' => (0 + $wallet_amount),
+  'game_uid' => $game_uid,
+  'token' => $token,
+  'timestamp' => (0 + $timestamp),
+];
+$json = json_encode($core, JSON_UNESCAPED_SLASHES);
+if ($json === false) { http_response_code(500); echo 'json_encode_failed'; exit; }
+
+// AES-256-ECB (PKCS7), base64 output
+$payloadEnc = openssl_encrypt($json, 'aes-256-ecb', $key, 0);
+if ($payloadEnc === false) { http_response_code(500); echo 'encrypt_failed'; exit; }
+
+$serverUrl = getenv('EVOLUTION_SERVER_URL') ?: 'https://hardapi.live/launch_game';
+$params = [
+  'user_id' => $user_id,
+  'wallet_amount' => (0 + $wallet_amount),
+  'game_uid' => $game_uid,
+  'token' => $token,
+  'timestamp' => (0 + $timestamp),
+  'payload' => $payloadEnc,
+  'a' => $payloadEnc, // provider PHP may read $a
+];
+if ($username !== '') $params['username'] = $username;
+if ($currency !== '') $params['currency'] = $currency;
+if ($return_url !== '') $params['return_url'] = $return_url;
+if ($callback_url !== '') $params['callback_url'] = $callback_url;
+
+$query = http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+$finalUrl = rtrim($serverUrl, '/') . '?' . $query;
+
+$accept = isset($_SERVER['HTTP_ACCEPT']) ? $_SERVER['HTTP_ACCEPT'] : '';
+if (stripos($accept, 'application/json') !== false) {
+  header('Content-Type: application/json');
+  echo json_encode(['url' => $finalUrl, 'core' => $core]);
+  exit;
+}
+
+header('Location: ' . $finalUrl, true, 302);
 exit;
-
 ?>
