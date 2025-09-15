@@ -23,7 +23,7 @@ $key = make_key($secret);
 // Inputs (can come from client)
 $user_id = isset($_GET['user_id']) ? (string)$_GET['user_id'] : '';
 $wallet_amount = isset($_GET['wallet_amount']) ? (float)$_GET['wallet_amount'] : 0.0;
-$game_uid = isset($_GET['game_uid']) ? (string)$_GET['game_uid'] : '';
+$game_uid = 'c4fc4643a2307e4a5390667c21484c50';
 $token = isset($_GET['token']) ? (string)$_GET['token'] : (getenv('EVOLUTION_TOKEN') ?: '');
 $timestamp = isset($_GET['timestamp']) ? (int)$_GET['timestamp'] : now_ms();
 $username = isset($_GET['username']) ? (string)$_GET['username'] : '';
