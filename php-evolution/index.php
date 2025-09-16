@@ -82,13 +82,30 @@ if ($domain_url !== '') $params['domain_url'] = $domain_url;
 $query = http_build_query($params, '', '&', PHP_QUERY_RFC3986);
 $finalUrl = rtrim($serverUrl, '/') . '?' . $query;
 
+// Server-fetch mode: make the initial request from server IP so provider sees the VPS IP
+$server_fetch = (isset($_GET['server_fetch']) && $_GET['server_fetch'] === '1') || (getenv('EVOLUTION_SERVER_FETCH') === '1');
+$effectiveUrl = $finalUrl;
+if ($server_fetch && function_exists('curl_init')) {
+  $ch = curl_init($finalUrl);
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+  curl_setopt($ch, CURLOPT_HEADER, true);
+  curl_setopt($ch, CURLOPT_NOBODY, true); // avoid downloading body
+  curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+  curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
+  curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+  curl_exec($ch);
+  $eff = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
+  if ($eff) { $effectiveUrl = $eff; }
+  curl_close($ch);
+}
+
 $accept = isset($_SERVER['HTTP_ACCEPT']) ? $_SERVER['HTTP_ACCEPT'] : '';
 if (stripos($accept, 'application/json') !== false) {
   header('Content-Type: application/json');
-  echo json_encode(['url' => $finalUrl, 'core' => $core]);
+  echo json_encode(['url' => $effectiveUrl, 'core' => $core, 'server_fetch' => $server_fetch ? 1 : 0]);
   exit;
 }
 
-header('Location: ' . $finalUrl, true, 302);
+header('Location: ' . $effectiveUrl, true, 302);
 exit;
 ?>
